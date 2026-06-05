@@ -1,5 +1,0 @@
-flet>=0.21.0
-supabase>=2.0.0
-python-dotenv>=1.0.0
-pyzk>=0.9
-pyinstaller>=6.0.0
