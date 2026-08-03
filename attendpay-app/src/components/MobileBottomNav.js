@@ -9,32 +9,32 @@ import './MobileBottomNav.css';
 const MobileBottomNav = ({ onOpenMenu }) => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { t } = useLocale();
+    const { language } = useLocale();
 
     const navItems = [
         {
             path: '/dashboard',
-            label: t.titleDashboard || 'الرئيسية',
+            label: language === 'en' ? 'Home' : 'الرئيسية',
             icon: LayoutDashboard,
         },
         {
             path: '/attendance',
-            label: t.titleAttendance || 'الحضور',
+            label: language === 'en' ? 'Attendance' : 'الحضور',
             icon: Clock,
         },
         {
             path: '/employees',
-            label: t.titleEmployees || 'الموظفون',
+            label: language === 'en' ? 'Staff' : 'الموظفون',
             icon: Users,
         },
         {
             path: '/payroll',
-            label: t.titlePayroll || 'المسيرات',
+            label: language === 'en' ? 'Payroll' : 'الرواتب',
             icon: Wallet,
         },
         {
             path: '/assistant',
-            label: t.titleAssistant || 'الذكاء',
+            label: language === 'en' ? 'Assistant' : 'المساعد',
             icon: Sparkles,
             isAi: true
         }
@@ -71,7 +71,7 @@ const MobileBottomNav = ({ onOpenMenu }) => {
                     <div className="mobile-nav-icon-wrap">
                         <Menu size={20} className="mobile-nav-icon" />
                     </div>
-                    <span className="mobile-nav-label">{t.menu || 'القائمة'}</span>
+                    <span className="mobile-nav-label">{language === 'en' ? 'Menu' : 'القائمة'}</span>
                 </button>
             </div>
         </nav>
