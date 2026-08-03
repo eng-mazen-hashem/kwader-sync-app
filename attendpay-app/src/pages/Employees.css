@@ -1,0 +1,1291 @@
+/* -------------------------------------------------------------------------
+   Employees.css — Obsidian Luxe (Phase 2)
+   Translates Stitch "Employees Directory" Tailwind tokens → CSS Variables
+   Supports RTL (.ar) and LTR (.en) via the inherited dir attribute
+------------------------------------------------------------------------- */
+
+/* ------------------------------------------------------------------------- */
+.emp-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+    padding: 0.25rem 0 2rem;
+}
+
+/* ------------------------------------------------------------------------- */
+.emp-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.emp-title {
+    font-size: 1.85rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+    margin: 0 0 0.25rem;
+}
+
+.emp-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin: 0;
+    max-width: 40ch;
+}
+
+.emp-header-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* Primary CTA button — indigo gradient */
+.emp-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.25rem;
+    border-radius: 0.75rem;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+    transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+}
+.emp-btn-primary:hover {
+    filter: brightness(1.12);
+    box-shadow: 0 8px 28px rgba(99, 102, 241, 0.5);
+    transform: translateY(-1px);
+}
+.emp-btn-primary:active { transform: translateY(0); }
+
+/* Secondary ghost button */
+.emp-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.25rem;
+    border-radius: 0.75rem;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+.emp-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+}
+
+/* ------------------------------------------------------------------------- */
+.emp-stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+}
+
+@media (max-width: 640px) {
+    .emp-page {
+        gap: 1rem !important;
+        padding: 0.1rem 0 115px !important;
+    }
+    .emp-header {
+        gap: 0.75rem !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+    }
+    .emp-title {
+        font-size: 1.4rem !important;
+        margin-bottom: 0.15rem !important;
+    }
+    .emp-subtitle {
+        font-size: 0.78rem !important;
+    }
+    .emp-header-actions {
+        width: 100% !important;
+        display: flex !important;
+        gap: 0.5rem !important;
+    }
+    .emp-btn-primary, 
+    .emp-btn-secondary {
+        flex: 1 !important;
+        justify-content: center !important;
+        padding: 0.55rem 0.75rem !important;
+        font-size: 0.8rem !important;
+        border-radius: 12px !important;
+    }
+    .emp-stats-row { 
+        grid-template-columns: repeat(2, 1fr) !important; 
+        gap: 0.55rem !important;
+    }
+    .emp-stats-row > div:nth-child(3) {
+        grid-column: span 2 !important;
+    }
+    .emp-stat-card {
+        padding: 0.75rem 0.85rem !important;
+        border-radius: 14px !important;
+    }
+    .emp-stat-top {
+        margin-bottom: 0.4rem !important;
+    }
+    .emp-stat-icon {
+        width: 2.2rem !important;
+        height: 2.2rem !important;
+        border-radius: 10px !important;
+    }
+    .emp-stat-icon svg {
+        width: 18px !important;
+        height: 18px !important;
+    }
+    .emp-stat-label {
+        font-size: 0.72rem !important;
+    }
+    .emp-stat-value {
+        font-size: 1.35rem !important;
+    }
+    .emp-filter-bar {
+        gap: 0.5rem !important;
+        flex-direction: column !important;
+    }
+    .emp-search-wrap,
+    .emp-filter-group {
+        width: 100% !important;
+    }
+    .emp-search-input,
+    .emp-select {
+        font-size: 0.82rem !important;
+        padding: 0.5rem 0.75rem !important;
+        border-radius: 12px !important;
+    }
+    .emp-search-input {
+        padding-inline-start: 2.3rem !important;
+    }
+    .emp-table-wrap {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        border-radius: 16px !important;
+    }
+    .emp-table th,
+    .emp-table td {
+        padding: 0.65rem 0.75rem !important;
+        font-size: 0.82rem !important;
+        white-space: nowrap !important;
+    }
+    .emp-avatar {
+        width: 2rem !important;
+        height: 2rem !important;
+        font-size: 0.75rem !important;
+    }
+    .emp-pagination {
+        padding: 0.75rem 1rem !important;
+        justify-content: center !important;
+        gap: 0.5rem !important;
+    }
+    .emp-modal-overlay {
+        align-items: flex-end !important;
+        padding: 0 !important;
+    }
+    .emp-modal-card {
+        border-radius: 24px 24px 0 0 !important;
+        max-height: 88vh !important;
+    }
+    .emp-modal-header {
+        padding: 16px 20px !important;
+    }
+    .emp-modal-body {
+        padding: 18px 20px !important;
+        gap: 14px !important;
+    }
+    .emp-modal-footer {
+        padding: 14px 20px !important;
+    }
+}
+
+.emp-stat-card {
+    position: relative;
+    overflow: hidden;
+    background: rgba(30, 30, 46, 0.45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    border-radius: 20px;
+    padding: 1.5rem;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.emp-stat-card:hover {
+    background: rgba(34, 34, 54, 0.65);
+    border-color: rgba(99, 102, 241, 0.25);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25), 0 0 24px rgba(99, 102, 241, 0.08);
+}
+
+/* Ambient glow blob */
+.emp-stat-glow {
+    position: absolute;
+    top: -3rem;
+    inset-inline-end: -3rem;
+    width: 8rem;
+    height: 8rem;
+    border-radius: 50%;
+    background: rgba(99, 102, 241, 0.12);
+    filter: blur(32px);
+    pointer-events: none;
+    transition: background 0.3s;
+}
+.emp-stat-card:hover .emp-stat-glow {
+    background: rgba(99, 102, 241, 0.22);
+}
+
+.emp-stat-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.emp-stat-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.emp-stat-icon-indigo { background: rgba(99,102,241,0.18); color: #818cf8; }
+.emp-stat-icon-purple { background: rgba(139,92,246,0.18); color: #c084fc; }
+.emp-stat-icon-teal   { background: rgba(6,182,212,0.18);  color: #22d3ee; }
+
+.emp-stat-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #818cf8;
+    background: rgba(99,102,241,0.15);
+    padding: 0.22rem 0.55rem;
+    border-radius: 0.35rem;
+}
+
+.emp-stat-label {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin: 0 0 0.25rem;
+}
+
+.emp-stat-value {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+/* ------------------------------------------------------------------------- */
+.emp-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 1rem 1.25rem;
+    background: rgba(30, 30, 46, 0.45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    border-radius: 1.25rem;
+}
+
+/* Search */
+.emp-search-wrap {
+    flex: 1;
+    min-width: 220px;
+    position: relative;
+}
+
+.emp-search-icon {
+    position: absolute;
+    top: 50%;
+    inset-inline-start: 0.875rem;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.emp-search-input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 0.875rem;
+    padding: 0.6rem 1rem 0.6rem 2.5rem;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.emp-search-input::placeholder { color: var(--text-muted); }
+.emp-search-input:focus {
+    border-color: rgba(99, 102, 241, 0.55);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+.ar .emp-search-input { padding: 0.6rem 2.5rem 0.6rem 1rem; }
+
+.emp-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.emp-select {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 0.875rem;
+    padding: 0.6rem 1rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    outline: none;
+    cursor: pointer;
+    min-width: 160px;
+    transition: border-color 0.2s;
+}
+.emp-select:focus { border-color: rgba(99, 102, 241, 0.55); }
+
+.emp-filter-btn {
+    width: 2.6rem;
+    height: 2.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 0.875rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+.emp-filter-btn:hover {
+    background: rgba(99, 102, 241, 0.12);
+    color: #818cf8;
+}
+
+/* ------------------------------------------------------------------------- */
+.emp-table-card {
+    background: rgba(30, 30, 46, 0.45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    border-radius: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+}
+
+.emp-table-wrap { overflow-x: auto; }
+
+.emp-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+/* Header row */
+.emp-table thead tr {
+    background: rgba(255, 255, 255, 0.035);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.emp-table thead th {
+    padding: 1rem 1.5rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-muted);
+    text-align: start;
+    white-space: nowrap;
+}
+
+/* Body rows */
+.emp-table tbody tr.emp-row {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    transition: background 0.15s;
+}
+.emp-table tbody tr.emp-row:hover { background: rgba(255, 255, 255, 0.03); }
+.emp-table tbody tr.emp-row:last-child { border-bottom: none; }
+
+.emp-table td {
+    padding: 1rem 1.5rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    vertical-align: middle;
+}
+
+/* Responsive Stacked Card Table */
+@media (max-width: 768px) {
+    .emp-table, 
+    .emp-table thead, 
+    .emp-table tbody, 
+    .emp-table th, 
+    .emp-table td, 
+    .emp-table tr {
+        display: block;
+    }
+    
+    .emp-table thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+    
+    .emp-table tbody tr.emp-row {
+        margin-bottom: 1rem;
+        background: rgba(26, 25, 25, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 1rem;
+        padding: 0.5rem;
+    }
+    
+    .emp-table td {
+        border: none;
+        position: relative;
+        padding: 0.75rem 1rem 0.75rem 40%;
+        text-align: end;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        min-height: 3rem;
+    }
+    
+    .emp-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        inset-inline-start: 1rem;
+        width: 35%;
+        text-align: start;
+        font-weight: 700;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        white-space: nowrap;
+    }
+    
+    .ar .emp-table td::before {
+        text-align: right;
+    }
+
+    .emp-filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .emp-search-wrap, .emp-filter-group {
+        width: 100%;
+    }
+    
+    .emp-filter-group select {
+        flex: 1;
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+
+/* Muted text */
+.emp-td-muted { color: var(--text-muted) !important; font-size: 0.82rem; }
+
+/* Name row */
+.emp-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.emp-avatar {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: #fff;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: transform 0.2s;
+}
+.emp-row:hover .emp-avatar { transform: scale(1.08); }
+
+.emp-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+/* Phone */
+.emp-phone {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+/* PIN badge */
+.emp-pin-badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 0.5rem;
+    background: rgba(99, 102, 241, 0.12);
+    color: #818cf8;
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-family: monospace;
+    letter-spacing: 0.05em;
+    border: 1px solid rgba(99, 102, 241, 0.25);
+}
+
+/* Salary */
+.emp-salary {
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: var(--text-primary) !important;
+}
+
+/* Department pill */
+.emp-dept-pill {
+    display: inline-block;
+    padding: 0.2rem 0.75rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* Status badges */
+.emp-status-badge {
+    display: inline-block;
+    padding: 0.22rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+}
+.emp-badge-active {
+    background: linear-gradient(135deg, rgba(139,92,246,0.6), rgba(99,102,241,0.8));
+    color: #fff;
+    box-shadow: 0 2px 12px rgba(99,102,241,0.25);
+}
+.emp-badge-inactive {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+}
+.emp-badge-error {
+    background: linear-gradient(135deg, rgba(167,2,56,0.6), rgba(239,68,68,0.7));
+    color: #fff;
+}
+.emp-badge-warning {
+    background: linear-gradient(135deg, rgba(245,158,11,0.3), rgba(245,158,11,0.5));
+    color: #fcd34d;
+}
+
+/* Action buttons */
+.emp-actions {
+    display: flex;
+    gap: 0.4rem;
+    justify-content: flex-end;
+}
+
+.emp-action-btn {
+    width: 2rem;
+    height: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+.emp-action-btn:hover {
+    background: rgba(99, 102, 241, 0.12);
+    color: #818cf8;
+}
+.emp-action-btn.emp-action-danger:hover {
+    background: rgba(239, 68, 68, 0.12);
+    color: #f87171;
+}
+
+/* ------------------------------------------------------------------------- */
+.emp-skeleton-row td { padding: 1rem 1.5rem; }
+.emp-skeleton {
+    height: 1rem;
+    border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    animation: emp-pulse 1.6s ease-in-out infinite;
+}
+@keyframes emp-pulse {
+    0%, 100% { opacity: 0.5; }
+    50%        { opacity: 1;   }
+}
+
+/* ------------------------------------------------------------------------- */
+.emp-empty {
+    text-align: center;
+    padding: 4rem 1rem !important;
+    color: var(--text-muted) !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* ------------------------------------------------------------------------- */
+.emp-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.emp-pagination-info {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.emp-pagination-controls {
+    display: flex;
+    gap: 0.35rem;
+}
+
+.emp-page-btn {
+    min-width: 2.4rem;
+    height: 2.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.625rem;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    padding: 0 0.5rem;
+}
+.emp-page-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.06);
+}
+.emp-page-btn.active {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.4);
+    color: #818cf8;
+    font-weight: 700;
+}
+.emp-page-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   MODAL REDESIGN — Obsidian Luxe
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Modal Overrides for Employee Form */
+.emp-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+    animation: emp-fadeIn 0.3s ease;
+}
+
+@keyframes emp-fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.emp-modal-card {
+    width: 100%;
+    max-width: 620px;
+    background: rgba(18, 18, 28, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh; /* Prevents cutting off on small screens */
+    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.04);
+    animation: emp-modalSlide 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+[data-theme='light'] .emp-modal-card {
+    background: rgba(255, 255, 255, 0.98);
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.12);
+}
+
+@keyframes emp-modalSlide {
+    from { opacity: 0; transform: translateY(30px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.emp-modal-accent {
+    height: 4px;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6, #3b82f6);
+    flex-shrink: 0;
+}
+
+.emp-modal-header {
+    padding: 24px 28px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+[data-theme='light'] .emp-modal-header { border-bottom-color: rgba(0, 0, 0, 0.06); }
+
+.emp-modal-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.emp-modal-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.emp-modal-subtitle {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.emp-modal-close {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.emp-modal-close:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.emp-modal-body {
+    padding: 28px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(99, 102, 241, 0.2) transparent;
+}
+
+.emp-modal-body::-webkit-scrollbar { width: 5px; }
+.emp-modal-body::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.2); border-radius: 10px; }
+
+/* Grid for body */
+.emp-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 640px) {
+    .emp-form-grid { grid-template-columns: 1fr; }
+}
+
+.emp-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.emp-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.emp-input-wrapper {
+    position: relative;
+}
+
+.emp-input-icon {
+    position: absolute;
+    inset-inline-start: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.emp-input {
+    width: 100%;
+    padding: 10px 14px;
+    padding-inline-start: 38px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.9rem;
+    outline: none;
+    transition: all 0.2s;
+}
+
+[data-theme='light'] .emp-input { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.08); }
+
+.emp-input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    background: rgba(99, 102, 241, 0.02);
+}
+
+.emp-input.error { border-color: #ef4444; }
+
+.emp-error-text {
+    font-size: 0.72rem;
+    color: #f87171;
+    margin-top: 2px;
+}
+
+/* Modal Footer */
+.emp-modal-footer {
+    padding: 20px 28px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    flex-shrink: 0;
+}
+
+[data-theme='light'] .emp-modal-footer { border-top-color: rgba(0, 0, 0, 0.06); background: rgba(0, 0, 0, 0.01); }
+
+.emp-btn-save {
+    padding: 10px 24px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.emp-btn-save:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+}
+
+.emp-btn-save:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.emp-btn-cancel {
+    padding: 10px 24px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.emp-btn-cancel:hover { background: rgba(255, 255, 255, 0.1); color: var(--text-primary); }
+
+/* ==========================================================================
+   Professional PWA Mobile Block Page (Obsidian Luxe Style)
+   ========================================================================== */
+
+.emp-mb-page {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #09090b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    padding: 20px;
+    overflow-y: auto;
+    font-family: 'Inter', 'Outfit', system-ui, sans-serif;
+}
+
+[data-theme='light'] .emp-mb-page {
+    background: #f4f4f5;
+}
+
+/* Background Ambient Glows */
+.emp-mb-glow1 {
+    position: absolute;
+    width: 250px;
+    height: 250px;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+    top: 15%;
+    left: 10%;
+    filter: blur(40px);
+    pointer-events: none;
+}
+
+.emp-mb-glow2 {
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+    bottom: 10%;
+    right: 5%;
+    filter: blur(50px);
+    pointer-events: none;
+}
+
+/* Main Blocker Card */
+.emp-mb-card {
+    position: relative;
+    width: 100%;
+    max-width: 440px;
+    background: rgba(18, 18, 24, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 28px;
+    padding: 36px 28px;
+    text-align: center;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4), 
+                inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    animation: emp-mb-slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+[data-theme='light'] .emp-mb-card {
+    background: rgba(255, 255, 255, 0.75);
+    border-color: rgba(0, 0, 0, 0.06);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* Pulsing Logo Ring */
+.emp-mb-logo-container {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+
+.emp-mb-logo-ring {
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 2px dashed rgba(139, 92, 246, 0.3);
+    animation: emp-mb-spin 12s linear infinite;
+}
+
+.emp-mb-logo-img {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    background: transparent;
+}
+
+/* Titles & Subtitles */
+.emp-mb-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    line-height: 1.4;
+    color: #ffffff;
+    margin: 0;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+[data-theme='light'] .emp-mb-title {
+    color: #0f172a;
+    background: none;
+    -webkit-text-fill-color: initial;
+}
+
+.emp-mb-subtitle {
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: #94a3b8;
+    margin: 0;
+    max-width: 95%;
+}
+
+[data-theme='light'] .emp-mb-subtitle {
+    color: #475569;
+}
+
+/* Benefits Section */
+.emp-mb-benefits {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 10px 0;
+}
+
+.emp-mb-benefit-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 16px;
+    text-align: start;
+    transition: all 0.25s;
+}
+
+[data-theme='light'] .emp-mb-benefit-card {
+    background: rgba(0, 0, 0, 0.02);
+    border-color: rgba(0, 0, 0, 0.04);
+}
+
+.emp-mb-benefit-card:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+    transform: translateY(-1px);
+}
+
+[data-theme='light'] .emp-mb-benefit-card:hover {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.06);
+}
+
+.emp-mb-benefit-icon-wrapper {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+[data-theme='light'] .emp-mb-benefit-icon-wrapper {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.04);
+}
+
+.emp-mb-benefit-text h4 {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin: 0 0 4px 0;
+}
+
+[data-theme='light'] .emp-mb-benefit-text h4 {
+    color: #1e293b;
+}
+
+.emp-mb-benefit-text p {
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: #64748b;
+    margin: 0;
+}
+
+/* iOS Specific Guides */
+.emp-mb-ios-guide {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px dashed rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+[data-theme='light'] .emp-mb-ios-guide {
+    background: rgba(0, 0, 0, 0.01);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+.emp-mb-guide-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #8b5cf6;
+}
+
+.emp-mb-ios-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.emp-mb-ios-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: start;
+}
+
+.emp-mb-step-num {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+}
+
+.emp-mb-ios-step p {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: #e2e8f0;
+    margin: 0;
+}
+
+[data-theme='light'] .emp-mb-ios-step p {
+    color: #334155;
+}
+
+.emp-mb-ios-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+}
+
+.emp-mb-indicator-arrow {
+    font-size: 1.2rem;
+    color: #6366f1;
+}
+
+.emp-mb-indicator-text {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6366f1;
+}
+
+/* Android & Generic Install Button */
+.emp-mb-android-guide {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.emp-mb-install-btn {
+    width: 100%;
+    padding: 14px 24px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border: none;
+    outline: none;
+    color: #ffffff;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+}
+
+.emp-mb-install-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(99, 102, 241, 0.55);
+}
+
+.emp-mb-install-btn:active {
+    transform: translateY(0);
+}
+
+.emp-mb-install-tip {
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: #64748b;
+    margin: 0;
+    max-width: 90%;
+}
+
+/* Animations */
+@keyframes emp-mb-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes emp-mb-slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Custom fade-in for page wrapper */
+.animate-fadeIn {
+    animation: emp-mb-fade-in 0.3s ease-out forwards;
+}
+
+@keyframes emp-mb-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
