@@ -1,0 +1,551 @@
+/* ===================================================================
+   PaymentPage.css  —  Premium Electronic Payment Page
+   =================================================================== */
+
+.pay-page {
+    min-height: 100vh;
+    background: var(--bg-primary);
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────── */
+.pay-header {
+    text-align: center;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08));
+    border: 1px solid rgba(99,102,241,0.2);
+    border-radius: 24px;
+    position: relative;
+    overflow: hidden;
+}
+
+.pay-header::before {
+    content: '';
+    position: absolute;
+    top: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.pay-header-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    box-shadow: 0 8px 24px rgba(99,102,241,0.4);
+}
+
+.pay-header-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem;
+    background: linear-gradient(135deg, #fff 30%, #a5b4fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.pay-header-subtitle {
+    color: var(--text-muted);
+    font-size: 0.92rem;
+    margin: 0;
+}
+
+/* ─── Plan Card ───────────────────────────────────────────────────── */
+.pay-plan-card {
+    background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(6,182,212,0.06));
+    border: 1px solid rgba(16,185,129,0.2);
+    border-radius: 20px;
+    padding: 1.5rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.pay-plan-info h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin: 0 0 0.3rem;
+}
+
+.pay-plan-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.pay-plan-amount {
+    text-align: center;
+}
+
+.pay-amount-value {
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: #10b981;
+    line-height: 1;
+}
+
+.pay-amount-currency {
+    font-size: 1rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.pay-plan-duration {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(16,185,129,0.1);
+    color: #10b981;
+    border: 1px solid rgba(16,185,129,0.2);
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-top: 6px;
+}
+
+/* ─── Steps ──────────────────────────────────────────────────────── */
+.pay-steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 0.5rem 0;
+}
+
+.pay-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    position: relative;
+}
+
+.pay-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 16px;
+    left: calc(50% + 20px);
+    right: calc(-50% + 20px);
+    height: 2px;
+    background: linear-gradient(90deg, rgba(99,102,241,0.4), rgba(139,92,246,0.1));
+}
+
+[dir="rtl"] .pay-step:not(:last-child)::after {
+    left: calc(-50% + 20px);
+    right: calc(50% + 20px);
+    background: linear-gradient(270deg, rgba(99,102,241,0.4), rgba(139,92,246,0.1));
+}
+
+.pay-step-num {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+    z-index: 1;
+}
+
+.pay-step-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    text-align: center;
+    max-width: 80px;
+}
+
+/* ─── Payment Methods ─────────────────────────────────────────────── */
+.pay-methods-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    padding: 0 0 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.pay-methods-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.2rem;
+}
+
+@media (max-width: 640px) {
+    .pay-methods-grid { grid-template-columns: 1fr; }
+}
+
+.pay-method-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.pay-method-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+}
+
+.pay-method-card.vodafone {
+    border-color: rgba(239,68,68,0.25);
+    background: linear-gradient(135deg, rgba(239,68,68,0.05), rgba(220,38,38,0.03));
+}
+
+.pay-method-card.vodafone:hover {
+    border-color: rgba(239,68,68,0.4);
+    box-shadow: 0 12px 32px rgba(239,68,68,0.12);
+}
+
+.pay-method-card.instapay {
+    border-color: rgba(99,102,241,0.25);
+    background: linear-gradient(135deg, rgba(99,102,241,0.05), rgba(139,92,246,0.03));
+}
+
+.pay-method-card.instapay:hover {
+    border-color: rgba(99,102,241,0.4);
+    box-shadow: 0 12px 32px rgba(99,102,241,0.12);
+}
+
+.pay-method-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    margin-bottom: 1rem;
+}
+
+.vodafone .pay-method-logo {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    box-shadow: 0 6px 20px rgba(239,68,68,0.35);
+}
+
+.instapay .pay-method-logo {
+    background: linear-gradient(135deg, #6366f1, #7c3aed);
+    box-shadow: 0 6px 20px rgba(99,102,241,0.35);
+}
+
+.pay-method-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.3rem;
+}
+
+.pay-method-desc {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin: 0 0 1rem;
+}
+
+.pay-method-account {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0.8rem 1rem;
+}
+
+.pay-account-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+}
+
+.pay-account-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.pay-account-number {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    font-family: monospace;
+    letter-spacing: 0.05em;
+}
+
+.pay-copy-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 4px;
+    border-radius: 6px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pay-copy-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
+.pay-copy-btn.copied { color: #10b981; }
+
+.pay-account-name {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/* ─── Reference Form ──────────────────────────────────────────────── */
+.pay-ref-section {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 1.5rem 2rem;
+}
+
+.pay-ref-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.4rem;
+}
+
+.pay-ref-desc {
+    font-size: 0.83rem;
+    color: var(--text-muted);
+    margin: 0 0 1.2rem;
+}
+
+.pay-ref-row {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.pay-ref-method-select {
+    flex: 0 0 160px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.9rem;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.pay-ref-method-select:focus { border-color: #6366f1; }
+
+.pay-ref-input-wrap {
+    flex: 1;
+    position: relative;
+    min-width: 200px;
+}
+
+.pay-ref-input {
+    width: 100%;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.9rem;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+
+.pay-ref-input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+.pay-ref-input::placeholder { color: var(--text-muted); }
+
+/* ─── CTAs ────────────────────────────────────────────────────────── */
+.pay-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.pay-btn-confirm {
+    width: 100%;
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border: none;
+    border-radius: 16px;
+    color: white;
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 8px 24px rgba(99,102,241,0.35);
+    font-family: inherit;
+    position: relative;
+    overflow: hidden;
+}
+
+.pay-btn-confirm::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.pay-btn-confirm:hover::before { opacity: 1; }
+.pay-btn-confirm:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(99,102,241,0.45); }
+.pay-btn-confirm:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.pay-btn-whatsapp {
+    width: 100%;
+    padding: 0.9rem 2rem;
+    background: linear-gradient(135deg, #25D366, #128C7E);
+    border: none;
+    border-radius: 16px;
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-decoration: none;
+    box-shadow: 0 6px 20px rgba(37,211,102,0.3);
+    font-family: inherit;
+}
+
+.pay-btn-whatsapp:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(37,211,102,0.4); }
+
+.pay-separator {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    position: relative;
+}
+
+.pay-separator::before, .pay-separator::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 1px;
+    background: var(--border-color);
+}
+
+.pay-separator::before { left: 0; }
+.pay-separator::after { right: 0; }
+
+/* ─── Success State ───────────────────────────────────────────────── */
+.pay-success {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(6,182,212,0.05));
+    border: 1px solid rgba(16,185,129,0.2);
+    border-radius: 24px;
+}
+
+.pay-success-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #10b981, #06b6d4);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    box-shadow: 0 12px 32px rgba(16,185,129,0.35);
+    animation: pay-pop 0.5s cubic-bezier(0.175,0.885,0.32,1.275);
+}
+
+@keyframes pay-pop {
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.pay-success-title {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem;
+}
+
+.pay-success-msg {
+    color: var(--text-muted);
+    font-size: 0.92rem;
+    line-height: 1.7;
+    margin: 0 0 2rem;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.pay-note {
+    background: rgba(99,102,241,0.08);
+    border: 1px solid rgba(99,102,241,0.15);
+    border-radius: 12px;
+    padding: 0.8rem 1.2rem;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    text-align: start;
+}
+
+.pay-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: pay-spin 0.6s linear infinite;
+}
+
+@keyframes pay-spin { to { transform: rotate(360deg); } }
+
+.pay-badge-pending {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(245,158,11,0.1);
+    color: #f59e0b;
+    border: 1px solid rgba(245,158,11,0.2);
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}

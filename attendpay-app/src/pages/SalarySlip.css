@@ -1,0 +1,427 @@
+.salary-slip-page {
+  animation: fadeIn 0.4s ease-out forwards;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.slip-header-card {
+  background: var(--bg-tertiary);
+  border-radius: 1.5rem;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .slip-header-card {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.slip-header-glow {
+  position: absolute;
+  top: 0;
+  inset-inline-end: 0;
+  width: 16rem;
+  height: 16rem;
+  background: var(--color-primary);
+  opacity: 0.05;
+  filter: blur(100px);
+  border-radius: 50%;
+  transform: translate(50%, -50%);
+  pointer-events: none;
+}
+
+.slip-employee-info {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  z-index: 10;
+}
+
+.slip-avatar-placeholder {
+  width: 5rem;
+  height: 5rem;
+  border-radius: 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.slip-employee-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.slip-meta-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+}
+
+.slip-meta-tag {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.slip-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+  z-index: 10;
+}
+
+.slip-status-paid {
+  padding: 0.375rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  background: rgba(167, 139, 250, 0.1);
+  color: var(--color-primary);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  backdrop-filter: blur(4px);
+}
+
+.slip-bento-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+  .slip-bento-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.slip-card {
+  background: var(--bg-secondary);
+  border-radius: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.slip-card-header {
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.slip-card-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.slip-card-title.earnings .material-symbols-outlined { color: var(--color-success); }
+.slip-card-title.deductions .material-symbols-outlined { color: var(--color-danger); }
+
+.slip-card-badge {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.slip-card-content {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.slip-line-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.slip-item-name {
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.slip-item-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.slip-item-value {
+  font-size: 1.125rem;
+  font-family: monospace;
+  color: var(--text-primary);
+}
+
+.slip-item-value.deduct { color: var(--text-muted); }
+.slip-item-value.highlight { color: var(--color-success); font-weight: 700; }
+.slip-item-value.danger { color: var(--color-danger); }
+
+.slip-currency {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-left: 0.25rem;
+}
+
+.slip-card-total {
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.slip-total-label {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.slip-total-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.slip-net-footer {
+  position: relative;
+  border-radius: 1.5rem;
+}
+
+.slip-net-footer-glow {
+  position: absolute;
+  inset: 0;
+  background: var(--accent-gradient);
+  mix-blend-mode: color-dodge;
+  filter: blur(20px);
+  opacity: 0.1;
+  transition: opacity 0.3s ease;
+  border-radius: 1.5rem;
+  pointer-events: none;
+}
+
+.slip-net-footer:hover .slip-net-footer-glow { opacity: 0.2; }
+
+.slip-net-content {
+  position: relative;
+  background: var(--bg-tertiary);
+  border-radius: 1.5rem;
+  padding: 2.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+@media (min-width: 768px) {
+  .slip-net-content {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.slip-net-label {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.slip-net-amount {
+  font-size: 3rem;
+  font-weight: 900;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@media (min-width: 768px) {
+  .slip-net-amount { font-size: 4rem; }
+}
+
+.slip-net-currency {
+  font-size: 1.5rem;
+  color: var(--text-primary);
+  font-weight: 300;
+  -webkit-text-fill-color: var(--text-primary);
+}
+
+.slip-net-divider {
+  width: 100%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+@media (min-width: 768px) {
+  .slip-net-divider {
+    width: 1px;
+    height: 100px;
+  }
+}
+
+.slip-bank-details {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.slip-bank-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: rgba(159, 167, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slip-bank-label {
+  font-size: 0.625rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.slip-bank-acc {
+  font-size: 0.875rem;
+  font-family: monospace;
+  color: var(--text-primary);
+}
+
+.slip-encryption {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 0.5rem;
+  margin-top: 1rem;
+}
+
+.slip-encryption-text {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.slip-footer-compliance {
+  margin-top: 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.625rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+@media (min-width: 768px) {
+  .slip-footer-compliance {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
+
+.slip-footer-links {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.slip-footer-links a:hover {
+  color: var(--color-primary);
+}
+
+/* Replaces <a href="#"> — accessibility fix (jsx-a11y/anchor-is-valid) */
+.slip-footer-link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.2s ease;
+}
+.slip-footer-link-btn:hover {
+  color: var(--color-primary);
+}
+
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+  
+  .sidebar, .topbar {
+    display: none !important;
+  }
+  
+  .main-area {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .slip-actions {
+    display: none !important;
+  }
+  
+  .salary-slip-page {
+    /* override glass styling for pure white prints */
+  }
+  
+  .slip-card, .slip-header-card, .slip-net-content {
+    background: transparent;
+    border: 1px solid #ccc;
+    color: black;
+  }
+  
+  .slip-item-name, .slip-net-amount, .slip-employee-title, .slip-item-value, .slip-total-value {
+    color: black !important;
+    -webkit-text-fill-color: black !important;
+  }
+  
+  .slip-item-desc, .slip-currency {
+    color: #666;
+  }
+  
+  .slip-header-glow, .slip-net-footer-glow {
+    display: none;
+  }
+}

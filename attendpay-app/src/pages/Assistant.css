@@ -1,0 +1,274 @@
+/* Assistant.css - Obsidian Luxe Theme integration for Smart Assistant Console */
+
+.assistant-console-page {
+  animation: fadeIn 0.4s ease-out forwards;
+  max-width: 90rem;
+  margin: 0 auto;
+  min-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+}
+
+.assistant-header-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+  .assistant-header-container {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+}
+
+.assistant-title-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.assistant-page-title {
+  font-size: 2.25rem;
+  font-weight: 900;
+  font-family: var(--font-headline, 'Plus Jakarta Sans', sans-serif);
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.assistant-live-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--color-success);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.5; box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4); }
+  70% { opacity: 1; box-shadow: 0 0 0 6px rgba(76, 175, 80, 0); }
+  100% { opacity: 0.5; box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+}
+
+.status-text-highlight {
+  color: var(--color-success);
+  font-family: monospace;
+  font-weight: 600;
+}
+
+.assistant-header-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.assistant-sync-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  background: var(--bg-tertiary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.assistant-sync-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.assistant-sync-btn:hover .material-symbols-outlined {
+  transform: rotate(180deg);
+  transition: transform 0.5s ease;
+}
+
+.assistant-export-btn {
+  padding: 0.75rem 2rem;
+  border-radius: 0.75rem;
+  background: var(--accent-gradient);
+  color: white;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 10px 20px rgba(108, 99, 255, 0.2);
+  transition: all 0.2s ease;
+}
+
+.assistant-export-btn:active {
+  transform: scale(0.95);
+}
+
+/* Tabs */
+.assistant-tabs-container {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  background: var(--bg-secondary);
+  padding: 0.5rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  width: max-content;
+}
+
+.assistant-tab-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.assistant-tab-btn.active {
+  background: var(--accent-gradient);
+  color: white;
+  box-shadow: 0 4px 15px rgba(108, 99, 255, 0.2);
+}
+
+/* Main Bento Grid layout if needed for dashboard stats */
+.assistant-dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  flex: 1;
+  min-height: 0;
+}
+
+@media (min-width: 1024px) {
+  .assistant-dashboard-grid {
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: auto 1fr;
+  }
+}
+
+.assistant-main-panel {
+  background: var(--bg-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 1.5rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 1024px) {
+  .assistant-main-panel {
+    grid-column: span 3;
+    grid-row: span 2;
+  }
+}
+
+.assistant-side-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .assistant-side-panel {
+    grid-column: span 1;
+    grid-row: span 2;
+  }
+}
+
+/* Common Card Styling */
+.assistant-card {
+  background: var(--bg-secondary);
+  border-radius: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.assistant-card-title {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 1rem;
+}
+
+.assistant-card-value {
+  font-size: 2.5rem;
+  font-family: var(--font-headline);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  color: var(--text-primary);
+}
+
+.assistant-card-trend {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.assistant-card-trend.up { color: var(--color-success); }
+.assistant-card-trend.down { color: var(--color-danger); }
+.assistant-card-trend.neutral { color: var(--color-primary); }
+
+/* Chat specific overrides to fit within main panel */
+.assistant-chat-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+}
+
+.assistant-chat-header {
+  padding: 1rem 1.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.assistant-chat-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.assistant-glow-bg {
+  position: absolute;
+  top: 0;
+  inset-inline-end: 0;
+  width: 20rem;
+  height: 20rem;
+  background: var(--color-primary);
+  opacity: 0.1;
+  filter: blur(100px);
+  border-radius: 50%;
+  pointer-events: none;
+}

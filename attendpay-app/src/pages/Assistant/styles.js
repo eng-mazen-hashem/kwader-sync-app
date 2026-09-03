@@ -1,0 +1,13 @@
+export const overlay = { position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 };
+export const modalBox = { background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 20, width: '100%', maxWidth: '500px', padding: 28 };
+export const modalHeader = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 };
+export const h3 = { margin: 0, color: '#fff', fontWeight: 800, fontSize: '1.05rem' };
+export const closeBtn = { background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 20 };       
+export const lbl = { display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'rgba(255,255,255,0.6)', marginBottom: 6 };    
+export const inp = { width: '100%', height: 42, padding: '0 14px', background: 'var(--bg-tertiary)', border: '1.5px solid var(--border-color)', borderRadius: 10, color: '#fff', fontSize: 14, fontFamily: 'Cairo', outline: 'none', boxSizing: 'border-box' };
+export const cancelBtn = { flex: 1, padding: '10px', borderRadius: 10, border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'Cairo' };
+export const saveBtn = { flex: 2, padding: '10px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#6c63ff,#a78bfa)', color: '#fff', cursor: 'pointer', fontFamily: 'Cairo', fontWeight: 700 };
+export const iconBtn = { width: 32, height: 32, borderRadius: 8, border: '1px solid var(--border-color)', background: 'var(--bg-tertiary)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.9rem', transition: 'all 0.15s' };
+export const section = (c) => ({ padding: 16, borderRadius: 14, background: `rgba(${c === '#25d366' ? '37,211,102' : '34,158,217'}, 0.05)`, border: `1px solid rgba(${c === '#25d366' ? '37,211,102' : '34,158,217'},0.2)` });   
+export const sectionHead = { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 };     
+export const pill = (c) => ({ fontSize: '0.72rem', padding: '2px 8px', borderRadius: 20, background: `rgba(${c === '#25d366' ? '37,211,102' : '34,158,217'},0.15)`, color: c });

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KWADER Sync</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="aurora-bg"></div>
+  <div class="app-shell">
+    <header class="header glass">
+      <div class="brand">
+        <img src="assets/icon.png" alt="KWADER" class="brand-icon" />
+        <div>
+          <h1 data-i18n="appTitle">KWADER Sync Agent</h1>
+          <p data-i18n="appSubtitle">مزامنة احترافية لأجهزة الحضور</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="languageToggle" class="language-toggle" type="button">English</button>
+        <div id="statusBadge" class="status-badge badge-neutral" data-i18n="stopped">متوقف</div>
+      </div>
+    </header>
+
+    <nav class="tabs glass">
+      <button class="tab-btn active" onclick="switchTab('dashboard', this)" data-i18n="dashboard">لوحة التحكم</button>
+      <button class="tab-btn" onclick="switchTab('settings', this)" data-i18n="settings">الإعدادات</button>
+    </nav>
+
+    <main class="content">
+      <section id="dashboardTab" class="tab-content active">
+        <div class="hero glass">
+          <div class="hero-icon" id="bigStatusIcon">||</div>
+          <div class="hero-text">
+            <h2 id="bigStatusText" data-i18n="syncStopped">المزامنة متوقفة</h2>
+            <p id="lastSyncText" data-i18n="noSyncYet">لا توجد مزامنة بعد</p>
+          </div>
+          <div class="hero-actions">
+            <button id="toggleSyncBtn" class="btn btn-primary" data-i18n="startSync">بدء المزامنة</button>
+            <button id="forceSyncBtn" class="btn btn-secondary" data-i18n="syncNow">مزامنة الآن</button>
+            <button id="resetSyncBtn" class="btn btn-ghost" data-i18n="resetWatermark" data-i18n-title="resetWatermarkTitle" title="إعادة ضبط علامة المزامنة ورفع كل السجلات مرة أخرى">إعادة الضبط</button>
+          </div>
+        </div>
+
+        <div class="logs-panel glass">
+          <div class="panel-head">
+            <h3 data-i18n="eventLog">سجل الأحداث</h3>
+            <button class="clear-btn" onclick="document.getElementById('logsView').innerHTML=''" data-i18n="clear">مسح</button>
+          </div>
+          <div id="logsView" class="logs-view">
+            <div class="log-entry info" data-i18n="readyLog">[بدء] جاهز. اضبط الإعدادات ثم شغّل المزامنة.</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="settingsTab" class="tab-content">
+        <form id="settingsForm" class="settings-grid">
+          <article class="card glass">
+            <div class="card-head">
+              <h3 data-i18n="licenseKey">مفتاح الترخيص</h3>
+              <p data-i18n="licenseHelp">أدخل مفتاح ترخيص الشركة وتحقق من الاتصال.</p>
+            </div>
+            <div class="input-row">
+              <input type="text" id="licenseKey" dir="ltr" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" required />
+              <button type="button" id="verifyLicenseBtn" class="btn btn-primary small" data-i18n="verify">تحقق</button>
+            </div>
+            <div id="licenseStatus" class="license-status"></div>
+          </article>
+
+          <article class="card glass" id="deviceSettingsSection">
+            <div class="card-head">
+              <h3 data-i18n="deviceSettings">إعدادات الجهاز</h3>
+              <p data-i18n="deviceHelp">اختر نوع الجهاز وأدخل بيانات الشبكة.</p>
+            </div>
+
+            <div class="device-type-selector">
+              <label class="device-type-btn active" id="btnZKTeco">
+                <input type="radio" name="deviceType" id="deviceTypeZK" value="zkteco" checked />
+                <span class="name">ZKTeco</span>
+                <span class="meta">UDP/TCP</span>
+              </label>
+              <label class="device-type-btn" id="btnHikvision">
+                <input type="radio" name="deviceType" id="deviceTypeHik" value="hikvision" />
+                <span class="name">Hikvision</span>
+                <span class="meta">ISAPI HTTP/HTTPS</span>
+              </label>
+            </div>
+
+            <div class="field">
+              <label data-i18n="deviceIp">عنوان IP للجهاز</label>
+              <input type="text" id="deviceIp" dir="ltr" placeholder="192.168.1.201" />
+            </div>
+
+            <div id="zkteco-fields">
+              <div class="two-col">
+                <div class="field">
+                  <label data-i18n="port">المنفذ</label>
+                  <input type="number" id="devicePort" dir="ltr" value="4370" />
+                </div>
+                <div class="field">
+                  <label data-i18n="deviceSerial">رقم الجهاز (S/N)</label>
+                  <input type="text" id="deviceSn" dir="ltr" data-i18n-placeholder="optional" placeholder="اختياري" />
+                </div>
+              </div>
+            </div>
+
+            <div id="hikvision-fields" style="display:none;">
+              <div class="two-col">
+                <div class="field">
+                  <label data-i18n="port">المنفذ</label>
+                  <input type="number" id="hikPort" dir="ltr" value="80" />
+                </div>
+                <div class="field">
+                  <label data-i18n="deviceSerial">رقم الجهاز (S/N)</label>
+                  <input type="text" id="deviceSnHik" dir="ltr" data-i18n-placeholder="optional" placeholder="اختياري" />
+                </div>
+              </div>
+              <div class="two-col">
+                <div class="field">
+                  <label data-i18n="username">اسم المستخدم</label>
+                  <input type="text" id="hikUsername" dir="ltr" value="admin" />
+                </div>
+                <div class="field">
+                  <label data-i18n="password">كلمة المرور</label>
+                  <input type="password" id="hikPassword" dir="ltr" placeholder="********" />
+                </div>
+              </div>
+              <div class="row">
+                <label class="switch small">
+                  <input type="checkbox" id="hikHttps" />
+                  <span></span>
+                </label>
+                <span class="muted" data-i18n="useHttps">استخدام HTTPS</span>
+              </div>
+              <div class="input-row">
+                <div id="hikConnStatus" class="muted flex-grow" data-i18n="ready">جاهز</div>
+                <button type="button" id="testHikBtn" class="btn btn-secondary small" data-i18n="testConnection">اختبار الاتصال</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="card glass">
+            <div class="card-head">
+              <h3 data-i18n="startupSync">التشغيل والمزامنة</h3>
+              <p data-i18n="startupHelp">إعدادات التشغيل التلقائي وفترة المزامنة.</p>
+            </div>
+            <div class="row">
+              <label class="switch">
+                <input type="checkbox" id="autoStartToggle" />
+                <span></span>
+              </label>
+              <strong id="autoStartLabel" data-i18n="disabled">معطل</strong>
+            </div>
+            <div class="field">
+              <label data-i18n="syncInterval">فترة المزامنة (بالدقائق)</label>
+              <input type="number" id="syncInterval" min="1" max="60" value="5" />
+            </div>
+          </article>
+
+          <button type="submit" id="saveSettingsBtn" class="btn btn-primary save-btn" data-i18n="saveSettings">حفظ الإعدادات</button>
+          <div id="saveToast" class="save-toast" aria-live="polite" data-i18n="settingsSaved">تم حفظ الإعدادات بنجاح</div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

@@ -1,0 +1,456 @@
+/* -------------------------------------------------------------------------
+   RuleBuilder.css — Obsidian Luxe (Phase 4)
+   Targeted Visual Upgrade: Stitch Bento Grid, Glassmorphism Cards, Dark Theme
+   RTL-safe via logical properties
+------------------------------------------------------------------------- */
+
+.rb-page {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding: 0.5rem 0 3rem;
+    position: relative;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* ------------------------------------------------------------------------- */
+.rb-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
+
+.rb-title {
+    font-size: 2.25rem;
+    font-weight: 800;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem;
+}
+
+.rb-subtitle {
+    font-size: 1.125rem;
+    color: var(--text-muted);
+    max-width: 42rem;
+    margin: 0;
+}
+
+.rb-header-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.rb-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.75rem;
+    border-radius: 1rem;
+    background: linear-gradient(135deg, #818cf8, #6366f1);
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+    transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.rb-btn-primary:hover {
+    filter: brightness(1.15);
+    box-shadow: 0 12px 30px rgba(99, 102, 241, 0.5);
+    transform: translateY(-2px);
+}
+.rb-btn-primary:active { transform: translateY(0); }
+
+.rb-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    font-weight: 600;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+.rb-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+/* ------------------------------------------------------------------------- */
+.rb-stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+}
+@media (max-width: 1024px) { .rb-stats-row { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .rb-stats-row { grid-template-columns: 1fr; } }
+
+.rb-stat-card {
+    position: relative;
+    overflow: hidden;
+    background: rgba(38, 38, 38, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    transition: box-shadow 0.3s border-color 0.3s;
+}
+.rb-stat-card:hover {
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    border-color: rgba(255,255,255,0.1);
+}
+
+.rb-stat-glow {
+    position: absolute;
+    top: 0;
+    inset-inline-start: 0;
+    width: 4px;
+    height: 100%;
+}
+
+.rb-stat-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.rb-stat-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+.rb-stat-title {
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--text-primary);
+}
+.rb-stat-value {
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--text-primary);
+}
+
+/* ------------------------------------------------------------------------- */
+.rb-filter-bar {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.rb-search {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.875rem;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    width: 100%;
+    max-width: 300px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.rb-search:focus {
+    border-color: rgba(99, 102, 241, 0.5);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    outline: none;
+}
+.ar .rb-search { padding: 0.75rem 2.5rem 0.75rem 1rem; }
+
+.rb-search-wrap {
+    position: relative;
+    flex-shrink: 0;
+}
+.rb-search-icon {
+    position: absolute;
+    top: 50%;
+    inset-inline-start: 1rem;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 1.1rem;
+}
+
+.rb-filter-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.rb-filter-btn {
+    padding: 0.4rem 1rem;
+    border-radius: 0.75rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.rb-filter-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-secondary);
+}
+.rb-filter-btn.active {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.5);
+    color: #a5b4fc;
+}
+
+/* ------------------------------------------------------------------------- */
+.rb-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 1.5rem;
+}
+
+/* ------------------------------------------------------------------------- */
+.rb-card {
+    position: relative;
+    background: rgba(38, 38, 38, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.05); /* Default */
+    border-radius: 1.5rem;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+}
+.rb-card:hover {
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+    transform: translateY(-2px);
+}
+
+.rb-card-inactive {
+    opacity: 0.65;
+    background: rgba(20, 20, 20, 0.6);
+}
+
+.rb-card-glow {
+    position: absolute;
+    top: 0;
+    inset-inline-start: 0;
+    width: 5px;
+    height: 100%;
+}
+
+.rb-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1.5rem;
+}
+
+.rb-card-header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.rb-card-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.rb-card-title {
+    font-size: 1.125rem;
+    font-weight: 800;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--text-primary);
+    margin: 0 0 0.25rem;
+}
+
+.rb-card-subtitle {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* Obsidian Toggle Switch */
+.rb-switch-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+}
+.rb-switch-input {
+    sr-only: true;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.rb-switch-track {
+    width: 3rem;
+    height: 1.5rem;
+    background: #262626;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background 0.3s, border-color 0.3s;
+    position: relative;
+}
+.rb-switch-thumb {
+    position: absolute;
+    top: 2px;
+    inset-inline-start: 2px;
+    width: 1.125rem;
+    height: 1.125rem;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.rb-switch-input:checked + .rb-switch-track {
+    background: var(--switch-color, linear-gradient(135deg, #818cf8, #6366f1));
+    border-color: transparent;
+}
+/* RTL support for switch thumb via logical properties handled in component */
+
+.rb-card-body {
+    padding: 0 1.5rem 1.5rem;
+    flex: 1;
+}
+
+.rb-card-conditions {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 1rem;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.rb-condition-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.85rem;
+}
+
+.rb-condition-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+.rb-condition-value {
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.rb-card-footer {
+    padding: 1.25rem 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.rb-card-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.rb-card-btn {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.6rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.rb-card-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+}
+.rb-card-btn-danger:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.rb-action-summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--summary-color, #fff);
+    padding: 0.4rem 0.75rem;
+    background: var(--summary-bg, rgba(255,255,255,0.1));
+    border-radius: 0.5rem;
+}
+
+/* ------------------------------------------------------------------------- */
+.rb-empty {
+    padding: 5rem 2rem;
+    text-align: center;
+    background: rgba(38, 38, 38, 0.4);
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 1.5rem;
+    backdrop-filter: blur(10px);
+}
+.rb-empty h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--text-primary);
+    margin: 1rem 0 0.5rem;
+}
+.rb-empty p {
+    color: var(--text-muted);
+    font-size: 1rem;
+    margin-bottom: 2.5rem;
+}
+
+/* ------------------------------------------------------------------------- */
+.rb-fab {
+    position: fixed;
+    bottom: 2.5rem;
+    inset-inline-start: 2.5rem;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #818cf8, #6366f1);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    box-shadow: 0 20px 50px rgba(99, 102, 241, 0.6);
+    border: none;
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s;
+    z-index: 50;
+}
+.rb-fab:hover {
+    transform: scale(1.1);
+    box-shadow: 0 25px 60px rgba(99, 102, 241, 0.7);
+}
+.rb-fab:active { transform: scale(0.95); }

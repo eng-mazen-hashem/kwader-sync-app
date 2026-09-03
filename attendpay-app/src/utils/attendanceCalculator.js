@@ -48,14 +48,18 @@ export function calculateRecordMetrics(checkIn, checkOut, shift, companySettings
         return { status: 'missing_checkin', late_minutes: 0, early_leave_minutes: 0, work_hours: 0 };
     }
 
-    const inMins = getMins(checkIn);
+    let inMins = getMins(checkIn);
     
     // 1. Calculate Late Minutes
     let lateMins = 0;
-    // Check if check-in is past the grace period
-    if (inMins > startMins + graceMins) {
-        // Late penalty starts exactly from shift start
-        lateMins = inMins - startMins; 
+    if (shift?.shift_type !== 'flexible') {
+        let diff = inMins - startMins;
+        if (diff < -720) {
+            diff += 24 * 60; // Cross-midnight punch (e.g. 01:00 AM for 17:00 shift)
+        }
+        if (diff > graceMins) {
+            lateMins = diff;
+        }
     }
 
     // 2. Calculate Early Leave & Work Hours

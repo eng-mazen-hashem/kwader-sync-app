@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "zk-att",
+    "production": "kwader-system"
+  },
+  "targets": {},
+  "etags": {}
+}

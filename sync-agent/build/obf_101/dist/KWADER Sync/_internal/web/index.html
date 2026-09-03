@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KWADER Sync Agent</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo-area">
+                <img src="assets/icon.png" alt="KWADER" style="width: 48px; height: 48px; border-radius: 12px; object-fit: contain;">
+                <div>
+                    <h1 class="logo-text">KWADER Sync</h1>
+                    <p class="logo-sub">ربط أجهزة البصمة بالسحابة</p>
+                </div>
+            </div>
+            <div id="statusBadge" class="badge badge-neutral">متوقف</div>
+        </header>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('dashboard')">🏠 الرئيسية</button>
+            <button class="tab-btn" onclick="switchTab('settings')">⚙️ الإعدادات</button>
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Tab -->
+            <div id="dashboardTab" class="tab-content active">
+                <div class="status-card">
+                    <div class="status-icon" id="bigStatusIcon">⏸️</div>
+                    <h2 id="bigStatusText">المزامنة متوقفة</h2>
+                    <p id="lastSyncText" class="text-muted">لم تتم المزامنة بعد</p>
+                    <button id="resetSyncBtn" class="btn-text-only" title="إعادة ضبط تاريخ المزامنة لهذا العميل">↩ إعادة رفع الكل</button>
+                    <div class="btn-group">
+                        <button id="toggleSyncBtn" class="btn btn-primary btn-lg">▶ بدء المزامنة</button>
+                        <button id="forceSyncBtn" class="btn btn-secondary btn-lg">🔄 مزامنة الآن</button>
+                    </div>
+                </div>
+
+                <div class="logs-container">
+                    <div class="logs-header">
+                        <h3>📋 سجل الأحداث</h3>
+                        <button class="btn-icon" onclick="document.getElementById('logsView').innerHTML=''">🗑️</button>
+                    </div>
+                    <div id="logsView" class="logs-view">
+                        <div class="log-entry info">[بدء] مرحباً بك! تأكد من الإعدادات ثم اضغط "بدء المزامنة".</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settingsTab" class="tab-content">
+                <form id="settingsForm" class="settings-form">
+
+                    <!-- Demo Mode Section -->
+                    <div class="form-section" id="demoSection"
+                        style="border: 2px solid #a78bfa; border-radius: 12px; background: rgba(167,139,250,0.06);">
+                        <div class="section-header" style="margin-bottom: 12px;">
+                            <h3>🧪 وضع التجربة (Demo Mode)</h3>
+                            <p class="section-desc">اختبر النظام بالكامل بدون جهاز بصمة حقيقي — يتم توليد بيانات حضور
+                                وانصراف واقعية لـ 12 موظف وهمي</p>
+                        </div>
+                        <div
+                            style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <label class="switch">
+                                    <input type="checkbox" id="demoModeToggle">
+                                    <span class="slider round"></span>
+                                </label>
+                                <span id="demoModeLabel" style="font-weight: 600; font-size: 0.95rem;">معطّل</span>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button type="button" id="genHistoricalBtn" class="btn btn-sm"
+                                    style="background: #a78bfa; color: #fff; border: none;">
+                                    📊 توليد بيانات 7 أيام
+                                </button>
+                            </div>
+                        </div>
+                        <p id="demoHint" style="color: #a78bfa; font-size: 0.82rem; margin-top: 10px; display: none;">
+                            ✨ وضع التجربة نشط — عند المزامنة سيتم توليد بصمات وهمية ورفعها للسحابة تلقائياً
+                        </p>
+                    </div>
+
+                    <!-- License Key -->
+                    <div class="form-section">
+                        <div class="section-header">
+                            <h3>🔑 مفتاح الترخيص</h3>
+                            <p class="section-desc">انسخ المفتاح من صفحة "الإعدادات" في لوحة تحكم KWADER</p>
+                        </div>
+                        <div class="form-group">
+                            <div class="input-with-btn">
+                                <input type="text" id="licenseKey" dir="ltr"
+                                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" required>
+                                <button type="button" id="verifyLicenseBtn" class="btn btn-sm">تحقق</button>
+                            </div>
+                            <div id="licenseStatus" class="license-status"></div>
+                        </div>
+                    </div>
+
+                    <!-- Device Settings -->
+                    <div class="form-section" id="deviceSettingsSection">
+                        <div class="section-header">
+                            <h3>📡 جهاز البصمة (ZKTeco)</h3>
+                            <p class="section-desc">بيانات الاتصال بجهاز البصمة في شبكتك المحلية</p>
+                        </div>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label>عنوان IP</label>
+                                <input type="text" id="deviceIp" dir="ltr" placeholder="192.168.1.201">
+                            </div>
+                            <div class="form-group">
+                                <label>المنفذ (Port)</label>
+                                <input type="number" id="devicePort" dir="ltr" value="4370">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>الرقم التسلسلي للجهاز (Serial Number)</label>
+                            <input type="text" id="deviceSn" dir="ltr" placeholder="الرقم المكتوب على ملصق الجهاز">
+                        </div>
+                    </div>
+
+                    <!-- Auto-Start Section -->
+                    <div class="form-section" style="border: 1.5px solid rgba(74,222,128,0.3); border-radius: 12px; background: rgba(74,222,128,0.04);">
+                        <div class="section-header" style="margin-bottom: 12px;">
+                            <h3>🚀 التشغيل التلقائي مع الويندوز</h3>
+                            <p class="section-desc">عند تشغيل الحاسوب، يبدأ البرنامج تلقائياً ويعمل في الخلفية بدون أن يظهر</p>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 14px;">
+                            <label class="switch">
+                                <input type="checkbox" id="autoStartToggle">
+                                <span class="slider round"></span>
+                            </label>
+                            <span id="autoStartLabel" style="font-weight: 600; font-size: 0.95rem;">معطّل</span>
+                        </div>
+                    </div>
+
+                    <!-- Sync Options -->
+                    <div class="form-section">
+                        <div class="section-header">
+                            <h3>⏱️ خيارات المزامنة</h3>
+                        </div>
+                        <div class="form-group">
+                            <label>فترة المزامنة التلقائية (بالدقائق)</label>
+                            <input type="number" id="syncInterval" min="1" max="60" value="5" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg btn-full">💾 حفظ الإعدادات</button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+
+</html>

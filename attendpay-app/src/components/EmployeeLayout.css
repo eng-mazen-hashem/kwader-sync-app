@@ -1,0 +1,124 @@
+/* EmployeeLayout.css - Mobile First Design */
+
+.emp-portal-container {
+    min-height: 100vh;
+    background-color: #0F0F16;
+    color: #ffffff;
+    font-family: 'Cairo', sans-serif;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    padding-bottom: 70px; /* Space for bottom nav */
+}
+
+/* Header */
+.emp-portal-header {
+    background: rgba(26, 26, 36, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+}
+
+.emp-portal-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.emp-portal-logo img {
+    height: 32px;
+}
+
+.emp-portal-logo span {
+    font-size: 1.125rem;
+    font-weight: 700;
+    background: linear-gradient(to right, #fff, #cbd5e1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.emp-portal-logout {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: none;
+    padding: 0.5rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.emp-portal-logout:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+/* Main Content Area */
+.emp-portal-main {
+    flex: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+}
+
+/* Bottom Navigation Bar */
+.emp-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(26, 26, 36, 0.95);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    height: 70px;
+    z-index: 50;
+    padding-bottom: env(safe-area-inset-bottom); /* iOS support */
+}
+
+.emp-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    color: #64748b;
+    text-decoration: none;
+    font-size: 0.75rem;
+    font-weight: 500;
+    flex: 1;
+    height: 100%;
+    transition: all 0.2s ease;
+}
+
+.emp-nav-item.active {
+    color: #8b5cf6;
+}
+
+.emp-nav-item .nav-icon {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.emp-nav-item.active .nav-icon {
+    transform: translateY(-2px);
+    color: #6366f1;
+}
+
+/* Mobile specific utilities */
+.mobile-card {
+    background: rgba(30, 30, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}

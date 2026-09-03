@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KWADER Desktop Pro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Aurora Background -->
+  <div class="aurora-bg"></div>
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <!-- App Shell -->
+  <div class="app-shell">
+
+    <!-- ─── Sidebar ─────────────────────────────────────── -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <img src="assets/icon.png" alt="KWADER" onerror="this.style.display='none'" />
+        <div class="sidebar-brand-text">
+          <h1>KWADER</h1>
+          <span data-i18n="desktopPro">Desktop Pro</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title" data-i18n="main">الرئيسية</div>
+
+          <a class="nav-item active" data-page="dashboard" onclick="navigate('dashboard', this)">
+            <span class="nav-icon">📊</span>
+            <span data-i18n="dashboard">لوحة التحكم</span>
+          </a>
+
+          <a class="nav-item" data-page="attendance" onclick="navigate('attendance', this)">
+            <span class="nav-icon">🕐</span>
+            <span data-i18n="attendance">سجل الحضور</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title" data-i18n="hr">الموارد البشرية</div>
+
+          <a class="nav-item" data-page="employees" onclick="navigate('employees', this)">
+            <span class="nav-icon">👥</span>
+            <span data-i18n="employees">الموظفون</span>
+          </a>
+
+          <a class="nav-item" data-page="payroll" onclick="navigate('payroll', this)">
+            <span class="nav-icon">💰</span>
+            <span data-i18n="payroll">المرتبات</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title" data-i18n="system">النظام</div>
+
+          <a class="nav-item" data-page="devices" onclick="navigate('devices', this)">
+            <span class="nav-icon">🖐</span>
+            <span data-i18n="devices">أجهزة البصمة</span>
+          </a>
+
+          <a class="nav-item" data-page="notifications" onclick="navigate('notifications', this)">
+            <span class="nav-icon">🔔</span>
+            <span data-i18n="notifications">الإشعارات</span>
+            <span class="nav-badge hidden" id="notif-badge">0</span>
+          </a>
+
+          <a class="nav-item" data-page="settings" onclick="navigate('settings', this)">
+            <span class="nav-icon">⚙️</span>
+            <span data-i18n="settings">الإعدادات</span>
+          </a>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="online-indicator">
+          <span class="online-dot" id="online-dot"></span>
+          <span id="online-label" data-i18n="offline">غير متصل</span>
+        </div>
+        <div class="text-xs mt-4" style="opacity:0.5">v2.0.0</div>
+      </div>
+    </aside>
+
+    <!-- ─── Main Area ─────────────────────────────────────── -->
+    <div class="main-area">
+
+      <!-- Top Bar -->
+      <div class="topbar">
+        <span class="topbar-title" id="topbar-title">لوحة التحكم</span>
+        <div class="topbar-actions">
+          <button class="btn btn-ghost btn-sm" id="lang-toggle" onclick="toggleLanguage()" title="Switch Language">
+            🌐 English
+          </button>
+        </div>
+      </div>
+
+      <!-- Update Banner -->
+      <div class="update-banner hidden" id="update-banner">
+        <span>🎉</span>
+        <div style="flex:1">
+          <strong id="update-text">يتوفر إصدار جديد!</strong>
+        </div>
+        <button class="btn btn-success btn-sm" id="update-download-btn" onclick="openUpdateUrl()">تحديث الآن</button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('update-banner').classList.add('hidden')">تجاهل</button>
+      </div>
+
+      <!-- Page Content -->
+      <div class="page-content" id="page-content">
+
+        <!-- ───────── Dashboard Page ───────── -->
+        <div class="page active" id="page-dashboard">
+          <!-- Ad Banner -->
+          <div class="ad-banner hidden" id="ad-banner">
+            <span id="ad-icon">📢</span>
+            <div style="flex:1">
+              <div style="font-weight:600;font-size:13px" id="ad-title"></div>
+              <div style="font-size:12px;color:var(--color-text-secondary)" id="ad-desc"></div>
+            </div>
+            <button class="btn btn-accent btn-sm" id="ad-cta-btn" style="background:linear-gradient(135deg,#6c63ff,#4a44cc);color:white;border:none;" onclick="openAdUrl()"></button>
+            <button class="ad-close" onclick="document.getElementById('ad-banner').classList.add('hidden')">✕</button>
+          </div>
+
+          <!-- Upsell Banner -->
+          <div class="upsell-banner hidden" id="upsell-banner">
+            <div style="flex:1">
+              <div style="font-weight:700;font-size:15px;margin-bottom:4px" id="upsell-title">ارقَ إلى الخطة السحابية</div>
+              <div style="font-size:12px;color:var(--color-text-secondary)" id="upsell-desc">مزامنة سحابية، تقارير متقدمة، ودعم غير محدود للموظفين</div>
+            </div>
+            <button class="btn btn-primary" id="upsell-cta" onclick="openUpsellUrl()">
+              ⬆️ <span data-i18n="upgradeNow">ترقية الآن</span>
+            </button>
+            <button class="ad-close" onclick="document.getElementById('upsell-banner').classList.add('hidden')">✕</button>
+          </div>
+
+          <!-- Stats Grid -->
+          <div class="stats-grid">
+            <div class="stat-card" style="--accent-color:#6c63ff">
+              <span class="stat-icon">👥</span>
+              <div class="stat-value" id="stat-total">—</div>
+              <div class="stat-label" data-i18n="totalEmployees">إجمالي الموظفين</div>
+            </div>
+            <div class="stat-card" style="--accent-color:#22c55e">
+              <span class="stat-icon">✅</span>
+              <div class="stat-value" id="stat-present">—</div>
+              <div class="stat-label" data-i18n="presentToday">حاضرون اليوم</div>
+            </div>
+            <div class="stat-card" style="--accent-color:#ef4444">
+              <span class="stat-icon">❌</span>
+              <div class="stat-value" id="stat-absent">—</div>
+              <div class="stat-label" data-i18n="absentToday">غائبون اليوم</div>
+            </div>
+            <div class="stat-card" style="--accent-color:#f59e0b">
+              <span class="stat-icon">📈</span>
+              <div class="stat-value" id="stat-rate">—%</div>
+              <div class="stat-label" data-i18n="attendanceRate">نسبة الحضور</div>
+            </div>
+          </div>
+
+          <!-- Last Punch + Attendance Today -->
+          <div class="flex gap-5 mb-6" style="flex-wrap:wrap">
+            <div class="card flex-1" style="min-width:280px">
+              <div class="card-header">
+                <span class="card-title">🖐 <span data-i18n="lastPunch">آخر بصمة</span></span>
+                <button class="btn btn-ghost btn-sm" onclick="refreshDashboard()">🔄</button>
+              </div>
+              <div id="last-punch-info">
+                <div class="empty-state">
+                  <div class="empty-icon">🖐</div>
+                  <div class="empty-title" data-i18n="noRecentPunch">لا توجد بصمات حديثة</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card flex-1" style="min-width:280px">
+              <div class="card-header">
+                <span class="card-title">📊 <span data-i18n="todayStatus">حالة اليوم</span></span>
+              </div>
+              <div>
+                <div class="flex items-center justify-between mb-4">
+                  <span class="text-muted text-sm" data-i18n="attendanceRate">نسبة الحضور</span>
+                  <span id="dash-rate" class="font-bold text-success">—</span>
+                </div>
+                <div class="progress">
+                  <div class="progress-bar" id="dash-progress-bar" style="width:0%"></div>
+                </div>
+                <div class="flex justify-between mt-4 text-sm text-muted">
+                  <span id="dash-present-detail">—</span>
+                  <span id="dash-date">—</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Devices Status -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">🖐 <span data-i18n="devicesStatus">حالة الأجهزة</span></span>
+              <button class="btn btn-primary btn-sm" onclick="navigate('devices', null)">
+                <span data-i18n="manageDevices">إدارة الأجهزة</span>
+              </button>
+            </div>
+            <div id="devices-status-list">
+              <div class="empty-state">
+                <div class="empty-icon">🖥️</div>
+                <div class="empty-title" data-i18n="noDevices">لا توجد أجهزة مُضافة</div>
+                <div class="empty-desc" data-i18n="addDeviceHint">أضف جهاز بصمة للبدء في تتبع الحضور تلقائياً</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ───────── Employees Page ───────── -->
+        <div class="page" id="page-employees">
+          <div class="flex items-center justify-between mb-6">
+            <div class="search-wrap">
+              <span class="search-icon">🔍</span>
+              <input type="search" class="form-control" id="emp-search"
+                     data-i18n-placeholder="searchEmployees" placeholder="بحث عن موظف..."
+                     oninput="filterEmployees(this.value)" />
+            </div>
+            <div class="flex gap-3">
+              <select class="form-control" id="emp-status-filter"
+                      onchange="filterEmployees()" style="width:160px">
+                <option value="" data-i18n="allStatus">الكل</option>
+                <option value="active" data-i18n="active">نشط</option>
+                <option value="inactive" data-i18n="inactive">موقوف</option>
+                <option value="terminated" data-i18n="terminated">منتهي</option>
+              </select>
+              <button class="btn btn-primary" onclick="openAddEmployeeModal()">
+                ＋ <span data-i18n="addEmployee">إضافة موظف</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="table-wrap">
+              <table id="employees-table">
+                <thead>
+                  <tr>
+                    <th data-i18n="empNumber">#</th>
+                    <th data-i18n="name">الاسم</th>
+                    <th data-i18n="department">الإدارة</th>
+                    <th data-i18n="jobTitle">المسمى الوظيفي</th>
+                    <th data-i18n="baseSalary">الراتب الأساسي</th>
+                    <th data-i18n="devicePin">PIN الجهاز</th>
+                    <th data-i18n="status">الحالة</th>
+                    <th data-i18n="actions">إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="employees-tbody">
+                  <tr>
+                    <td colspan="8">
+                      <div class="empty-state">
+                        <div class="empty-icon">👥</div>
+                        <div class="empty-title" data-i18n="noEmployees">لا يوجد موظفون</div>
+                        <div class="empty-desc" data-i18n="addFirstEmployee">ابدأ بإضافة أول موظف في شركتك</div>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ───────── Attendance Page ───────── -->
+        <div class="page" id="page-attendance">
+          <div class="flex items-center gap-4 mb-6" style="flex-wrap:wrap">
+            <div class="flex items-center gap-3">
+              <label class="form-label mb-0" data-i18n="from">من</label>
+              <input type="date" class="form-control" id="att-date-from" style="width:160px" />
+            </div>
+            <div class="flex items-center gap-3">
+              <label class="form-label mb-0" data-i18n="to">إلى</label>
+              <input type="date" class="form-control" id="att-date-to" style="width:160px" />
+            </div>
+            <div class="flex gap-3">
+              <button class="btn btn-primary" onclick="loadAttendance()">
+                🔍 <span data-i18n="search">بحث</span>
+              </button>
+              <button class="btn btn-secondary" onclick="openManualAttendanceModal()">
+                ＋ <span data-i18n="addManual">إدخال يدوي</span>
+              </button>
+            </div>
+            <button class="btn btn-ghost btn-sm ms-auto" onclick="processRawLogs()">
+              ⚙️ <span data-i18n="processLogs">معالجة السجلات</span>
+            </button>
+          </div>
+
+          <div class="card">
+            <div class="table-wrap">
+              <table id="attendance-table">
+                <thead>
+                  <tr>
+                    <th data-i18n="name">الموظف</th>
+                    <th data-i18n="department">الإدارة</th>
+                    <th data-i18n="date">التاريخ</th>
+                    <th data-i18n="checkIn">دخول</th>
+                    <th data-i18n="checkOut">خروج</th>
+                    <th data-i18n="worked">مدة العمل</th>
+                    <th data-i18n="overtime">أوفرتايم</th>
+                    <th data-i18n="status">الحالة</th>
+                    <th data-i18n="source">المصدر</th>
+                  </tr>
+                </thead>
+                <tbody id="attendance-tbody">
+                  <tr>
+                    <td colspan="9">
+                      <div class="empty-state">
+                        <div class="empty-icon">📅</div>
+                        <div class="empty-title" data-i18n="selectPeriod">اختر الفترة الزمنية وابحث</div>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ───────── Payroll Page ───────── -->
+        <div class="page" id="page-payroll">
+          <!-- New Run -->
+          <div class="card mb-6">
+            <div class="card-header">
+              <span class="card-title">💰 <span data-i18n="newPayrollRun">تشغيل دورة راتب جديدة</span></span>
+            </div>
+            <div class="flex items-center gap-4" style="flex-wrap:wrap">
+              <div class="form-group" style="min-width:160px;margin-bottom:0">
+                <label class="form-label" data-i18n="periodFrom">من</label>
+                <input type="date" class="form-control" id="pr-from" />
+              </div>
+              <div class="form-group" style="min-width:160px;margin-bottom:0">
+                <label class="form-label" data-i18n="periodTo">إلى</label>
+                <input type="date" class="form-control" id="pr-to" />
+              </div>
+              <div style="align-self:flex-end">
+                <button class="btn btn-primary btn-lg" id="run-payroll-btn" onclick="runPayroll()">
+                  ▶ <span data-i18n="calculatePayroll">احسب المرتبات</span>
+                </button>
+              </div>
+            </div>
+            <div id="payroll-result-panel" class="mt-6 hidden">
+              <div class="flex gap-4 mb-4" style="flex-wrap:wrap">
+                <div class="stat-card flex-1" style="--accent-color:#6c63ff;padding:var(--space-4)">
+                  <div class="text-sm text-muted mb-1" data-i18n="totalGross">الإجمالي</div>
+                  <div class="font-bold text-xl" id="pr-total-gross">—</div>
+                </div>
+                <div class="stat-card flex-1" style="--accent-color:#ef4444;padding:var(--space-4)">
+                  <div class="text-sm text-muted mb-1" data-i18n="totalDeductions">الخصومات</div>
+                  <div class="font-bold text-xl" id="pr-total-ded">—</div>
+                </div>
+                <div class="stat-card flex-1" style="--accent-color:#22c55e;padding:var(--space-4)">
+                  <div class="text-sm text-muted mb-1" data-i18n="totalNet">الصافي الكلي</div>
+                  <div class="font-bold text-xl" id="pr-total-net">—</div>
+                </div>
+              </div>
+              <div class="flex gap-3 mb-4">
+                <button class="btn btn-success" id="approve-payroll-btn" onclick="approvePayroll()">
+                  ✓ <span data-i18n="approve">اعتماد</span>
+                </button>
+                <button class="btn btn-secondary" id="export-payroll-btn" onclick="exportPayroll()">
+                  📄 <span data-i18n="export">تصدير PDF</span>
+                </button>
+              </div>
+              <div class="table-wrap">
+                <table id="payroll-items-table">
+                  <thead>
+                    <tr>
+                      <th data-i18n="name">الاسم</th>
+                      <th data-i18n="workedDays">أيام العمل</th>
+                      <th data-i18n="baseSalary">الأساسي</th>
+                      <th data-i18n="allowances">الإضافات</th>
+                      <th data-i18n="overtime">أوفرتايم</th>
+                      <th data-i18n="gross">الإجمالي</th>
+                      <th data-i18n="deductions">الخصومات</th>
+                      <th data-i18n="net">الصافي</th>
+                      <th data-i18n="log">الخطوات</th>
+                    </tr>
+                  </thead>
+                  <tbody id="payroll-items-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Previous Runs -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">📋 <span data-i18n="previousRuns">الدورات السابقة</span></span>
+              <button class="btn btn-ghost btn-sm" onclick="loadPayrollRuns()">🔄</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th data-i18n="period">الفترة</th>
+                    <th data-i18n="employees">موظفون</th>
+                    <th data-i18n="gross">الإجمالي</th>
+                    <th data-i18n="net">الصافي</th>
+                    <th data-i18n="status">الحالة</th>
+                    <th data-i18n="actions">إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="payroll-runs-tbody">
+                  <tr>
+                    <td colspan="6">
+                      <div class="empty-state">
+                        <div class="empty-icon">💰</div>
+                        <div class="empty-title" data-i18n="noPayrollRuns">لا توجد دورات رواتب</div>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ───────── Devices Page ───────── -->
+        <div class="page" id="page-devices">
+          <div class="flex justify-between items-center mb-6">
+            <div class="text-muted text-sm" data-i18n="devicesHint">أضف أجهزة البصمة لبدء المزامنة التلقائية</div>
+            <button class="btn btn-primary" onclick="openAddDeviceModal()">
+              ＋ <span data-i18n="addDevice">إضافة جهاز</span>
+            </button>
+          </div>
+
+          <div id="devices-grid" class="flex flex-col gap-4"></div>
+
+          <!-- Sync Log Panel -->
+          <div class="card mt-6">
+            <div class="card-header">
+              <span class="card-title">📜 <span data-i18n="syncLog">سجل المزامنة</span></span>
+              <button class="btn btn-ghost btn-sm" onclick="document.getElementById('device-log-body').innerHTML=''">
+                <span data-i18n="clear">مسح</span>
+              </button>
+            </div>
+            <div class="log-panel" style="max-height:320px">
+              <div class="log-body" id="device-log-body">
+                <div class="log-entry info">
+                  <span class="log-time">--:--</span>
+                  <span class="log-msg" data-i18n="logReady">[جاهز] سيظهر هنا سجل المزامنة</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ───────── Notifications Page ───────── -->
+        <div class="page" id="page-notifications">
+          <div class="flex justify-between items-center mb-6">
+            <span class="text-muted text-sm" data-i18n="notifHint">الإشعارات الواردة عند الاتصال بالإنترنت</span>
+            <div class="flex gap-3">
+              <button class="btn btn-ghost btn-sm" onclick="loadNotifications()">🔄</button>
+              <button class="btn btn-secondary btn-sm" onclick="checkForUpdates()">
+                ⬆️ <span data-i18n="checkUpdates">تحقق من التحديثات</span>
+              </button>
+            </div>
+          </div>
+          <div id="notifications-list" class="flex flex-col gap-3"></div>
+        </div>
+
+        <!-- ───────── Settings Page ───────── -->
+        <div class="page" id="page-settings">
+          <div class="flex gap-6" style="flex-wrap:wrap;align-items:flex-start">
+
+            <!-- Company Settings -->
+            <div class="card flex-1" style="min-width:300px">
+              <div class="card-header">
+                <span class="card-title">🏢 <span data-i18n="companySettings">إعدادات الشركة</span></span>
+              </div>
+              <form onsubmit="saveCompanySettings(event)">
+                <div class="form-group">
+                  <label class="form-label" data-i18n="companyName">اسم الشركة</label>
+                  <input type="text" class="form-control" id="s-company-name" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" data-i18n="companyNameEn">الاسم بالإنجليزية</label>
+                  <input type="text" class="form-control" id="s-company-name-en" dir="ltr" />
+                </div>
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label class="form-label" data-i18n="country">الدولة</label>
+                    <select class="form-control" id="s-country">
+                      <option value="EG">مصر</option>
+                      <option value="SA">السعودية</option>
+                      <option value="AE">الإمارات</option>
+                      <option value="KW">الكويت</option>
+                      <option value="QA">قطر</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" data-i18n="currency">العملة</label>
+                    <select class="form-control" id="s-currency">
+                      <option value="EGP">جنيه مصري</option>
+                      <option value="SAR">ريال سعودي</option>
+                      <option value="AED">درهم إماراتي</option>
+                      <option value="KWD">دينار كويتي</option>
+                    </select>
+                  </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                  <span data-i18n="save">حفظ</span>
+                </button>
+              </form>
+            </div>
+
+            <!-- App Settings -->
+            <div class="card flex-1" style="min-width:300px">
+              <div class="card-header">
+                <span class="card-title">⚙️ <span data-i18n="appSettings">إعدادات التطبيق</span></span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" data-i18n="language">اللغة</label>
+                <select class="form-control" id="s-language" onchange="setLanguage(this.value)">
+                  <option value="ar">العربية</option>
+                  <option value="en">English</option>
+                </select>
+              </div>
+
+              <div class="flex items-center justify-between mb-4">
+                <span data-i18n="autoStartOnBoot">التشغيل مع بدء Windows</span>
+                <label class="toggle">
+                  <input type="checkbox" id="s-autostart" onchange="setAutoStart(this.checked)" />
+                  <div class="toggle-track"></div>
+                  <div class="toggle-thumb"></div>
+                </label>
+              </div>
+
+              <!-- License -->
+              <div class="card-header" style="margin-top:var(--space-4)">
+                <span class="card-title">🔑 <span data-i18n="license">الترخيص السحابي</span></span>
+              </div>
+              <div class="form-group">
+                <label class="form-label" data-i18n="licenseKey">مفتاح الترخيص</label>
+                <div class="flex gap-3">
+                  <input type="text" class="form-control" id="s-license-key" dir="ltr" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+                  <button class="btn btn-secondary" onclick="verifyLicense()">
+                    <span data-i18n="verify">تحقق</span>
+                  </button>
+                </div>
+                <div id="license-status" class="mt-4 text-sm hidden"></div>
+              </div>
+
+              <!-- About -->
+              <div class="mt-6 text-sm text-muted" style="border-top:1px solid var(--color-border);padding-top:var(--space-4)">
+                <div style="font-weight:600;margin-bottom:4px">KWADER Desktop Pro v2.0.0</div>
+                <div>© 2024 KWADER — كوادر لإدارة الموارد البشرية</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /page-content -->
+    </div><!-- /main-area -->
+  </div><!-- /app-shell -->
+
+  <!-- ─── Modals ─── -->
+
+  <!-- Add/Edit Employee Modal -->
+  <div class="modal-backdrop hidden" id="employee-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title" id="employee-modal-title" data-i18n="addEmployee">إضافة موظف</span>
+        <button class="modal-close" onclick="closeModal('employee-modal')">✕</button>
+      </div>
+      <form onsubmit="saveEmployee(event)">
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label" data-i18n="name">الاسم الكامل *</label>
+            <input type="text" class="form-control" id="e-name" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="nameEn">الاسم بالإنجليزية</label>
+            <input type="text" class="form-control" id="e-name-en" dir="ltr" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="nationalId">الرقم القومي</label>
+            <input type="text" class="form-control" id="e-national-id" dir="ltr" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="phone">رقم الهاتف</label>
+            <input type="tel" class="form-control" id="e-phone" dir="ltr" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="department">الإدارة</label>
+            <input type="text" class="form-control" id="e-department" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="jobTitle">المسمى الوظيفي</label>
+            <input type="text" class="form-control" id="e-job-title" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="hireDate">تاريخ التوظيف</label>
+            <input type="date" class="form-control" id="e-hire-date" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="devicePin">PIN جهاز البصمة</label>
+            <input type="text" class="form-control" id="e-device-pin" dir="ltr" placeholder="1, 2, 100..." />
+          </div>
+        </div>
+
+        <div style="border-top:1px solid var(--color-border);margin:var(--space-4) 0;padding-top:var(--space-4)">
+          <div style="font-weight:600;margin-bottom:var(--space-4)" data-i18n="salaryInfo">معلومات الراتب</div>
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label class="form-label" data-i18n="baseSalary">الراتب الأساسي</label>
+              <input type="number" class="form-control" id="e-base-salary" min="0" step="0.01" value="0" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" data-i18n="housingAllowance">بدل السكن</label>
+              <input type="number" class="form-control" id="e-housing" min="0" step="0.01" value="0" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" data-i18n="transportAllowance">بدل النقل</label>
+              <input type="number" class="form-control" id="e-transport" min="0" step="0.01" value="0" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" data-i18n="mealAllowance">بدل الوجبات</label>
+              <input type="number" class="form-control" id="e-meal" min="0" step="0.01" value="0" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" data-i18n="socialInsurance">تأمينات (%)</label>
+              <input type="number" class="form-control" id="e-si-pct" min="0" max="100" step="0.01" value="0" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" data-i18n="taxRate">ضريبة الدخل (%)</label>
+              <input type="number" class="form-control" id="e-tax" min="0" max="100" step="0.01" value="0" />
+            </div>
+          </div>
+        </div>
+
+        <input type="hidden" id="e-editing-id" value="" />
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('employee-modal')" data-i18n="cancel">إلغاء</button>
+          <button type="submit" class="btn btn-primary" id="e-submit-btn" data-i18n="save">حفظ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Device Modal -->
+  <div class="modal-backdrop hidden" id="device-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title" data-i18n="addDevice">إضافة جهاز بصمة</span>
+        <button class="modal-close" onclick="closeModal('device-modal')">✕</button>
+      </div>
+      <form onsubmit="saveDevice(event)">
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label" data-i18n="deviceName">اسم الجهاز</label>
+            <input type="text" class="form-control" id="d-name" placeholder="مثال: فرع القاهرة" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="deviceType">نوع الجهاز</label>
+            <select class="form-control" id="d-type" onchange="toggleDeviceFields()">
+              <option value="zkteco">ZKTeco</option>
+              <option value="hikvision">Hikvision</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="deviceIp">عنوان IP</label>
+            <input type="text" class="form-control" id="d-ip" dir="ltr" placeholder="192.168.1.201" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="port">المنفذ</label>
+            <input type="number" class="form-control" id="d-port" dir="ltr" value="4370" />
+          </div>
+        </div>
+
+        <div id="d-hik-fields" class="form-grid-2 hidden">
+          <div class="form-group">
+            <label class="form-label" data-i18n="username">اسم المستخدم</label>
+            <input type="text" class="form-control" id="d-username" dir="ltr" value="admin" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="password">كلمة المرور</label>
+            <input type="password" class="form-control" id="d-password" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" data-i18n="syncInterval">فترة المزامنة (دقائق)</label>
+          <input type="number" class="form-control" id="d-interval" min="1" max="60" value="5" />
+        </div>
+
+        <div class="flex gap-3 mb-4">
+          <button type="button" class="btn btn-secondary" onclick="testDeviceBeforeAdd()">
+            <span data-i18n="testConnection">اختبار الاتصال</span>
+          </button>
+          <span id="d-test-result" class="text-sm items-center" style="display:flex;align-items:center"></span>
+        </div>
+
+        <input type="hidden" id="d-editing-id" value="" />
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('device-modal')" data-i18n="cancel">إلغاء</button>
+          <button type="submit" class="btn btn-primary" data-i18n="save">حفظ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Manual Attendance Modal -->
+  <div class="modal-backdrop hidden" id="manual-att-modal">
+    <div class="modal" style="max-width:400px">
+      <div class="modal-header">
+        <span class="modal-title" data-i18n="addManualAttendance">إدخال حضور يدوي</span>
+        <button class="modal-close" onclick="closeModal('manual-att-modal')">✕</button>
+      </div>
+      <form onsubmit="saveManualAttendance(event)">
+        <div class="form-group">
+          <label class="form-label" data-i18n="employee">الموظف</label>
+          <select class="form-control" id="ma-employee" required></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="date">التاريخ</label>
+          <input type="date" class="form-control" id="ma-date" required />
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label" data-i18n="checkIn">وقت الدخول</label>
+            <input type="time" class="form-control" id="ma-in" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="checkOut">وقت الخروج</label>
+            <input type="time" class="form-control" id="ma-out" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="notes">ملاحظات</label>
+          <input type="text" class="form-control" id="ma-notes" />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('manual-att-modal')" data-i18n="cancel">إلغاء</button>
+          <button type="submit" class="btn btn-primary" data-i18n="save">حفظ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Payroll Log Modal -->
+  <div class="modal-backdrop hidden" id="payroll-log-modal">
+    <div class="modal" style="max-width:500px">
+      <div class="modal-header">
+        <span class="modal-title" data-i18n="calculationDetails">تفاصيل الحساب</span>
+        <button class="modal-close" onclick="closeModal('payroll-log-modal')">✕</button>
+      </div>
+      <div id="payroll-log-content"></div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

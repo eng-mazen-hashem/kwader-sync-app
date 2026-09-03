@@ -1,0 +1,2614 @@
+([('81d243bd2c585b0f4821__mypyc.cp312-win_amd64.pyd',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\81d243bd2c585b0f4821__mypyc.cp312-win_amd64.pyd',
+   'EXTENSION'),
+  ('KWADER Sync.exe',
+   'D:\\Zk att project\\sync-agent\\build\\obf\\build\\KWADER Sync\\KWADER '
+   'Sync.exe',
+   'EXECUTABLE'),
+  ('MSVCP140.dll', 'C:\\Windows\\system32\\MSVCP140.dll', 'BINARY'),
+  ('PIL\\AvifImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\AvifImagePlugin.py',
+   'DATA'),
+  ('PIL\\BdfFontFile.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\BdfFontFile.py',
+   'DATA'),
+  ('PIL\\BlpImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\BlpImagePlugin.py',
+   'DATA'),
+  ('PIL\\BmpImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\BmpImagePlugin.py',
+   'DATA'),
+  ('PIL\\BufrStubImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\BufrStubImagePlugin.py',
+   'DATA'),
+  ('PIL\\ContainerIO.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ContainerIO.py',
+   'DATA'),
+  ('PIL\\CurImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\CurImagePlugin.py',
+   'DATA'),
+  ('PIL\\DcxImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\DcxImagePlugin.py',
+   'DATA'),
+  ('PIL\\DdsImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\DdsImagePlugin.py',
+   'DATA'),
+  ('PIL\\EpsImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\EpsImagePlugin.py',
+   'DATA'),
+  ('PIL\\ExifTags.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ExifTags.py',
+   'DATA'),
+  ('PIL\\FitsImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\FitsImagePlugin.py',
+   'DATA'),
+  ('PIL\\FliImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\FliImagePlugin.py',
+   'DATA'),
+  ('PIL\\FontFile.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\FontFile.py',
+   'DATA'),
+  ('PIL\\FpxImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\FpxImagePlugin.py',
+   'DATA'),
+  ('PIL\\FtexImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\FtexImagePlugin.py',
+   'DATA'),
+  ('PIL\\GbrImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\GbrImagePlugin.py',
+   'DATA'),
+  ('PIL\\GdImageFile.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\GdImageFile.py',
+   'DATA'),
+  ('PIL\\GifImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\GifImagePlugin.py',
+   'DATA'),
+  ('PIL\\GimpGradientFile.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\GimpGradientFile.py',
+   'DATA'),
+  ('PIL\\GimpPaletteFile.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\GimpPaletteFile.py',
+   'DATA'),
+  ('PIL\\GribStubImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\GribStubImagePlugin.py',
+   'DATA'),
+  ('PIL\\Hdf5StubImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\Hdf5StubImagePlugin.py',
+   'DATA'),
+  ('PIL\\IcnsImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\IcnsImagePlugin.py',
+   'DATA'),
+  ('PIL\\IcoImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\IcoImagePlugin.py',
+   'DATA'),
+  ('PIL\\ImImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImImagePlugin.py',
+   'DATA'),
+  ('PIL\\Image.py',
+   'D:\\Zk att project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\Image.py',
+   'DATA'),
+  ('PIL\\ImageChops.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImageChops.py',
+   'DATA'),
+  ('PIL\\ImageCms.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImageCms.py',
+   'DATA'),
+  ('PIL\\ImageColor.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImageColor.py',
+   'DATA'),
+  ('PIL\\ImageDraw.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImageDraw.py',
+   'DATA'),
+  ('PIL\\ImageDraw2.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImageDraw2.py',
+   'DATA'),
+  ('PIL\\ImageEnhance.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImageEnhance.py',
+   'DATA'),
+  ('PIL\\ImageFile.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImageFile.py',
+   'DATA'),
+  ('PIL\\ImageFilter.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImageFilter.py',
+   'DATA'),
+  ('PIL\\ImageFont.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImageFont.py',
+   'DATA'),
+  ('PIL\\ImageGrab.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImageGrab.py',
+   'DATA'),
+  ('PIL\\ImageMath.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImageMath.py',
+   'DATA'),
+  ('PIL\\ImageMode.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImageMode.py',
+   'DATA'),
+  ('PIL\\ImageMorph.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImageMorph.py',
+   'DATA'),
+  ('PIL\\ImageOps.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImageOps.py',
+   'DATA'),
+  ('PIL\\ImagePalette.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImagePalette.py',
+   'DATA'),
+  ('PIL\\ImagePath.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImagePath.py',
+   'DATA'),
+  ('PIL\\ImageQt.py',
+   'D:\\Zk att project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImageQt.py',
+   'DATA'),
+  ('PIL\\ImageSequence.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImageSequence.py',
+   'DATA'),
+  ('PIL\\ImageShow.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImageShow.py',
+   'DATA'),
+  ('PIL\\ImageStat.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImageStat.py',
+   'DATA'),
+  ('PIL\\ImageText.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImageText.py',
+   'DATA'),
+  ('PIL\\ImageTk.py',
+   'D:\\Zk att project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImageTk.py',
+   'DATA'),
+  ('PIL\\ImageTransform.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImageTransform.py',
+   'DATA'),
+  ('PIL\\ImageWin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImageWin.py',
+   'DATA'),
+  ('PIL\\ImtImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\ImtImagePlugin.py',
+   'DATA'),
+  ('PIL\\IptcImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\IptcImagePlugin.py',
+   'DATA'),
+  ('PIL\\Jpeg2KImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\Jpeg2KImagePlugin.py',
+   'DATA'),
+  ('PIL\\JpegImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\JpegImagePlugin.py',
+   'DATA'),
+  ('PIL\\JpegPresets.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\JpegPresets.py',
+   'DATA'),
+  ('PIL\\McIdasImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\McIdasImagePlugin.py',
+   'DATA'),
+  ('PIL\\MicImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\MicImagePlugin.py',
+   'DATA'),
+  ('PIL\\MpegImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\MpegImagePlugin.py',
+   'DATA'),
+  ('PIL\\MpoImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\MpoImagePlugin.py',
+   'DATA'),
+  ('PIL\\MspImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\MspImagePlugin.py',
+   'DATA'),
+  ('PIL\\PSDraw.py',
+   'D:\\Zk att project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\PSDraw.py',
+   'DATA'),
+  ('PIL\\PaletteFile.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\PaletteFile.py',
+   'DATA'),
+  ('PIL\\PalmImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\PalmImagePlugin.py',
+   'DATA'),
+  ('PIL\\PcdImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\PcdImagePlugin.py',
+   'DATA'),
+  ('PIL\\PcfFontFile.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\PcfFontFile.py',
+   'DATA'),
+  ('PIL\\PcxImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\PcxImagePlugin.py',
+   'DATA'),
+  ('PIL\\PdfImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\PdfImagePlugin.py',
+   'DATA'),
+  ('PIL\\PdfParser.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\PdfParser.py',
+   'DATA'),
+  ('PIL\\PixarImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\PixarImagePlugin.py',
+   'DATA'),
+  ('PIL\\PngImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\PngImagePlugin.py',
+   'DATA'),
+  ('PIL\\PpmImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\PpmImagePlugin.py',
+   'DATA'),
+  ('PIL\\PsdImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\PsdImagePlugin.py',
+   'DATA'),
+  ('PIL\\QoiImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\QoiImagePlugin.py',
+   'DATA'),
+  ('PIL\\SgiImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\SgiImagePlugin.py',
+   'DATA'),
+  ('PIL\\SpiderImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\SpiderImagePlugin.py',
+   'DATA'),
+  ('PIL\\SunImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\SunImagePlugin.py',
+   'DATA'),
+  ('PIL\\TarIO.py',
+   'D:\\Zk att project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\TarIO.py',
+   'DATA'),
+  ('PIL\\TgaImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\TgaImagePlugin.py',
+   'DATA'),
+  ('PIL\\TiffImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\TiffImagePlugin.py',
+   'DATA'),
+  ('PIL\\TiffTags.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\TiffTags.py',
+   'DATA'),
+  ('PIL\\WalImageFile.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\WalImageFile.py',
+   'DATA'),
+  ('PIL\\WebPImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\WebPImagePlugin.py',
+   'DATA'),
+  ('PIL\\WmfImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\WmfImagePlugin.py',
+   'DATA'),
+  ('PIL\\XVThumbImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\XVThumbImagePlugin.py',
+   'DATA'),
+  ('PIL\\XbmImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\XbmImagePlugin.py',
+   'DATA'),
+  ('PIL\\XpmImagePlugin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\XpmImagePlugin.py',
+   'DATA'),
+  ('PIL\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\__init__.py',
+   'DATA'),
+  ('PIL\\__main__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\__main__.py',
+   'DATA'),
+  ('PIL\\_avif.cp312-win_amd64.pyd',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\_avif.cp312-win_amd64.pyd',
+   'EXTENSION'),
+  ('PIL\\_avif.pyi',
+   'D:\\Zk att project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\_avif.pyi',
+   'DATA'),
+  ('PIL\\_binary.py',
+   'D:\\Zk att project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\_binary.py',
+   'DATA'),
+  ('PIL\\_deprecate.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\_deprecate.py',
+   'DATA'),
+  ('PIL\\_imaging.cp312-win_amd64.pyd',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\_imaging.cp312-win_amd64.pyd',
+   'EXTENSION'),
+  ('PIL\\_imaging.pyi',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\_imaging.pyi',
+   'DATA'),
+  ('PIL\\_imagingcms.cp312-win_amd64.pyd',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\_imagingcms.cp312-win_amd64.pyd',
+   'EXTENSION'),
+  ('PIL\\_imagingcms.pyi',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\_imagingcms.pyi',
+   'DATA'),
+  ('PIL\\_imagingft.cp312-win_amd64.pyd',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\_imagingft.cp312-win_amd64.pyd',
+   'EXTENSION'),
+  ('PIL\\_imagingft.pyi',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\_imagingft.pyi',
+   'DATA'),
+  ('PIL\\_imagingmath.cp312-win_amd64.pyd',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\_imagingmath.cp312-win_amd64.pyd',
+   'EXTENSION'),
+  ('PIL\\_imagingmath.pyi',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\_imagingmath.pyi',
+   'DATA'),
+  ('PIL\\_imagingmorph.cp312-win_amd64.pyd',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\_imagingmorph.cp312-win_amd64.pyd',
+   'EXTENSION'),
+  ('PIL\\_imagingmorph.pyi',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\_imagingmorph.pyi',
+   'DATA'),
+  ('PIL\\_imagingtk.cp312-win_amd64.pyd',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\_imagingtk.cp312-win_amd64.pyd',
+   'EXTENSION'),
+  ('PIL\\_imagingtk.pyi',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\_imagingtk.pyi',
+   'DATA'),
+  ('PIL\\_tkinter_finder.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\_tkinter_finder.py',
+   'DATA'),
+  ('PIL\\_typing.py',
+   'D:\\Zk att project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\_typing.py',
+   'DATA'),
+  ('PIL\\_util.py',
+   'D:\\Zk att project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\_util.py',
+   'DATA'),
+  ('PIL\\_version.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\_version.py',
+   'DATA'),
+  ('PIL\\_webp.cp312-win_amd64.pyd',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\_webp.cp312-win_amd64.pyd',
+   'EXTENSION'),
+  ('PIL\\_webp.pyi',
+   'D:\\Zk att project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\_webp.pyi',
+   'DATA'),
+  ('PIL\\features.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\features.py',
+   'DATA'),
+  ('PIL\\py.typed',
+   'D:\\Zk att project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\py.typed',
+   'DATA'),
+  ('PIL\\report.py',
+   'D:\\Zk att project\\sync-agent\\.venv\\Lib\\site-packages\\PIL\\report.py',
+   'DATA'),
+  ('VCRUNTIME140.dll',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\VCRUNTIME140.dll',
+   'BINARY'),
+  ('VCRUNTIME140_1.dll',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\VCRUNTIME140_1.dll',
+   'BINARY'),
+  ('_asyncio.pyd',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\_asyncio.pyd',
+   'EXTENSION'),
+  ('_bz2.pyd',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\_bz2.pyd',
+   'EXTENSION'),
+  ('_cffi_backend.cp312-win_amd64.pyd',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\_cffi_backend.cp312-win_amd64.pyd',
+   'EXTENSION'),
+  ('_ctypes.pyd',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\_ctypes.pyd',
+   'EXTENSION'),
+  ('_decimal.pyd',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\_decimal.pyd',
+   'EXTENSION'),
+  ('_elementtree.pyd',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\_elementtree.pyd',
+   'EXTENSION'),
+  ('_hashlib.pyd',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\_hashlib.pyd',
+   'EXTENSION'),
+  ('_lzma.pyd',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\_lzma.pyd',
+   'EXTENSION'),
+  ('_multiprocessing.pyd',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\_multiprocessing.pyd',
+   'EXTENSION'),
+  ('_overlapped.pyd',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\_overlapped.pyd',
+   'EXTENSION'),
+  ('_queue.pyd',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\_queue.pyd',
+   'EXTENSION'),
+  ('_socket.pyd',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\_socket.pyd',
+   'EXTENSION'),
+  ('_ssl.pyd',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\_ssl.pyd',
+   'EXTENSION'),
+  ('_uuid.pyd',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\_uuid.pyd',
+   'EXTENSION'),
+  ('_wmi.pyd',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\_wmi.pyd',
+   'EXTENSION'),
+  ('_zoneinfo.pyd',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\_zoneinfo.pyd',
+   'EXTENSION'),
+  ('base_library.zip',
+   'D:\\Zk att project\\sync-agent\\build\\obf\\build\\KWADER '
+   'Sync\\base_library.zip',
+   'DATA'),
+  ('certifi\\cacert.pem',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\certifi\\cacert.pem',
+   'DATA'),
+  ('certifi\\py.typed',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\certifi\\py.typed',
+   'DATA'),
+  ('charset_normalizer\\cd.cp312-win_amd64.pyd',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\charset_normalizer\\cd.cp312-win_amd64.pyd',
+   'EXTENSION'),
+  ('charset_normalizer\\md.cp312-win_amd64.pyd',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\charset_normalizer\\md.cp312-win_amd64.pyd',
+   'EXTENSION'),
+  ('click-8.4.1.dist-info\\INSTALLER',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\click-8.4.1.dist-info\\INSTALLER',
+   'DATA'),
+  ('click-8.4.1.dist-info\\METADATA',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\click-8.4.1.dist-info\\METADATA',
+   'DATA'),
+  ('click-8.4.1.dist-info\\RECORD',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\click-8.4.1.dist-info\\RECORD',
+   'DATA'),
+  ('click-8.4.1.dist-info\\WHEEL',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\click-8.4.1.dist-info\\WHEEL',
+   'DATA'),
+  ('click-8.4.1.dist-info\\licenses\\LICENSE.txt',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\click-8.4.1.dist-info\\licenses\\LICENSE.txt',
+   'DATA'),
+  ('clr_loader-0.3.1.dist-info\\INSTALLER',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader-0.3.1.dist-info\\INSTALLER',
+   'DATA'),
+  ('clr_loader-0.3.1.dist-info\\METADATA',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader-0.3.1.dist-info\\METADATA',
+   'DATA'),
+  ('clr_loader-0.3.1.dist-info\\RECORD',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader-0.3.1.dist-info\\RECORD',
+   'DATA'),
+  ('clr_loader-0.3.1.dist-info\\WHEEL',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader-0.3.1.dist-info\\WHEEL',
+   'DATA'),
+  ('clr_loader-0.3.1.dist-info\\licenses\\LICENSE',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader-0.3.1.dist-info\\licenses\\LICENSE',
+   'DATA'),
+  ('clr_loader-0.3.1.dist-info\\top_level.txt',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader-0.3.1.dist-info\\top_level.txt',
+   'DATA'),
+  ('clr_loader\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader\\__init__.py',
+   'DATA'),
+  ('clr_loader\\ffi\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader\\ffi\\__init__.py',
+   'DATA'),
+  ('clr_loader\\ffi\\dlls\\amd64\\ClrLoader.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader\\ffi\\dlls\\amd64\\ClrLoader.dll',
+   'BINARY'),
+  ('clr_loader\\ffi\\dlls\\amd64\\ClrLoader.pdb',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader\\ffi\\dlls\\amd64\\ClrLoader.pdb',
+   'DATA'),
+  ('clr_loader\\ffi\\dlls\\x86\\ClrLoader.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader\\ffi\\dlls\\x86\\ClrLoader.dll',
+   'BINARY'),
+  ('clr_loader\\ffi\\dlls\\x86\\ClrLoader.pdb',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader\\ffi\\dlls\\x86\\ClrLoader.pdb',
+   'DATA'),
+  ('clr_loader\\ffi\\hostfxr.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader\\ffi\\hostfxr.py',
+   'DATA'),
+  ('clr_loader\\ffi\\mono.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader\\ffi\\mono.py',
+   'DATA'),
+  ('clr_loader\\ffi\\netfx.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader\\ffi\\netfx.py',
+   'DATA'),
+  ('clr_loader\\hostfxr.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader\\hostfxr.py',
+   'DATA'),
+  ('clr_loader\\mono.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader\\mono.py',
+   'DATA'),
+  ('clr_loader\\netfx.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader\\netfx.py',
+   'DATA'),
+  ('clr_loader\\py.typed',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader\\py.typed',
+   'DATA'),
+  ('clr_loader\\types.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader\\types.py',
+   'DATA'),
+  ('clr_loader\\util\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader\\util\\__init__.py',
+   'DATA'),
+  ('clr_loader\\util\\clr_error.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader\\util\\clr_error.py',
+   'DATA'),
+  ('clr_loader\\util\\coreclr_errors.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader\\util\\coreclr_errors.py',
+   'DATA'),
+  ('clr_loader\\util\\find.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader\\util\\find.py',
+   'DATA'),
+  ('clr_loader\\util\\hostfxr_errors.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader\\util\\hostfxr_errors.py',
+   'DATA'),
+  ('clr_loader\\util\\runtime_spec.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\clr_loader\\util\\runtime_spec.py',
+   'DATA'),
+  ('cryptography-48.0.0.dist-info\\INSTALLER',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\cryptography-48.0.0.dist-info\\INSTALLER',
+   'DATA'),
+  ('cryptography-48.0.0.dist-info\\METADATA',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\cryptography-48.0.0.dist-info\\METADATA',
+   'DATA'),
+  ('cryptography-48.0.0.dist-info\\RECORD',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\cryptography-48.0.0.dist-info\\RECORD',
+   'DATA'),
+  ('cryptography-48.0.0.dist-info\\WHEEL',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\cryptography-48.0.0.dist-info\\WHEEL',
+   'DATA'),
+  ('cryptography-48.0.0.dist-info\\licenses\\LICENSE',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\cryptography-48.0.0.dist-info\\licenses\\LICENSE',
+   'DATA'),
+  ('cryptography-48.0.0.dist-info\\licenses\\LICENSE.APACHE',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\cryptography-48.0.0.dist-info\\licenses\\LICENSE.APACHE',
+   'DATA'),
+  ('cryptography-48.0.0.dist-info\\licenses\\LICENSE.BSD',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\cryptography-48.0.0.dist-info\\licenses\\LICENSE.BSD',
+   'DATA'),
+  ('cryptography-48.0.0.dist-info\\sboms\\cryptography-rust.cyclonedx.json',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\cryptography-48.0.0.dist-info\\sboms\\cryptography-rust.cyclonedx.json',
+   'DATA'),
+  ('cryptography-48.0.0.dist-info\\sboms\\sbom.json',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\cryptography-48.0.0.dist-info\\sboms\\sbom.json',
+   'DATA'),
+  ('cryptography\\hazmat\\bindings\\_rust.pyd',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\cryptography\\hazmat\\bindings\\_rust.pyd',
+   'EXTENSION'),
+  ('dateutil\\zoneinfo\\dateutil-zoneinfo.tar.gz',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\dateutil\\zoneinfo\\dateutil-zoneinfo.tar.gz',
+   'DATA'),
+  ('h2-4.3.0.dist-info\\INSTALLER',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\h2-4.3.0.dist-info\\INSTALLER',
+   'DATA'),
+  ('h2-4.3.0.dist-info\\METADATA',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\h2-4.3.0.dist-info\\METADATA',
+   'DATA'),
+  ('h2-4.3.0.dist-info\\RECORD',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\h2-4.3.0.dist-info\\RECORD',
+   'DATA'),
+  ('h2-4.3.0.dist-info\\WHEEL',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\h2-4.3.0.dist-info\\WHEEL',
+   'DATA'),
+  ('h2-4.3.0.dist-info\\licenses\\LICENSE',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\h2-4.3.0.dist-info\\licenses\\LICENSE',
+   'DATA'),
+  ('h2-4.3.0.dist-info\\top_level.txt',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\h2-4.3.0.dist-info\\top_level.txt',
+   'DATA'),
+  ('libcrypto-3.dll',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\libcrypto-3.dll',
+   'BINARY'),
+  ('libffi-8.dll',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\libffi-8.dll',
+   'BINARY'),
+  ('libssl-3.dll',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\libssl-3.dll',
+   'BINARY'),
+  ('mmh3.cp312-win_amd64.pyd',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\mmh3.cp312-win_amd64.pyd',
+   'EXTENSION'),
+  ('multidict\\_multidict.cp312-win_amd64.pyd',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\multidict\\_multidict.cp312-win_amd64.pyd',
+   'EXTENSION'),
+  ('pillow-12.2.0.dist-info\\INSTALLER',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pillow-12.2.0.dist-info\\INSTALLER',
+   'DATA'),
+  ('pillow-12.2.0.dist-info\\METADATA',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pillow-12.2.0.dist-info\\METADATA',
+   'DATA'),
+  ('pillow-12.2.0.dist-info\\RECORD',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pillow-12.2.0.dist-info\\RECORD',
+   'DATA'),
+  ('pillow-12.2.0.dist-info\\REQUESTED',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pillow-12.2.0.dist-info\\REQUESTED',
+   'DATA'),
+  ('pillow-12.2.0.dist-info\\WHEEL',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pillow-12.2.0.dist-info\\WHEEL',
+   'DATA'),
+  ('pillow-12.2.0.dist-info\\licenses\\LICENSE',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pillow-12.2.0.dist-info\\licenses\\LICENSE',
+   'DATA'),
+  ('pillow-12.2.0.dist-info\\top_level.txt',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pillow-12.2.0.dist-info\\top_level.txt',
+   'DATA'),
+  ('pillow-12.2.0.dist-info\\zip-safe',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pillow-12.2.0.dist-info\\zip-safe',
+   'DATA'),
+  ('platformdirs-4.10.0.dist-info\\INSTALLER',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\platformdirs-4.10.0.dist-info\\INSTALLER',
+   'DATA'),
+  ('platformdirs-4.10.0.dist-info\\METADATA',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\platformdirs-4.10.0.dist-info\\METADATA',
+   'DATA'),
+  ('platformdirs-4.10.0.dist-info\\RECORD',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\platformdirs-4.10.0.dist-info\\RECORD',
+   'DATA'),
+  ('platformdirs-4.10.0.dist-info\\REQUESTED',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\platformdirs-4.10.0.dist-info\\REQUESTED',
+   'DATA'),
+  ('platformdirs-4.10.0.dist-info\\WHEEL',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\platformdirs-4.10.0.dist-info\\WHEEL',
+   'DATA'),
+  ('platformdirs-4.10.0.dist-info\\licenses\\LICENSE',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\platformdirs-4.10.0.dist-info\\licenses\\LICENSE',
+   'DATA'),
+  ('platformdirs\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\platformdirs\\__init__.py',
+   'DATA'),
+  ('platformdirs\\__main__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\platformdirs\\__main__.py',
+   'DATA'),
+  ('platformdirs\\_xdg.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\platformdirs\\_xdg.py',
+   'DATA'),
+  ('platformdirs\\android.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\platformdirs\\android.py',
+   'DATA'),
+  ('platformdirs\\api.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\platformdirs\\api.py',
+   'DATA'),
+  ('platformdirs\\macos.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\platformdirs\\macos.py',
+   'DATA'),
+  ('platformdirs\\py.typed',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\platformdirs\\py.typed',
+   'DATA'),
+  ('platformdirs\\unix.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\platformdirs\\unix.py',
+   'DATA'),
+  ('platformdirs\\version.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\platformdirs\\version.py',
+   'DATA'),
+  ('platformdirs\\windows.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\platformdirs\\windows.py',
+   'DATA'),
+  ('postgrest-2.30.0.dist-info\\INSTALLER',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\postgrest-2.30.0.dist-info\\INSTALLER',
+   'DATA'),
+  ('postgrest-2.30.0.dist-info\\METADATA',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\postgrest-2.30.0.dist-info\\METADATA',
+   'DATA'),
+  ('postgrest-2.30.0.dist-info\\RECORD',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\postgrest-2.30.0.dist-info\\RECORD',
+   'DATA'),
+  ('postgrest-2.30.0.dist-info\\WHEEL',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\postgrest-2.30.0.dist-info\\WHEEL',
+   'DATA'),
+  ('postgrest\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\postgrest\\__init__.py',
+   'DATA'),
+  ('postgrest\\_async\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\postgrest\\_async\\__init__.py',
+   'DATA'),
+  ('postgrest\\_async\\client.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\postgrest\\_async\\client.py',
+   'DATA'),
+  ('postgrest\\_async\\request_builder.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\postgrest\\_async\\request_builder.py',
+   'DATA'),
+  ('postgrest\\_sync\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\postgrest\\_sync\\__init__.py',
+   'DATA'),
+  ('postgrest\\_sync\\client.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\postgrest\\_sync\\client.py',
+   'DATA'),
+  ('postgrest\\_sync\\request_builder.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\postgrest\\_sync\\request_builder.py',
+   'DATA'),
+  ('postgrest\\base_client.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\postgrest\\base_client.py',
+   'DATA'),
+  ('postgrest\\base_request_builder.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\postgrest\\base_request_builder.py',
+   'DATA'),
+  ('postgrest\\constants.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\postgrest\\constants.py',
+   'DATA'),
+  ('postgrest\\exceptions.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\postgrest\\exceptions.py',
+   'DATA'),
+  ('postgrest\\py.typed',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\postgrest\\py.typed',
+   'DATA'),
+  ('postgrest\\types.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\postgrest\\types.py',
+   'DATA'),
+  ('postgrest\\utils.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\postgrest\\utils.py',
+   'DATA'),
+  ('postgrest\\version.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\postgrest\\version.py',
+   'DATA'),
+  ('propcache\\_helpers_c.cp312-win_amd64.pyd',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\propcache\\_helpers_c.cp312-win_amd64.pyd',
+   'EXTENSION'),
+  ('pyarmor_runtime_000000\\pyarmor_runtime.pyd',
+   'D:\\Zk att '
+   'project\\sync-agent\\build\\obf\\pyarmor_runtime_000000\\pyarmor_runtime.pyd',
+   'EXTENSION'),
+  ('pydantic-2.13.4.dist-info\\INSTALLER',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pydantic-2.13.4.dist-info\\INSTALLER',
+   'DATA'),
+  ('pydantic-2.13.4.dist-info\\METADATA',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pydantic-2.13.4.dist-info\\METADATA',
+   'DATA'),
+  ('pydantic-2.13.4.dist-info\\RECORD',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pydantic-2.13.4.dist-info\\RECORD',
+   'DATA'),
+  ('pydantic-2.13.4.dist-info\\WHEEL',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pydantic-2.13.4.dist-info\\WHEEL',
+   'DATA'),
+  ('pydantic-2.13.4.dist-info\\licenses\\LICENSE',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pydantic-2.13.4.dist-info\\licenses\\LICENSE',
+   'DATA'),
+  ('pydantic_core\\_pydantic_core.cp312-win_amd64.pyd',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pydantic_core\\_pydantic_core.cp312-win_amd64.pyd',
+   'EXTENSION'),
+  ('pyexpat.pyd',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\pyexpat.pyd',
+   'EXTENSION'),
+  ('pyiceberg\\avro\\decoder_fast.cp312-win_amd64.pyd',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pyiceberg\\avro\\decoder_fast.cp312-win_amd64.pyd',
+   'EXTENSION'),
+  ('pyroaring.cp312-win_amd64.pyd',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pyroaring.cp312-win_amd64.pyd',
+   'EXTENSION'),
+  ('pystray-0.19.5.dist-info\\COPYING',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pystray-0.19.5.dist-info\\COPYING',
+   'DATA'),
+  ('pystray-0.19.5.dist-info\\COPYING.LGPL',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pystray-0.19.5.dist-info\\COPYING.LGPL',
+   'DATA'),
+  ('pystray-0.19.5.dist-info\\INSTALLER',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pystray-0.19.5.dist-info\\INSTALLER',
+   'DATA'),
+  ('pystray-0.19.5.dist-info\\METADATA',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pystray-0.19.5.dist-info\\METADATA',
+   'DATA'),
+  ('pystray-0.19.5.dist-info\\RECORD',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pystray-0.19.5.dist-info\\RECORD',
+   'DATA'),
+  ('pystray-0.19.5.dist-info\\REQUESTED',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pystray-0.19.5.dist-info\\REQUESTED',
+   'DATA'),
+  ('pystray-0.19.5.dist-info\\WHEEL',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pystray-0.19.5.dist-info\\WHEEL',
+   'DATA'),
+  ('pystray-0.19.5.dist-info\\top_level.txt',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pystray-0.19.5.dist-info\\top_level.txt',
+   'DATA'),
+  ('pystray-0.19.5.dist-info\\zip-safe',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pystray-0.19.5.dist-info\\zip-safe',
+   'DATA'),
+  ('pystray\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pystray\\__init__.py',
+   'DATA'),
+  ('pystray\\_appindicator.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pystray\\_appindicator.py',
+   'DATA'),
+  ('pystray\\_base.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pystray\\_base.py',
+   'DATA'),
+  ('pystray\\_darwin.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pystray\\_darwin.py',
+   'DATA'),
+  ('pystray\\_dummy.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pystray\\_dummy.py',
+   'DATA'),
+  ('pystray\\_gtk.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pystray\\_gtk.py',
+   'DATA'),
+  ('pystray\\_info.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pystray\\_info.py',
+   'DATA'),
+  ('pystray\\_util\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pystray\\_util\\__init__.py',
+   'DATA'),
+  ('pystray\\_util\\gtk.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pystray\\_util\\gtk.py',
+   'DATA'),
+  ('pystray\\_util\\notify_dbus.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pystray\\_util\\notify_dbus.py',
+   'DATA'),
+  ('pystray\\_util\\win32.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pystray\\_util\\win32.py',
+   'DATA'),
+  ('pystray\\_win32.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pystray\\_win32.py',
+   'DATA'),
+  ('pystray\\_xorg.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pystray\\_xorg.py',
+   'DATA'),
+  ('python3.dll',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\python3.dll',
+   'BINARY'),
+  ('python312.dll',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\python312.dll',
+   'BINARY'),
+  ('pythonnet-3.1.0.dist-info\\INSTALLER',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet-3.1.0.dist-info\\INSTALLER',
+   'DATA'),
+  ('pythonnet-3.1.0.dist-info\\METADATA',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet-3.1.0.dist-info\\METADATA',
+   'DATA'),
+  ('pythonnet-3.1.0.dist-info\\RECORD',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet-3.1.0.dist-info\\RECORD',
+   'DATA'),
+  ('pythonnet-3.1.0.dist-info\\WHEEL',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet-3.1.0.dist-info\\WHEEL',
+   'DATA'),
+  ('pythonnet-3.1.0.dist-info\\entry_points.txt',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet-3.1.0.dist-info\\entry_points.txt',
+   'DATA'),
+  ('pythonnet-3.1.0.dist-info\\licenses\\AUTHORS.md',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet-3.1.0.dist-info\\licenses\\AUTHORS.md',
+   'DATA'),
+  ('pythonnet-3.1.0.dist-info\\licenses\\LICENSE',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet-3.1.0.dist-info\\licenses\\LICENSE',
+   'DATA'),
+  ('pythonnet-3.1.0.dist-info\\top_level.txt',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet-3.1.0.dist-info\\top_level.txt',
+   'DATA'),
+  ('pythonnet\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\__init__.py',
+   'DATA'),
+  ('pythonnet\\_pyinstaller\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\_pyinstaller\\__init__.py',
+   'DATA'),
+  ('pythonnet\\_pyinstaller\\hook-clr.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\_pyinstaller\\hook-clr.py',
+   'DATA'),
+  ('pythonnet\\runtime\\Microsoft.Win32.Primitives.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\Microsoft.Win32.Primitives.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\Python.Runtime.deps.json',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\Python.Runtime.deps.json',
+   'DATA'),
+  ('pythonnet\\runtime\\Python.Runtime.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\Python.Runtime.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\Python.Runtime.xml',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\Python.Runtime.xml',
+   'DATA'),
+  ('pythonnet\\runtime\\System.AppContext.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.AppContext.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Collections.Concurrent.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Collections.Concurrent.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Collections.NonGeneric.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Collections.NonGeneric.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Collections.Specialized.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Collections.Specialized.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Collections.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Collections.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.ComponentModel.EventBasedAsync.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.ComponentModel.EventBasedAsync.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.ComponentModel.Primitives.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.ComponentModel.Primitives.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.ComponentModel.TypeConverter.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.ComponentModel.TypeConverter.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.ComponentModel.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.ComponentModel.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Console.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Console.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Data.Common.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Data.Common.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Diagnostics.Contracts.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Diagnostics.Contracts.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Diagnostics.Debug.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Diagnostics.Debug.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Diagnostics.FileVersionInfo.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Diagnostics.FileVersionInfo.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Diagnostics.Process.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Diagnostics.Process.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Diagnostics.StackTrace.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Diagnostics.StackTrace.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Diagnostics.TextWriterTraceListener.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Diagnostics.TextWriterTraceListener.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Diagnostics.Tools.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Diagnostics.Tools.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Diagnostics.TraceSource.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Diagnostics.TraceSource.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Diagnostics.Tracing.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Diagnostics.Tracing.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Drawing.Primitives.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Drawing.Primitives.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Dynamic.Runtime.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Dynamic.Runtime.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Globalization.Calendars.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Globalization.Calendars.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Globalization.Extensions.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Globalization.Extensions.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Globalization.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Globalization.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.IO.Compression.ZipFile.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.IO.Compression.ZipFile.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.IO.Compression.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.IO.Compression.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.IO.FileSystem.DriveInfo.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.IO.FileSystem.DriveInfo.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.IO.FileSystem.Primitives.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.IO.FileSystem.Primitives.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.IO.FileSystem.Watcher.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.IO.FileSystem.Watcher.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.IO.FileSystem.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.IO.FileSystem.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.IO.IsolatedStorage.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.IO.IsolatedStorage.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.IO.MemoryMappedFiles.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.IO.MemoryMappedFiles.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.IO.Pipes.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.IO.Pipes.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.IO.UnmanagedMemoryStream.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.IO.UnmanagedMemoryStream.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.IO.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.IO.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Linq.Expressions.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Linq.Expressions.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Linq.Parallel.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Linq.Parallel.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Linq.Queryable.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Linq.Queryable.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Linq.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Linq.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Net.Http.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Net.Http.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Net.NameResolution.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Net.NameResolution.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Net.NetworkInformation.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Net.NetworkInformation.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Net.Ping.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Net.Ping.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Net.Primitives.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Net.Primitives.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Net.Requests.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Net.Requests.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Net.Security.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Net.Security.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Net.Sockets.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Net.Sockets.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Net.WebHeaderCollection.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Net.WebHeaderCollection.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Net.WebSockets.Client.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Net.WebSockets.Client.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Net.WebSockets.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Net.WebSockets.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.ObjectModel.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.ObjectModel.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Reflection.Extensions.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Reflection.Extensions.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Reflection.Primitives.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Reflection.Primitives.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Reflection.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Reflection.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Resources.Reader.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Resources.Reader.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Resources.ResourceManager.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Resources.ResourceManager.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Resources.Writer.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Resources.Writer.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Runtime.CompilerServices.VisualC.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Runtime.CompilerServices.VisualC.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Runtime.Extensions.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Runtime.Extensions.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Runtime.Handles.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Runtime.Handles.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Runtime.InteropServices.RuntimeInformation.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Runtime.InteropServices.RuntimeInformation.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Runtime.InteropServices.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Runtime.InteropServices.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Runtime.Numerics.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Runtime.Numerics.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Runtime.Serialization.Formatters.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Runtime.Serialization.Formatters.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Runtime.Serialization.Json.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Runtime.Serialization.Json.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Runtime.Serialization.Primitives.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Runtime.Serialization.Primitives.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Runtime.Serialization.Xml.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Runtime.Serialization.Xml.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Runtime.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Runtime.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Security.Claims.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Security.Claims.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Security.Cryptography.Algorithms.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Security.Cryptography.Algorithms.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Security.Cryptography.Csp.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Security.Cryptography.Csp.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Security.Cryptography.Encoding.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Security.Cryptography.Encoding.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Security.Cryptography.Primitives.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Security.Cryptography.Primitives.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Security.Cryptography.X509Certificates.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Security.Cryptography.X509Certificates.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Security.Principal.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Security.Principal.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Security.SecureString.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Security.SecureString.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Text.Encoding.Extensions.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Text.Encoding.Extensions.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Text.Encoding.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Text.Encoding.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Text.RegularExpressions.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Text.RegularExpressions.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Threading.Overlapped.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Threading.Overlapped.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Threading.Tasks.Parallel.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Threading.Tasks.Parallel.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Threading.Tasks.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Threading.Tasks.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Threading.Thread.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Threading.Thread.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Threading.ThreadPool.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Threading.ThreadPool.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Threading.Timer.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Threading.Timer.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Threading.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Threading.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.ValueTuple.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.ValueTuple.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Xml.ReaderWriter.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Xml.ReaderWriter.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Xml.XDocument.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Xml.XDocument.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Xml.XPath.XDocument.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Xml.XPath.XDocument.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Xml.XPath.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Xml.XPath.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Xml.XmlDocument.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Xml.XmlDocument.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\System.Xml.XmlSerializer.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\System.Xml.XmlSerializer.dll',
+   'BINARY'),
+  ('pythonnet\\runtime\\netstandard.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pythonnet\\runtime\\netstandard.dll',
+   'BINARY'),
+  ('pywebview-6.2.1.dist-info\\INSTALLER',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pywebview-6.2.1.dist-info\\INSTALLER',
+   'DATA'),
+  ('pywebview-6.2.1.dist-info\\METADATA',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pywebview-6.2.1.dist-info\\METADATA',
+   'DATA'),
+  ('pywebview-6.2.1.dist-info\\RECORD',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pywebview-6.2.1.dist-info\\RECORD',
+   'DATA'),
+  ('pywebview-6.2.1.dist-info\\REQUESTED',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pywebview-6.2.1.dist-info\\REQUESTED',
+   'DATA'),
+  ('pywebview-6.2.1.dist-info\\WHEEL',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pywebview-6.2.1.dist-info\\WHEEL',
+   'DATA'),
+  ('pywebview-6.2.1.dist-info\\entry_points.txt',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pywebview-6.2.1.dist-info\\entry_points.txt',
+   'DATA'),
+  ('pywebview-6.2.1.dist-info\\licenses\\LICENSE',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pywebview-6.2.1.dist-info\\licenses\\LICENSE',
+   'DATA'),
+  ('pywebview-6.2.1.dist-info\\top_level.txt',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pywebview-6.2.1.dist-info\\top_level.txt',
+   'DATA'),
+  ('pyzk-0.9.dist-info\\INSTALLER',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pyzk-0.9.dist-info\\INSTALLER',
+   'DATA'),
+  ('pyzk-0.9.dist-info\\METADATA',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pyzk-0.9.dist-info\\METADATA',
+   'DATA'),
+  ('pyzk-0.9.dist-info\\RECORD',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pyzk-0.9.dist-info\\RECORD',
+   'DATA'),
+  ('pyzk-0.9.dist-info\\REQUESTED',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pyzk-0.9.dist-info\\REQUESTED',
+   'DATA'),
+  ('pyzk-0.9.dist-info\\WHEEL',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pyzk-0.9.dist-info\\WHEEL',
+   'DATA'),
+  ('pyzk-0.9.dist-info\\top_level.txt',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\pyzk-0.9.dist-info\\top_level.txt',
+   'DATA'),
+  ('realtime-2.30.0.dist-info\\INSTALLER',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\realtime-2.30.0.dist-info\\INSTALLER',
+   'DATA'),
+  ('realtime-2.30.0.dist-info\\METADATA',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\realtime-2.30.0.dist-info\\METADATA',
+   'DATA'),
+  ('realtime-2.30.0.dist-info\\RECORD',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\realtime-2.30.0.dist-info\\RECORD',
+   'DATA'),
+  ('realtime-2.30.0.dist-info\\WHEEL',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\realtime-2.30.0.dist-info\\WHEEL',
+   'DATA'),
+  ('realtime\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\realtime\\__init__.py',
+   'DATA'),
+  ('realtime\\_async\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\realtime\\_async\\__init__.py',
+   'DATA'),
+  ('realtime\\_async\\channel.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\realtime\\_async\\channel.py',
+   'DATA'),
+  ('realtime\\_async\\client.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\realtime\\_async\\client.py',
+   'DATA'),
+  ('realtime\\_async\\presence.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\realtime\\_async\\presence.py',
+   'DATA'),
+  ('realtime\\_async\\push.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\realtime\\_async\\push.py',
+   'DATA'),
+  ('realtime\\_async\\timer.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\realtime\\_async\\timer.py',
+   'DATA'),
+  ('realtime\\_sync\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\realtime\\_sync\\__init__.py',
+   'DATA'),
+  ('realtime\\_sync\\channel.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\realtime\\_sync\\channel.py',
+   'DATA'),
+  ('realtime\\_sync\\client.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\realtime\\_sync\\client.py',
+   'DATA'),
+  ('realtime\\_sync\\presence.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\realtime\\_sync\\presence.py',
+   'DATA'),
+  ('realtime\\exceptions.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\realtime\\exceptions.py',
+   'DATA'),
+  ('realtime\\message.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\realtime\\message.py',
+   'DATA'),
+  ('realtime\\py.typed',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\realtime\\py.typed',
+   'DATA'),
+  ('realtime\\transformers.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\realtime\\transformers.py',
+   'DATA'),
+  ('realtime\\types.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\realtime\\types.py',
+   'DATA'),
+  ('realtime\\utils.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\realtime\\utils.py',
+   'DATA'),
+  ('realtime\\version.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\realtime\\version.py',
+   'DATA'),
+  ('requests-2.34.2.dist-info\\INSTALLER',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests-2.34.2.dist-info\\INSTALLER',
+   'DATA'),
+  ('requests-2.34.2.dist-info\\METADATA',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests-2.34.2.dist-info\\METADATA',
+   'DATA'),
+  ('requests-2.34.2.dist-info\\RECORD',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests-2.34.2.dist-info\\RECORD',
+   'DATA'),
+  ('requests-2.34.2.dist-info\\REQUESTED',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests-2.34.2.dist-info\\REQUESTED',
+   'DATA'),
+  ('requests-2.34.2.dist-info\\WHEEL',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests-2.34.2.dist-info\\WHEEL',
+   'DATA'),
+  ('requests-2.34.2.dist-info\\licenses\\LICENSE',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests-2.34.2.dist-info\\licenses\\LICENSE',
+   'DATA'),
+  ('requests-2.34.2.dist-info\\licenses\\NOTICE',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests-2.34.2.dist-info\\licenses\\NOTICE',
+   'DATA'),
+  ('requests-2.34.2.dist-info\\top_level.txt',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests-2.34.2.dist-info\\top_level.txt',
+   'DATA'),
+  ('requests\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests\\__init__.py',
+   'DATA'),
+  ('requests\\__version__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests\\__version__.py',
+   'DATA'),
+  ('requests\\_internal_utils.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests\\_internal_utils.py',
+   'DATA'),
+  ('requests\\_types.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests\\_types.py',
+   'DATA'),
+  ('requests\\adapters.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests\\adapters.py',
+   'DATA'),
+  ('requests\\api.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests\\api.py',
+   'DATA'),
+  ('requests\\auth.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests\\auth.py',
+   'DATA'),
+  ('requests\\certs.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests\\certs.py',
+   'DATA'),
+  ('requests\\compat.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests\\compat.py',
+   'DATA'),
+  ('requests\\cookies.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests\\cookies.py',
+   'DATA'),
+  ('requests\\exceptions.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests\\exceptions.py',
+   'DATA'),
+  ('requests\\help.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests\\help.py',
+   'DATA'),
+  ('requests\\hooks.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests\\hooks.py',
+   'DATA'),
+  ('requests\\models.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests\\models.py',
+   'DATA'),
+  ('requests\\packages.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests\\packages.py',
+   'DATA'),
+  ('requests\\py.typed',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests\\py.typed',
+   'DATA'),
+  ('requests\\sessions.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests\\sessions.py',
+   'DATA'),
+  ('requests\\status_codes.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests\\status_codes.py',
+   'DATA'),
+  ('requests\\structures.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests\\structures.py',
+   'DATA'),
+  ('requests\\utils.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\requests\\utils.py',
+   'DATA'),
+  ('select.pyd',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\select.pyd',
+   'EXTENSION'),
+  ('setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\INSTALLER',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\INSTALLER',
+   'DATA'),
+  ('setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\METADATA',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\METADATA',
+   'DATA'),
+  ('setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\RECORD',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\RECORD',
+   'DATA'),
+  ('setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\REQUESTED',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\REQUESTED',
+   'DATA'),
+  ('setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\WHEEL',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\WHEEL',
+   'DATA'),
+  ('setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\licenses\\LICENSE',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\licenses\\LICENSE',
+   'DATA'),
+  ('setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\top_level.txt',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\setuptools\\_vendor\\importlib_metadata-8.7.1.dist-info\\top_level.txt',
+   'DATA'),
+  ('setuptools\\_vendor\\jaraco\\text\\Lorem ipsum.txt',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco\\text\\Lorem '
+   'ipsum.txt',
+   'DATA'),
+  ('storage3-2.30.0.dist-info\\INSTALLER',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3-2.30.0.dist-info\\INSTALLER',
+   'DATA'),
+  ('storage3-2.30.0.dist-info\\METADATA',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3-2.30.0.dist-info\\METADATA',
+   'DATA'),
+  ('storage3-2.30.0.dist-info\\RECORD',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3-2.30.0.dist-info\\RECORD',
+   'DATA'),
+  ('storage3-2.30.0.dist-info\\WHEEL',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3-2.30.0.dist-info\\WHEEL',
+   'DATA'),
+  ('storage3\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3\\__init__.py',
+   'DATA'),
+  ('storage3\\_async\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3\\_async\\__init__.py',
+   'DATA'),
+  ('storage3\\_async\\analytics.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3\\_async\\analytics.py',
+   'DATA'),
+  ('storage3\\_async\\bucket.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3\\_async\\bucket.py',
+   'DATA'),
+  ('storage3\\_async\\client.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3\\_async\\client.py',
+   'DATA'),
+  ('storage3\\_async\\file_api.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3\\_async\\file_api.py',
+   'DATA'),
+  ('storage3\\_async\\request.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3\\_async\\request.py',
+   'DATA'),
+  ('storage3\\_async\\vectors.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3\\_async\\vectors.py',
+   'DATA'),
+  ('storage3\\_sync\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3\\_sync\\__init__.py',
+   'DATA'),
+  ('storage3\\_sync\\analytics.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3\\_sync\\analytics.py',
+   'DATA'),
+  ('storage3\\_sync\\bucket.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3\\_sync\\bucket.py',
+   'DATA'),
+  ('storage3\\_sync\\client.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3\\_sync\\client.py',
+   'DATA'),
+  ('storage3\\_sync\\file_api.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3\\_sync\\file_api.py',
+   'DATA'),
+  ('storage3\\_sync\\request.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3\\_sync\\request.py',
+   'DATA'),
+  ('storage3\\_sync\\vectors.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3\\_sync\\vectors.py',
+   'DATA'),
+  ('storage3\\constants.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3\\constants.py',
+   'DATA'),
+  ('storage3\\exceptions.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3\\exceptions.py',
+   'DATA'),
+  ('storage3\\py.typed',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3\\py.typed',
+   'DATA'),
+  ('storage3\\types.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3\\types.py',
+   'DATA'),
+  ('storage3\\utils.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3\\utils.py',
+   'DATA'),
+  ('storage3\\version.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\storage3\\version.py',
+   'DATA'),
+  ('supabase-2.30.0.dist-info\\INSTALLER',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase-2.30.0.dist-info\\INSTALLER',
+   'DATA'),
+  ('supabase-2.30.0.dist-info\\METADATA',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase-2.30.0.dist-info\\METADATA',
+   'DATA'),
+  ('supabase-2.30.0.dist-info\\RECORD',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase-2.30.0.dist-info\\RECORD',
+   'DATA'),
+  ('supabase-2.30.0.dist-info\\REQUESTED',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase-2.30.0.dist-info\\REQUESTED',
+   'DATA'),
+  ('supabase-2.30.0.dist-info\\WHEEL',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase-2.30.0.dist-info\\WHEEL',
+   'DATA'),
+  ('supabase-2.30.0.dist-info\\licenses\\LICENSE',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase-2.30.0.dist-info\\licenses\\LICENSE',
+   'DATA'),
+  ('supabase\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase\\__init__.py',
+   'DATA'),
+  ('supabase\\_async\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase\\_async\\__init__.py',
+   'DATA'),
+  ('supabase\\_async\\auth_client.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase\\_async\\auth_client.py',
+   'DATA'),
+  ('supabase\\_async\\client.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase\\_async\\client.py',
+   'DATA'),
+  ('supabase\\_sync\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase\\_sync\\__init__.py',
+   'DATA'),
+  ('supabase\\_sync\\auth_client.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase\\_sync\\auth_client.py',
+   'DATA'),
+  ('supabase\\_sync\\client.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase\\_sync\\client.py',
+   'DATA'),
+  ('supabase\\client.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase\\client.py',
+   'DATA'),
+  ('supabase\\lib\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase\\lib\\__init__.py',
+   'DATA'),
+  ('supabase\\lib\\client_options.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase\\lib\\client_options.py',
+   'DATA'),
+  ('supabase\\py.typed',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase\\py.typed',
+   'DATA'),
+  ('supabase\\types.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase\\types.py',
+   'DATA'),
+  ('supabase\\version.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase\\version.py',
+   'DATA'),
+  ('supabase_auth-2.30.0.dist-info\\INSTALLER',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth-2.30.0.dist-info\\INSTALLER',
+   'DATA'),
+  ('supabase_auth-2.30.0.dist-info\\METADATA',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth-2.30.0.dist-info\\METADATA',
+   'DATA'),
+  ('supabase_auth-2.30.0.dist-info\\RECORD',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth-2.30.0.dist-info\\RECORD',
+   'DATA'),
+  ('supabase_auth-2.30.0.dist-info\\WHEEL',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth-2.30.0.dist-info\\WHEEL',
+   'DATA'),
+  ('supabase_auth\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth\\__init__.py',
+   'DATA'),
+  ('supabase_auth\\_async\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth\\_async\\__init__.py',
+   'DATA'),
+  ('supabase_auth\\_async\\gotrue_admin_api.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth\\_async\\gotrue_admin_api.py',
+   'DATA'),
+  ('supabase_auth\\_async\\gotrue_admin_mfa_api.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth\\_async\\gotrue_admin_mfa_api.py',
+   'DATA'),
+  ('supabase_auth\\_async\\gotrue_admin_oauth_api.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth\\_async\\gotrue_admin_oauth_api.py',
+   'DATA'),
+  ('supabase_auth\\_async\\gotrue_base_api.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth\\_async\\gotrue_base_api.py',
+   'DATA'),
+  ('supabase_auth\\_async\\gotrue_client.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth\\_async\\gotrue_client.py',
+   'DATA'),
+  ('supabase_auth\\_async\\gotrue_mfa_api.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth\\_async\\gotrue_mfa_api.py',
+   'DATA'),
+  ('supabase_auth\\_async\\storage.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth\\_async\\storage.py',
+   'DATA'),
+  ('supabase_auth\\_sync\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth\\_sync\\__init__.py',
+   'DATA'),
+  ('supabase_auth\\_sync\\gotrue_admin_api.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth\\_sync\\gotrue_admin_api.py',
+   'DATA'),
+  ('supabase_auth\\_sync\\gotrue_admin_mfa_api.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth\\_sync\\gotrue_admin_mfa_api.py',
+   'DATA'),
+  ('supabase_auth\\_sync\\gotrue_admin_oauth_api.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth\\_sync\\gotrue_admin_oauth_api.py',
+   'DATA'),
+  ('supabase_auth\\_sync\\gotrue_base_api.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth\\_sync\\gotrue_base_api.py',
+   'DATA'),
+  ('supabase_auth\\_sync\\gotrue_client.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth\\_sync\\gotrue_client.py',
+   'DATA'),
+  ('supabase_auth\\_sync\\gotrue_mfa_api.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth\\_sync\\gotrue_mfa_api.py',
+   'DATA'),
+  ('supabase_auth\\_sync\\storage.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth\\_sync\\storage.py',
+   'DATA'),
+  ('supabase_auth\\constants.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth\\constants.py',
+   'DATA'),
+  ('supabase_auth\\errors.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth\\errors.py',
+   'DATA'),
+  ('supabase_auth\\helpers.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth\\helpers.py',
+   'DATA'),
+  ('supabase_auth\\py.typed',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth\\py.typed',
+   'DATA'),
+  ('supabase_auth\\timer.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth\\timer.py',
+   'DATA'),
+  ('supabase_auth\\types.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth\\types.py',
+   'DATA'),
+  ('supabase_auth\\version.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_auth\\version.py',
+   'DATA'),
+  ('supabase_functions-2.30.0.dist-info\\INSTALLER',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_functions-2.30.0.dist-info\\INSTALLER',
+   'DATA'),
+  ('supabase_functions-2.30.0.dist-info\\METADATA',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_functions-2.30.0.dist-info\\METADATA',
+   'DATA'),
+  ('supabase_functions-2.30.0.dist-info\\RECORD',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_functions-2.30.0.dist-info\\RECORD',
+   'DATA'),
+  ('supabase_functions-2.30.0.dist-info\\WHEEL',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_functions-2.30.0.dist-info\\WHEEL',
+   'DATA'),
+  ('supabase_functions\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_functions\\__init__.py',
+   'DATA'),
+  ('supabase_functions\\_async\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_functions\\_async\\__init__.py',
+   'DATA'),
+  ('supabase_functions\\_async\\functions_client.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_functions\\_async\\functions_client.py',
+   'DATA'),
+  ('supabase_functions\\_sync\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_functions\\_sync\\__init__.py',
+   'DATA'),
+  ('supabase_functions\\_sync\\functions_client.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_functions\\_sync\\functions_client.py',
+   'DATA'),
+  ('supabase_functions\\errors.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_functions\\errors.py',
+   'DATA'),
+  ('supabase_functions\\py.typed',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_functions\\py.typed',
+   'DATA'),
+  ('supabase_functions\\utils.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_functions\\utils.py',
+   'DATA'),
+  ('supabase_functions\\version.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\supabase_functions\\version.py',
+   'DATA'),
+  ('unicodedata.pyd',
+   'C:\\Users\\Almadina\\AppData\\Local\\Programs\\Python\\Python312\\DLLs\\unicodedata.pyd',
+   'EXTENSION'),
+  ('urllib3-2.7.0.dist-info\\INSTALLER',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3-2.7.0.dist-info\\INSTALLER',
+   'DATA'),
+  ('urllib3-2.7.0.dist-info\\METADATA',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3-2.7.0.dist-info\\METADATA',
+   'DATA'),
+  ('urllib3-2.7.0.dist-info\\RECORD',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3-2.7.0.dist-info\\RECORD',
+   'DATA'),
+  ('urllib3-2.7.0.dist-info\\REQUESTED',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3-2.7.0.dist-info\\REQUESTED',
+   'DATA'),
+  ('urllib3-2.7.0.dist-info\\WHEEL',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3-2.7.0.dist-info\\WHEEL',
+   'DATA'),
+  ('urllib3-2.7.0.dist-info\\licenses\\LICENSE.txt',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3-2.7.0.dist-info\\licenses\\LICENSE.txt',
+   'DATA'),
+  ('urllib3\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\__init__.py',
+   'DATA'),
+  ('urllib3\\_base_connection.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\_base_connection.py',
+   'DATA'),
+  ('urllib3\\_collections.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\_collections.py',
+   'DATA'),
+  ('urllib3\\_request_methods.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\_request_methods.py',
+   'DATA'),
+  ('urllib3\\_version.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\_version.py',
+   'DATA'),
+  ('urllib3\\connection.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\connection.py',
+   'DATA'),
+  ('urllib3\\connectionpool.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\connectionpool.py',
+   'DATA'),
+  ('urllib3\\contrib\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\contrib\\__init__.py',
+   'DATA'),
+  ('urllib3\\contrib\\emscripten\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\contrib\\emscripten\\__init__.py',
+   'DATA'),
+  ('urllib3\\contrib\\emscripten\\connection.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\contrib\\emscripten\\connection.py',
+   'DATA'),
+  ('urllib3\\contrib\\emscripten\\emscripten_fetch_worker.js',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\contrib\\emscripten\\emscripten_fetch_worker.js',
+   'DATA'),
+  ('urllib3\\contrib\\emscripten\\fetch.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\contrib\\emscripten\\fetch.py',
+   'DATA'),
+  ('urllib3\\contrib\\emscripten\\request.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\contrib\\emscripten\\request.py',
+   'DATA'),
+  ('urllib3\\contrib\\emscripten\\response.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\contrib\\emscripten\\response.py',
+   'DATA'),
+  ('urllib3\\contrib\\pyopenssl.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\contrib\\pyopenssl.py',
+   'DATA'),
+  ('urllib3\\contrib\\socks.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\contrib\\socks.py',
+   'DATA'),
+  ('urllib3\\exceptions.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\exceptions.py',
+   'DATA'),
+  ('urllib3\\fields.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\fields.py',
+   'DATA'),
+  ('urllib3\\filepost.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\filepost.py',
+   'DATA'),
+  ('urllib3\\http2\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\http2\\__init__.py',
+   'DATA'),
+  ('urllib3\\http2\\connection.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\http2\\connection.py',
+   'DATA'),
+  ('urllib3\\http2\\probe.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\http2\\probe.py',
+   'DATA'),
+  ('urllib3\\poolmanager.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\poolmanager.py',
+   'DATA'),
+  ('urllib3\\py.typed',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\py.typed',
+   'DATA'),
+  ('urllib3\\response.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\response.py',
+   'DATA'),
+  ('urllib3\\util\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\util\\__init__.py',
+   'DATA'),
+  ('urllib3\\util\\connection.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\util\\connection.py',
+   'DATA'),
+  ('urllib3\\util\\proxy.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\util\\proxy.py',
+   'DATA'),
+  ('urllib3\\util\\request.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\util\\request.py',
+   'DATA'),
+  ('urllib3\\util\\response.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\util\\response.py',
+   'DATA'),
+  ('urllib3\\util\\retry.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\util\\retry.py',
+   'DATA'),
+  ('urllib3\\util\\ssl_.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\util\\ssl_.py',
+   'DATA'),
+  ('urllib3\\util\\ssl_match_hostname.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\util\\ssl_match_hostname.py',
+   'DATA'),
+  ('urllib3\\util\\ssltransport.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\util\\ssltransport.py',
+   'DATA'),
+  ('urllib3\\util\\timeout.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\util\\timeout.py',
+   'DATA'),
+  ('urllib3\\util\\url.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\util\\url.py',
+   'DATA'),
+  ('urllib3\\util\\util.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\util\\util.py',
+   'DATA'),
+  ('urllib3\\util\\wait.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\urllib3\\util\\wait.py',
+   'DATA'),
+  ('web\\assets\\icon.png',
+   'D:\\Zk att project\\sync-agent\\web\\assets\\icon.png',
+   'DATA'),
+  ('web\\index.html',
+   'D:\\Zk att project\\sync-agent\\web\\index.html',
+   'DATA'),
+  ('web\\renderer.js',
+   'D:\\Zk att project\\sync-agent\\web\\renderer.js',
+   'DATA'),
+  ('web\\style.css', 'D:\\Zk att project\\sync-agent\\web\\style.css', 'DATA'),
+  ('websockets-15.0.1.dist-info\\INSTALLER',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\websockets-15.0.1.dist-info\\INSTALLER',
+   'DATA'),
+  ('websockets-15.0.1.dist-info\\LICENSE',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\websockets-15.0.1.dist-info\\LICENSE',
+   'DATA'),
+  ('websockets-15.0.1.dist-info\\METADATA',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\websockets-15.0.1.dist-info\\METADATA',
+   'DATA'),
+  ('websockets-15.0.1.dist-info\\RECORD',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\websockets-15.0.1.dist-info\\RECORD',
+   'DATA'),
+  ('websockets-15.0.1.dist-info\\WHEEL',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\websockets-15.0.1.dist-info\\WHEEL',
+   'DATA'),
+  ('websockets-15.0.1.dist-info\\entry_points.txt',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\websockets-15.0.1.dist-info\\entry_points.txt',
+   'DATA'),
+  ('websockets-15.0.1.dist-info\\top_level.txt',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\websockets-15.0.1.dist-info\\top_level.txt',
+   'DATA'),
+  ('websockets\\speedups.cp312-win_amd64.pyd',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\websockets\\speedups.cp312-win_amd64.pyd',
+   'EXTENSION'),
+  ('webview\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\__init__.py',
+   'DATA'),
+  ('webview\\__pyinstaller\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\__pyinstaller\\__init__.py',
+   'DATA'),
+  ('webview\\__pyinstaller\\hook-webview.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\__pyinstaller\\hook-webview.py',
+   'DATA'),
+  ('webview\\_version.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\_version.py',
+   'DATA'),
+  ('webview\\dom\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\dom\\__init__.py',
+   'DATA'),
+  ('webview\\dom\\classlist.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\dom\\classlist.py',
+   'DATA'),
+  ('webview\\dom\\dom.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\dom\\dom.py',
+   'DATA'),
+  ('webview\\dom\\element.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\dom\\element.py',
+   'DATA'),
+  ('webview\\dom\\event.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\dom\\event.py',
+   'DATA'),
+  ('webview\\dom\\propsdict.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\dom\\propsdict.py',
+   'DATA'),
+  ('webview\\errors.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\errors.py',
+   'DATA'),
+  ('webview\\event.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\event.py',
+   'DATA'),
+  ('webview\\guilib.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\guilib.py',
+   'DATA'),
+  ('webview\\http.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\http.py',
+   'DATA'),
+  ('webview\\js\\api.js',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\js\\api.js',
+   'DATA'),
+  ('webview\\js\\customize.js',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\js\\customize.js',
+   'DATA'),
+  ('webview\\js\\finish.js',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\js\\finish.js',
+   'DATA'),
+  ('webview\\js\\lib\\dom_json.js',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\js\\lib\\dom_json.js',
+   'DATA'),
+  ('webview\\js\\lib\\polyfill.js',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\js\\lib\\polyfill.js',
+   'DATA'),
+  ('webview\\js\\state.js',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\js\\state.js',
+   'DATA'),
+  ('webview\\lib\\Microsoft.Web.WebView2.Core.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\lib\\Microsoft.Web.WebView2.Core.dll',
+   'BINARY'),
+  ('webview\\lib\\Microsoft.Web.WebView2.WinForms.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\lib\\Microsoft.Web.WebView2.WinForms.dll',
+   'BINARY'),
+  ('webview\\lib\\WebBrowserInterop.x64.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\lib\\WebBrowserInterop.x64.dll',
+   'BINARY'),
+  ('webview\\lib\\WebBrowserInterop.x86.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\lib\\WebBrowserInterop.x86.dll',
+   'BINARY'),
+  ('webview\\lib\\pywebview-android.jar',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\lib\\pywebview-android.jar',
+   'DATA'),
+  ('webview\\lib\\runtimes\\win-arm64\\native\\WebView2Loader.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\lib\\runtimes\\win-arm64\\native\\WebView2Loader.dll',
+   'BINARY'),
+  ('webview\\lib\\runtimes\\win-x64\\native\\WebView2Loader.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\lib\\runtimes\\win-x64\\native\\WebView2Loader.dll',
+   'BINARY'),
+  ('webview\\lib\\runtimes\\win-x86\\native\\WebView2Loader.dll',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\lib\\runtimes\\win-x86\\native\\WebView2Loader.dll',
+   'BINARY'),
+  ('webview\\localization.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\localization.py',
+   'DATA'),
+  ('webview\\menu.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\menu.py',
+   'DATA'),
+  ('webview\\models.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\models.py',
+   'DATA'),
+  ('webview\\platforms\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\platforms\\__init__.py',
+   'DATA'),
+  ('webview\\platforms\\android\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\platforms\\android\\__init__.py',
+   'DATA'),
+  ('webview\\platforms\\android\\app.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\platforms\\android\\app.py',
+   'DATA'),
+  ('webview\\platforms\\android\\base.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\platforms\\android\\base.py',
+   'DATA'),
+  ('webview\\platforms\\android\\event.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\platforms\\android\\event.py',
+   'DATA'),
+  ('webview\\platforms\\android\\jclass\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\platforms\\android\\jclass\\__init__.py',
+   'DATA'),
+  ('webview\\platforms\\android\\jclass\\app.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\platforms\\android\\jclass\\app.py',
+   'DATA'),
+  ('webview\\platforms\\android\\jclass\\content.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\platforms\\android\\jclass\\content.py',
+   'DATA'),
+  ('webview\\platforms\\android\\jclass\\net.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\platforms\\android\\jclass\\net.py',
+   'DATA'),
+  ('webview\\platforms\\android\\jclass\\os.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\platforms\\android\\jclass\\os.py',
+   'DATA'),
+  ('webview\\platforms\\android\\jclass\\view.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\platforms\\android\\jclass\\view.py',
+   'DATA'),
+  ('webview\\platforms\\android\\jclass\\webkit.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\platforms\\android\\jclass\\webkit.py',
+   'DATA'),
+  ('webview\\platforms\\android\\jinterface\\__init__.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\platforms\\android\\jinterface\\__init__.py',
+   'DATA'),
+  ('webview\\platforms\\android\\jinterface\\pywebview.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\platforms\\android\\jinterface\\pywebview.py',
+   'DATA'),
+  ('webview\\platforms\\android\\jinterface\\view.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\platforms\\android\\jinterface\\view.py',
+   'DATA'),
+  ('webview\\platforms\\android\\jinterface\\webkit.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\platforms\\android\\jinterface\\webkit.py',
+   'DATA'),
+  ('webview\\platforms\\cef.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\platforms\\cef.py',
+   'DATA'),
+  ('webview\\platforms\\cocoa.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\platforms\\cocoa.py',
+   'DATA'),
+  ('webview\\platforms\\edgechromium.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\platforms\\edgechromium.py',
+   'DATA'),
+  ('webview\\platforms\\gtk.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\platforms\\gtk.py',
+   'DATA'),
+  ('webview\\platforms\\mshtml.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\platforms\\mshtml.py',
+   'DATA'),
+  ('webview\\platforms\\qt.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\platforms\\qt.py',
+   'DATA'),
+  ('webview\\platforms\\win32.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\platforms\\win32.py',
+   'DATA'),
+  ('webview\\platforms\\winforms.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\platforms\\winforms.py',
+   'DATA'),
+  ('webview\\py.typed',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\py.typed',
+   'DATA'),
+  ('webview\\screen.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\screen.py',
+   'DATA'),
+  ('webview\\state.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\state.py',
+   'DATA'),
+  ('webview\\util.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\util.py',
+   'DATA'),
+  ('webview\\window.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\webview\\window.py',
+   'DATA'),
+  ('yarl\\_quoting_c.cp312-win_amd64.pyd',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\yarl\\_quoting_c.cp312-win_amd64.pyd',
+   'EXTENSION'),
+  ('zk\\__init__.py',
+   'D:\\Zk att project\\sync-agent\\.venv\\Lib\\site-packages\\zk\\__init__.py',
+   'DATA'),
+  ('zk\\attendance.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\zk\\attendance.py',
+   'DATA'),
+  ('zk\\base.py',
+   'D:\\Zk att project\\sync-agent\\.venv\\Lib\\site-packages\\zk\\base.py',
+   'DATA'),
+  ('zk\\const.py',
+   'D:\\Zk att project\\sync-agent\\.venv\\Lib\\site-packages\\zk\\const.py',
+   'DATA'),
+  ('zk\\exception.py',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\zk\\exception.py',
+   'DATA'),
+  ('zk\\finger.py',
+   'D:\\Zk att project\\sync-agent\\.venv\\Lib\\site-packages\\zk\\finger.py',
+   'DATA'),
+  ('zk\\user.py',
+   'D:\\Zk att project\\sync-agent\\.venv\\Lib\\site-packages\\zk\\user.py',
+   'DATA'),
+  ('zstandard\\_cffi.cp312-win_amd64.pyd',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\zstandard\\_cffi.cp312-win_amd64.pyd',
+   'EXTENSION'),
+  ('zstandard\\backend_c.cp312-win_amd64.pyd',
+   'D:\\Zk att '
+   'project\\sync-agent\\.venv\\Lib\\site-packages\\zstandard\\backend_c.cp312-win_amd64.pyd',
+   'EXTENSION')],)

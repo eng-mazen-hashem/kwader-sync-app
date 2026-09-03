@@ -1,0 +1,1 @@
+ALTER TABLE payrolls ADD COLUMN IF NOT EXISTS breakdown JSONB DEFAULT '[]'::jsonb;

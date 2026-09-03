@@ -1,0 +1,562 @@
+/* Devices.css - Obsidian Luxe Styling for Kwader Device Management */
+
+.devices-luxe-container {
+    padding: 2rem;
+    max-width: 1440px;
+    margin: 0 auto;
+    animation: fadeIn 0.4s ease-out;
+}
+
+.devices-header {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+@media (min-width: 768px) {
+    .devices-header {
+        flex-direction: row;
+        align-items: flex-end;
+        justify-content: space-between;
+    }
+}
+
+.devices-title {
+    font-size: 2.25rem;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    margin-bottom: 0.5rem;
+    color: #fff;
+    font-family: inherit;
+}
+
+.devices-subtitle {
+    color: var(--text-muted, #adaaaa);
+    max-width: 36rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.devices-header-stats {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.device-stat-box {
+    background: var(--bg-tertiary, #1a1919);
+    border: 1px solid rgba(119, 117, 117, 0.15);
+    padding: 1rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 160px;
+}
+
+.stat-icon-wrapper {
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-icon-wrapper.primary {
+    background: rgba(159, 167, 255, 0.1);
+    color: #9fa7ff;
+}
+
+.stat-icon-wrapper.secondary {
+    background: rgba(193, 128, 255, 0.1);
+    color: #c180ff;
+}
+
+.stat-details p {
+    margin: 0;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted, #adaaaa);
+}
+
+.stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.devices-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .devices-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1280px) {
+    .devices-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Device Card */
+.device-card {
+    background: var(--bg-secondary, #131313);
+    border: 1px solid rgba(119, 117, 117, 0.1);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.device-card:hover {
+    background: var(--bg-tertiary, #1a1919);
+    border-color: rgba(119, 117, 117, 0.2);
+}
+
+.device-card-content {
+    padding: 1.5rem;
+}
+
+.device-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+}
+
+.device-info-hero {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.device-icon-box {
+    width: 3rem;
+    height: 3rem;
+    background: #201f1f;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(119, 117, 117, 0.2);
+    color: #adaaaa;
+    font-size: 1.5rem;
+}
+
+.device-name {
+    font-weight: 700;
+    font-size: 1.125rem;
+    line-height: 1.2;
+    margin: 0;
+    color: #fff;
+}
+
+.device-model {
+    font-size: 0.75rem;
+    color: #adaaaa;
+}
+
+.device-status-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.device-status-badge.online {
+    background: rgba(193, 128, 255, 0.1);
+    border: 1px solid rgba(193, 128, 255, 0.2);
+    color: #c180ff;
+}
+
+.device-status-badge.offline {
+    background: rgba(255, 110, 132, 0.1);
+    border: 1px solid rgba(255, 110, 132, 0.2);
+    color: #ff6e84;
+}
+
+.status-dot {
+    position: relative;
+    display: flex;
+    width: 0.5rem;
+    height: 0.5rem;
+}
+
+.status-dot-ping {
+    position: absolute;
+    display: inline-flex;
+    height: 100%;
+    width: 100%;
+    border-radius: 9999px;
+    opacity: 0.75;
+}
+
+.status-dot-core {
+    position: relative;
+    display: inline-flex;
+    border-radius: 9999px;
+    height: 0.5rem;
+    width: 0.5rem;
+}
+
+.device-status-badge.online .status-dot-ping {
+    background-color: #c180ff;
+    animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.device-status-badge.online .status-dot-core {
+    background-color: #c180ff;
+}
+
+.device-status-badge.offline .status-dot-core {
+    background-color: #ff6e84;
+}
+
+@keyframes ping {
+    75%, 100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+.device-actions-row {
+    position: absolute;
+    top: 1rem;
+    inset-inline-end: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    opacity: 0;
+    transform: translateY(-5px);
+    transition: all 0.2s ease;
+}
+
+@media (max-width: 768px) {
+    .device-actions-row {
+        opacity: 1;
+        transform: translateY(0);
+        position: relative;
+        top: auto;
+        inset-inline-end: auto;
+        margin-top: 1rem;
+        justify-content: flex-end;
+    }
+}
+
+.device-card:hover .device-actions-row {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.device-action-btn {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    color: #adaaaa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.device-action-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.device-action-btn.danger:hover {
+    background: rgba(255, 110, 132, 0.1);
+    color: #ff6e84;
+    border-color: rgba(255, 110, 132, 0.2);
+}
+
+.device-details-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.device-detail-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+}
+
+.device-detail-label {
+    color: #adaaaa;
+}
+
+.device-detail-value {
+    color: #fff;
+    font-family: monospace;
+    direction: ltr;
+}
+
+.device-detail-item.offline-state {
+    opacity: 0.6;
+}
+
+.device-detail-value.offline-alert {
+    color: #ff6e84;
+    font-weight: 500;
+    font-family: inherit;
+    direction: rtl;
+}
+
+.device-sync-btn {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.device-sync-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(159, 167, 255, 0.2);
+}
+
+.device-sync-btn.offline-mode {
+    background: rgba(255, 110, 132, 0.05);
+    color: #ff6e84;
+    border-color: rgba(255, 110, 132, 0.1);
+}
+
+.device-sync-btn.offline-mode:hover {
+    background: rgba(255, 110, 132, 0.1);
+}
+
+.device-card-glow {
+    height: 0.25rem;
+    background: linear-gradient(90deg, transparent, rgba(193, 128, 255, 0.3), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.device-card:hover .device-card-glow {
+    opacity: 1;
+}
+
+/* Insight Bento - taking 2 columns */
+.device-insight-bento {
+    grid-column: 1 / -1;
+    background: var(--bg-tertiary, #1a1919);
+    border: 1px solid rgba(119, 117, 117, 0.15);
+    border-radius: 0.75rem;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    align-items: center;
+}
+
+@media (min-width: 768px) {
+    .device-insight-bento {
+        grid-column: span 2;
+        flex-direction: row;
+    }
+}
+
+.insight-content {
+    flex: 1;
+}
+
+.insight-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #9fa7ff;
+    margin-bottom: 1rem;
+}
+
+.insight-badge span {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.insight-title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #fff;
+}
+
+.insight-desc {
+    color: #adaaaa;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.insight-stats-container {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.insight-button {
+    background: #6c63ff;
+    color: #fff;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.insight-button:hover {
+    background: #5a52d5;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3);
+}
+
+.insight-visual {
+    width: 100%;
+    height: 12rem;
+    border-radius: 0.75rem;
+    background: #131313;
+    border: 1px solid rgba(119, 117, 117, 0.2);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+@media (min-width: 768px) {
+    .insight-visual {
+        width: 16rem;
+    }
+}
+
+.insight-visual::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(159, 167, 255, 0.1) 0%, transparent 70%);
+}
+
+.visual-value {
+    font-size: 2.25rem;
+    font-weight: 900;
+    color: #fff;
+    position: relative;
+    z-index: 1;
+}
+
+.visual-value span {
+    color: #9fa7ff;
+    font-size: 1.25rem;
+}
+
+.visual-label {
+    font-size: 0.625rem;
+    color: #adaaaa;
+    text-transform: uppercase;
+    font-weight: 700;
+    position: relative;
+    z-index: 1;
+    margin-top: 0.25rem;
+}
+
+/* Add Device CTA Card */
+.device-add-cta {
+    background: rgba(108, 99, 255, 0.05);
+    border: 1px dashed rgba(108, 99, 255, 0.3);
+    border-radius: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    min-height: 300px;
+}
+
+.device-add-cta:hover {
+    background: rgba(108, 99, 255, 0.1);
+    border-color: rgba(108, 99, 255, 0.5);
+}
+
+.add-cta-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    background: rgba(108, 99, 255, 0.2);
+    color: #9fa7ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.875rem;
+    margin-bottom: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.device-add-cta:hover .add-cta-icon {
+    transform: scale(1.1);
+}
+
+.add-cta-title {
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: #fff;
+    margin: 0 0 0.5rem 0;
+}
+
+.add-cta-desc {
+    font-size: 0.75rem;
+    color: #adaaaa;
+    margin: 0;
+    padding: 0 1rem;
+}
+
+/* Empty State Override */
+.devices-empty-state {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    background: var(--bg-tertiary);
+    border-radius: 1rem;
+    border: 1px dashed var(--border-color);
+    text-align: center;
+}

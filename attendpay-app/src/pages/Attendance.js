@@ -27,6 +27,7 @@ const STATUS_CFG = {
     leave:            { label: 'statusLeave',           cls: 'att-chip-leave',           var: '--att-leave' },
     manual:           { label: 'statusManual',          cls: 'att-chip-manual',          var: '--att-manual' },
     missing_checkout: { label: 'statusMissingCheckout', cls: 'att-chip-missing-checkout', var: '--att-missing' },
+    missing_checkin:  { label: 'statusMissingCheckin',  cls: 'att-chip-missing-checkout', var: '--att-missing' },
 };
 const getCfg = (status) => STATUS_CFG[status] || STATUS_CFG.leave;
 
@@ -209,7 +210,7 @@ function TimelineRow({ record, index, t, labels, onRefresh }) {
                         </div>
                     </div>
 
-                    {/* Status chip + manual badge */}
+                    {/* Status chip + manual badge + mark absent button */}
                     <div className="att-chips">
                         <div className={`att-status-chip ${cfg.cls}`}>
                             <span
@@ -223,6 +224,63 @@ function TimelineRow({ record, index, t, labels, onRefresh }) {
                                 <PenLine size={11} />
                                 {t.statusManual ?? 'Manual'}
                             </div>
+                        )}
+                        {!isAbsent && (
+                            <button
+                                className="att-btn-mark-absent-sm"
+                                title="تحويل السجل إلى غائب وتصفير الساعات الخاطئة"
+                                onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (!window.confirm(`هل أنت تأكد من تسجيل الموظف (${name}) كـ غائب بتاريخ ${record.date || 'اليوم'} وتصفير الساعات؟`)) return;
+                                    setResolving(true);
+                                    try {
+                                        if (record.id) {
+                                            await supabase
+                                                .from('processed_attendance')
+                                                .update({
+                                                    check_in: null,
+                                                    check_out: null,
+                                                    work_hours: 0,
+                                                    late_minutes: 0,
+                                                    early_leave_minutes: 0,
+                                                    status: 'absent',
+                                                    status_reason: 'تم التعديل إلى غائب بواسطة المدير'
+                                                })
+                                                .eq('id', record.id);
+                                        }
+
+                                        const pin = record.employees?.device_pin || record.user_pin;
+                                        const cid = record.company_id || record.employees?.company_id;
+                                        const targetDate = record.date;
+                                        if (pin && cid && targetDate) {
+                                            const nextD = new Date(targetDate);
+                                            nextD.setDate(nextD.getDate() + 1);
+                                            const nextStr = nextD.toISOString().split('T')[0];
+                                            const dayStart = `${targetDate}T00:00:00`;
+                                            const dayEnd   = `${nextStr}T14:00:00`;
+                                            await supabase
+                                                .from('raw_attendance_logs')
+                                                .delete()
+                                                .eq('company_id', cid)
+                                                .eq('user_pin', pin)
+                                                .gte('timestamp', dayStart)
+                                                .lte('timestamp', dayEnd);
+                                        }
+
+                                        toast.success(`تم تسجيل ${name} كـ غائب بنجاح`);
+                                        if (onRefresh) onRefresh();
+                                    } catch (err) {
+                                        console.error('[TimelineRow] handleMarkAbsent error:', err);
+                                        toast.error('حدث خطأ أثناء تحويل السجل إلى غائب');
+                                    } finally {
+                                        setResolving(false);
+                                    }
+                                }}
+                                disabled={resolving}
+                            >
+                                <UserX size={12} />
+                                تحويل لغائب
+                            </button>
                         )}
                     </div>
                 </div>
@@ -554,23 +612,63 @@ function AttendanceReportModal({ isOpen, onClose, employees, company }) {
     const statusLabel = (s) => ({
         present: 'حاضر', late: 'متأخر', absent: 'غائب',
         early_leave: 'انصراف مبكر', leave: 'إجازة', manual: 'يدوي',
-        missing_checkout: 'انصراف مفقود ⚠️',
+        missing_checkout: 'انصراف مفقود (خصم نصف شفت) ⚠️',
+        missing_checkin: 'دخول مفقود (خصم نصف شفت) ⚠️',
     }[s] || s);
 
     const fetchReport = async () => {
         if (!empId) { toast.error(t.errSelectEmployee); return; }
         setLoading(true);
         try {
+            const { data: shiftData } = await supabase
+                .from('shift_employees')
+                .select('shifts(start_time, end_time, shift_type, target_hours, deduct_half_on_missing, has_break, break_duration)')
+                .eq('employee_id', empId)
+                .limit(1);
+
+            const empShift = Array.isArray(shiftData) && shiftData.length > 0 ? shiftData[0]?.shifts : null;
+
             const { data, error } = await supabase
                 .from('processed_attendance')
-                .select('date, check_in, check_out, status, work_hours, late_minutes, early_leave_minutes')
+                .select('id, date, check_in, check_out, status, work_hours, late_minutes, early_leave_minutes')
                 .eq('company_id', company.id)
                 .eq('employee_id', empId)
                 .gte('date', dateFrom)
                 .lte('date', dateTo)
                 .order('date', { ascending: true });
             if (error) throw error;
-            setRows(data || []);
+
+            let shiftHours = 8;
+            if (empShift) {
+                if (empShift.shift_type === 'flexible') {
+                    shiftHours = Number(empShift.target_hours || 8);
+                } else if (empShift.start_time && empShift.end_time) {
+                    const [sh, sm] = empShift.start_time.split(':').map(Number);
+                    const [eh, em] = empShift.end_time.split(':').map(Number);
+                    let sMins = sh * 60 + sm;
+                    let eMins = eh * 60 + em;
+                    if (eMins <= sMins) eMins += 24 * 60;
+                    let durationMins = eMins - sMins;
+                    if (empShift.has_break && empShift.break_duration) {
+                        durationMins -= Number(empShift.break_duration);
+                    }
+                    shiftHours = Math.max(0, durationMins / 60);
+                }
+            }
+            const halfShiftHours = Math.round((shiftHours / 2) * 100) / 100;
+
+            const processedRows = (data || []).map(r => {
+                const isMissing = r.status === 'missing_checkout' || r.status === 'missing_checkin' || (!r.check_in && r.check_out) || (r.check_in && !r.check_out);
+                if (isMissing && empShift?.deduct_half_on_missing) {
+                    return {
+                        ...r,
+                        work_hours: halfShiftHours
+                    };
+                }
+                return r;
+            });
+
+            setRows(processedRows);
             setFetched(true);
         } catch {
             toast.error(t.errFetchReport);
@@ -579,8 +677,55 @@ function AttendanceReportModal({ isOpen, onClose, employees, company }) {
         }
     };
 
+    const handleMarkAbsent = async (r) => {
+        if (!window.confirm(`هل أنت تأكد من تسجيل الموظف كـ غائب بتاريخ ${r.date} وتصفير الساعات الخاطئة؟`)) {
+            return;
+        }
+        setLoading(true);
+        try {
+            if (r.id) {
+                await supabase
+                    .from('processed_attendance')
+                    .update({
+                        check_in: null,
+                        check_out: null,
+                        work_hours: 0,
+                        late_minutes: 0,
+                        early_leave_minutes: 0,
+                        status: 'absent',
+                        status_reason: 'تم التعديل إلى غائب بواسطة المدير'
+                    })
+                    .eq('id', r.id);
+            }
+
+            const emp = employees.find(e => e.id === empId);
+            if (emp?.device_pin && company?.id) {
+                const nextD = new Date(r.date);
+                nextD.setDate(nextD.getDate() + 1);
+                const nextStr = nextD.toISOString().split('T')[0];
+                const dayStart = `${r.date}T00:00:00`;
+                const dayEnd   = `${nextStr}T14:00:00`;
+                await supabase
+                    .from('raw_attendance_logs')
+                    .delete()
+                    .eq('company_id', company.id)
+                    .eq('user_pin', emp.device_pin)
+                    .gte('timestamp', dayStart)
+                    .lte('timestamp', dayEnd);
+            }
+
+            toast.success(`تم تحويل يوم ${r.date} إلى غائب بنجاح`);
+            await fetchReport();
+        } catch (err) {
+            console.error('[AttendanceReportModal] handleMarkAbsent error:', err);
+            toast.error('حدث خطأ أثناء تعديل السجل');
+            setLoading(false);
+        }
+    };
+
     const summary = {
         present: rows.filter(r => ['present', 'manual'].includes(r.status)).length,
+        missingPunch: rows.filter(r => ['missing_checkout', 'missing_checkin'].includes(r.status)).length,
         late:    rows.filter(r => r.status === 'late').length,
         absent:  rows.filter(r => r.status === 'absent').length,
         leave:   rows.filter(r => r.status === 'leave').length,
@@ -671,6 +816,7 @@ function AttendanceReportModal({ isOpen, onClose, employees, company }) {
                         <div className="att-report-summary">
                             {[
                                 { label: t.repDaysPresent,  val: summary.present,          cls: 'rep-green'  },
+                                { label: 'بصمة مفقودة (نصف شفت)', val: summary.missingPunch, cls: 'rep-amber' },
                                 { label: t.repLate,         val: summary.late,             cls: 'rep-amber'  },
                                 { label: t.repAbsent,       val: summary.absent,           cls: 'rep-red'    },
                                 { label: t.repLeave,        val: summary.leave,            cls: 'rep-blue'   },
@@ -701,6 +847,7 @@ function AttendanceReportModal({ isOpen, onClose, employees, company }) {
                                                 <th>تأخر (د)</th>
                                                 <th>مبكر (د)</th>
                                                 <th>الحالة</th>
+                                                <th>الإجراءات</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -716,6 +863,18 @@ function AttendanceReportModal({ isOpen, onClose, employees, company }) {
                                                         <span className={`att-rep-status att-rep-s-${r.status}`}>
                                                             {statusLabel(r.status)}
                                                         </span>
+                                                    </td>
+                                                    <td>
+                                                        {r.status !== 'absent' && (
+                                                            <button
+                                                                className="att-btn-mark-absent"
+                                                                title="تحويل السجل إلى غائب وتصفير الساعات الخاطئة"
+                                                                onClick={() => handleMarkAbsent(r)}
+                                                            >
+                                                                <UserX size={13} />
+                                                                تحويل لغائب
+                                                            </button>
+                                                        )}
                                                     </td>
                                                 </tr>
                                             ))}
@@ -794,7 +953,10 @@ function Attendance() {
 
         try {
             const { data: dbshifts } = await supabase.from('shifts').select('id, name, start_time, end_time, shift_type, target_hours, has_break, break_duration, break_policy, grace_minutes, deduct_half_on_missing').eq('company_id', company.id);
-            const { data: dbsm }     = await supabase.from('shift_employees').select('employee_id, shift_id');
+            const shiftIds = (dbshifts || []).map(s => s.id);
+            const { data: dbsm }     = shiftIds.length > 0
+                ? await supabase.from('shift_employees').select('employee_id, shift_id').in('shift_id', shiftIds)
+                : { data: [] };
             setDbShifts(dbshifts || []);
             setDbShiftMappings(dbsm || []);
 

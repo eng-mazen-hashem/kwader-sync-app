@@ -143,12 +143,17 @@ BEGIN
 
     -- ─── 3. CLEANUP PREVIOUS OPEN DAYS ──────────────────────────
     UPDATE processed_attendance
-    SET status = 'missing_checkout', work_hours = 0
+    SET status = 'missing_checkout',
+        work_hours = CASE
+            WHEN v_shift.id IS NOT NULL AND COALESCE(v_shift.deduct_half_on_missing, false) THEN ROUND((v_expected_hours / 2.0)::numeric, 2)
+            ELSE 0
+        END
     WHERE employee_id = v_employee_id
       AND company_id = NEW.company_id
       AND date < v_new_date
       AND check_out IS NULL
       AND status != 'missing_checkout';
+
 
     -- ─── 4. CALCULATE LOGICAL BOUNDARIES ──────────────────────────
     IF v_shift.id IS NOT NULL AND v_shift.start_time IS NOT NULL THEN
@@ -326,3 +331,76 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Re-attach the trigger for both INSERT and UPDATE of is_processed
+DROP TRIGGER IF EXISTS on_raw_attendance_insert ON raw_attendance_logs;
+CREATE TRIGGER on_raw_attendance_insert
+BEFORE INSERT OR UPDATE OF is_processed ON raw_attendance_logs
+FOR EACH ROW
+EXECUTE FUNCTION process_raw_attendance_trigger();
+
+-- Create RPC to safely reprocess all attendance for shifts with deduct_half_on_missing enabled (retroactive)
+CREATE OR REPLACE FUNCTION reprocess_deduct_half_shifts(p_shift_id uuid DEFAULT NULL)
+RETURNS void AS $$
+DECLARE
+    emp_record record;
+    log_rec record;
+BEGIN
+    -- 1. Update processed_attendance directly retroactively for missing checkin/checkout on enabled shifts
+    UPDATE processed_attendance pa
+    SET work_hours = ROUND((
+        CASE 
+            WHEN s.shift_type = 'flexible' THEN COALESCE(s.target_hours, 8)
+            ELSE (
+                CASE 
+                    WHEN (
+                        (cast(substring(s.end_time::text from 1 for 2) as int) * 60 + cast(substring(s.end_time::text from 4 for 2) as int)) 
+                        <= 
+                        (cast(substring(s.start_time::text from 1 for 2) as int) * 60 + cast(substring(s.start_time::text from 4 for 2) as int))
+                    ) THEN 
+                        ((cast(substring(s.end_time::text from 1 for 2) as int) * 60 + cast(substring(s.end_time::text from 4 for 2) as int) + 1440) - 
+                         (cast(substring(s.start_time::text from 1 for 2) as int) * 60 + cast(substring(s.start_time::text from 4 for 2) as int))) / 60.0
+                    ELSE 
+                        ((cast(substring(s.end_time::text from 1 for 2) as int) * 60 + cast(substring(s.end_time::text from 4 for 2) as int)) - 
+                         (cast(substring(s.start_time::text from 1 for 2) as int) * 60 + cast(substring(s.start_time::text from 4 for 2) as int))) / 60.0
+                END
+            )
+        END / 2.0
+    )::numeric, 2)
+    FROM shift_employees se
+    JOIN shifts s ON s.id = se.shift_id
+    WHERE pa.employee_id = se.employee_id
+      AND s.deduct_half_on_missing = true
+      AND (p_shift_id IS NULL OR s.id = p_shift_id)
+      AND (
+          pa.status IN ('missing_checkin', 'missing_checkout')
+          OR (pa.check_in IS NULL AND pa.check_out IS NOT NULL)
+          OR (pa.check_in IS NOT NULL AND pa.check_out IS NULL)
+      );
+
+    -- 2. Touch raw attendance logs chronologically to re-trigger process_raw_attendance_trigger()
+    FOR emp_record IN 
+        SELECT DISTINCT se.employee_id 
+        FROM shift_employees se
+        JOIN shifts s ON s.id = se.shift_id
+        WHERE s.deduct_half_on_missing = true
+          AND (p_shift_id IS NULL OR s.id = p_shift_id)
+    LOOP
+        FOR log_rec IN 
+            SELECT r.id 
+            FROM raw_attendance_logs r
+            JOIN employees e ON e.device_pin = r.user_pin AND e.company_id = r.company_id
+            WHERE e.id = emp_record.employee_id 
+            ORDER BY r.timestamp ASC
+        LOOP
+            UPDATE raw_attendance_logs
+            SET is_processed = false
+            WHERE id = log_rec.id;
+        END LOOP;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Perform immediate retroactive reprocess for all existing shifts with deduct_half_on_missing = true
+SELECT reprocess_deduct_half_shifts(NULL::uuid);
+

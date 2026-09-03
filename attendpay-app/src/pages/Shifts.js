@@ -844,6 +844,7 @@ function Shifts() {
     const handleSaveShift = async (form) => {
         try {
             const payload = { ...form, company_id: company.id };
+            let savedShiftId = editingShift?.id;
             if (editingShift) {
                 await supabase.from('shifts').update(payload).eq('id', editingShift.id);
                 toast.success(t.sh_toast_save_success || 'تم التحديث بنجاح');
@@ -858,6 +859,7 @@ function Shifts() {
                 });
             } else {
                 const { data: inserted } = await supabase.from('shifts').insert(payload).select('id').single();
+                savedShiftId = inserted?.id;
                 toast.success(t.sh_toast_save_success || 'تم الإنشاء بنجاح');
                 await logAudit({
                     companyId: company.id,
@@ -868,6 +870,13 @@ function Shifts() {
                     oldData: null,
                     newData: payload,
                 });
+            }
+            if (savedShiftId) {
+                try {
+                    await supabase.rpc('reprocess_deduct_half_shifts', { p_shift_id: savedShiftId });
+                } catch (err) {
+                    console.error('[Shifts] reprocess_deduct_half_shifts error:', err);
+                }
             }
             setShowModal(false); setEditingShift(null); fetchAll();
         } catch (e) { toast.error(t.sh_toast_save_error || 'فشل حفظ البيانات'); }
@@ -900,6 +909,12 @@ function Shifts() {
             if (empIds.length > 0) {
                 await supabase.from('shift_employees').insert(empIds.map(eid => ({ shift_id: shiftId, employee_id: eid })));
             }
+
+            const targetShift = shifts.find(s => s.id === shiftId);
+            if (targetShift?.deduct_half_on_missing) {
+                supabase.rpc('reprocess_deduct_half_shifts', { p_shift_id: shiftId }).then();
+            }
+
             toast.success(t.sh_toast_assign_success || 'تم تحديث قائمة الموظفين');
             await logAudit({
                 companyId: company.id,

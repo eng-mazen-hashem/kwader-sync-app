@@ -1,0 +1,9 @@
+pywebview
+supabase
+platformdirs
+pystray
+pillow
+pyzk
+python-dotenv
+requests
+urllib3
