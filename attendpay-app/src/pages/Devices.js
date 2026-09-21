@@ -121,6 +121,16 @@ function Devices() {
                     newData: formData,
                 });
             } else {
+                const maxDev = company.limits?.max_devices || company.max_devices || 1;
+                if (deviceList.length >= maxDev) {
+                    toast.error(
+                        language === 'ar'
+                            ? `لقد بلغت الحد الأقصى لأجهزة البصمة المسموح بها في باقتك (${maxDev} جهاز). يرجى ترقية الباقة لربط أجهزة إضافية.`
+                            : `You have reached the maximum allowed biometric devices for your plan (${maxDev} devices). Please upgrade your plan.`
+                    );
+                    return;
+                }
+
                 const { data: inserted, error } = await supabase
                     .from('devices')
                     .insert({
@@ -314,7 +324,7 @@ function Devices() {
                                 <p className="insight-desc">
                                     {t.dev_sync_agent_desc || 'لربط أجهزة البصمة المحلية بالمنصة السحابية، يجب تثبيت أداة المزامنة على أي جهاز كمبيوتر (Windows 10/11) متصل بنفس شبكة أجهزة البصمة. تدعم جميع أجهزة ZKTeco.'}
                                 </p>
-                                <a href={agentDownloadUrl} download="KWADER-Sync-Setup.exe" className="insight-button">
+                                <a href={agentDownloadUrl} download="KWADER_Sync_Setup_v1.2.0.exe" className="insight-button">
                                     <HiOutlineDesktopComputer size={20} />
                                     {t.dev_download_agent || 'تحميل الأداة'}
                                 </a>
@@ -327,6 +337,15 @@ function Devices() {
 
                         {/* Add Device CTA */}
                         <div className="device-add-cta" onClick={() => {
+                            const maxDev = company?.limits?.max_devices || company?.max_devices || 1;
+                            if (deviceList.length >= maxDev) {
+                                toast.error(
+                                    language === 'ar'
+                                        ? `لقد بلغت الحد الأقصى لأجهزة البصمة في باقتك (${maxDev} جهاز). يرجى الترقية لإضافة أجهزة إضافية.`
+                                        : `You have reached the maximum allowed biometric devices for your plan (${maxDev} devices). Please upgrade your plan.`
+                                );
+                                return;
+                            }
                             reset({ device_name: '', serial_number: '', ip_address: '', port: '4370' });
                             setIsEditing(false);
                             setShowModal(true);

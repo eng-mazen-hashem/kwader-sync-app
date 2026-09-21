@@ -3,171 +3,982 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>KWADER Sync</title>
+  <title>KWADER Sync Agent — محرك مزامنة البصمة السحابي</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com?plugins=container-queries"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            surface: "#0b0f19",
+            "surface-container": "#111726",
+            "surface-container-high": "#182032",
+            "surface-container-highest": "#222c42",
+            "surface-container-low": "#0e1422",
+            "surface-container-lowest": "#070a12",
+            primary: "#3b82f6",
+            "primary-container": "#1d4ed8",
+            "on-primary": "#ffffff",
+            "on-surface": "#f1f5f9",
+            "on-surface-variant": "#94a3b8",
+            outline: "#334155",
+            "outline-variant": "#1e293b",
+            secondary: "#818cf8",
+            tertiary: "#38bdf8",
+            success: "#10b981",
+            warning: "#f59e0b"
+          },
+          fontFamily: {
+            sans: ["Cairo", "sans-serif"],
+            mono: ["JetBrains Mono", "monospace"]
+          },
+          boxShadow: {
+            glow: "0 0 25px -5px rgba(59, 130, 246, 0.25)",
+            "glow-sm": "0 0 15px -3px rgba(59, 130, 246, 0.2)"
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="style.css?v=20260907_1" />
 </head>
-<body>
-  <div class="aurora-bg"></div>
-  <div class="app-shell">
-    <header class="header glass">
-      <div class="brand">
-        <img src="assets/icon.png" alt="KWADER" class="brand-icon" />
-        <div>
-          <h1 data-i18n="appTitle">KWADER Sync Agent</h1>
-          <p data-i18n="appSubtitle">مزامنة احترافية لأجهزة الحضور</p>
+<body class="bg-surface text-slate-200 antialiased selection:bg-blue-600 selection:text-white">
+  <div class="app-layout">
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeMobileSidebar()"></div>
+    
+    <!-- ─── RTL Enterprise Sidebar ────────────────────────── -->
+    <aside class="sidebar" id="sidebar">
+      <!-- Brand Area -->
+      <div class="sidebar-brand">
+        <div class="brand-logo-glow" title="KWADER Sync Agent">
+          <img src="assets/kwader_logo.png" alt="KWADER" class="brand-logo-img" />
+        </div>
+        <div class="brand-info">
+          <div class="brand-title-wrap">
+            <span class="brand-title">KWADER</span>
+            <span class="brand-badge">AGENT</span>
+          </div>
+          <p class="brand-subtitle" data-i18n="appSubtitle">محرك مزامنة البصمة السحابي</p>
         </div>
       </div>
-      <div class="header-actions">
-        <button id="languageToggle" class="language-toggle" type="button">English</button>
-        <div id="statusBadge" class="status-badge badge-neutral" data-i18n="stopped">متوقف</div>
+
+      <!-- Navigation Section: Core Modules -->
+      <div class="nav-section-label" data-i18n="coreModules">الوحدات الأساسية</div>
+      <nav class="sidebar-nav">
+        <a class="nav-item active" data-page="dashboard" onclick="navigatePage('dashboard', this)">
+          <span class="material-symbols-outlined nav-icon">grid_view</span>
+          <span data-i18n="dashboard">لوحة التحكم والمراقبة</span>
+        </a>
+
+        <a class="nav-item" data-page="devices" onclick="navigatePage('devices', this)">
+          <span class="material-symbols-outlined nav-icon">devices</span>
+          <span data-i18n="connectedDevices">الأجهزة المتصلة</span>
+          <span class="nav-counter" id="sidebarDeviceCount">0</span>
+        </a>
+
+        <a class="nav-item" data-page="logs" onclick="navigatePage('logs', this)">
+          <span class="material-symbols-outlined nav-icon">history_edu</span>
+          <span data-i18n="liveSyncLogs">سجلات المزامنة المباشرة</span>
+          <span class="nav-dot-pulse"></span>
+        </a>
+
+        <div class="nav-divider"></div>
+        <div class="nav-section-label" data-i18n="systemManagement">إدارة النظام والتشخيص</div>
+
+        <a class="nav-item" data-page="settings" onclick="navigatePage('settings', this)">
+          <span class="material-symbols-outlined nav-icon">tune</span>
+          <span data-i18n="advancedSettings">الإعدادات والربط المتقدم</span>
+        </a>
+
+        <a class="nav-item" data-page="diagnostics" onclick="navigatePage('diagnostics', this)">
+          <span class="material-symbols-outlined nav-icon">health_and_safety</span>
+          <span data-i18n="smartDiagnostics">كشف الأعطال والتشخيص الذكي</span>
+          <span class="nav-badge-alert" id="sidebarDiagBadge" data-i18n="healthyPill">سليم</span>
+        </a>
+      </nav>
+
+      <!-- Sidebar Footer Status Box -->
+      <div class="sidebar-footer">
+        <div class="node-status-card">
+          <div class="node-status-meta">
+            <span class="live-dot-ping">
+              <span class="ping-ring"></span>
+              <span class="ping-core" id="nodeStatusDot"></span>
+            </span>
+            <div class="node-text">
+              <p class="node-state-title" id="nodeStatusTitle" data-i18n="clientConnected">العميل متصل (Live)</p>
+              <p class="node-version">Agent v1.2.0 • Build 920</p>
+            </div>
+          </div>
+          <div class="node-uptime-badge" id="nodeUptimeBadge">99.9%</div>
+        </div>
       </div>
-    </header>
+    </aside>
 
-    <nav class="tabs glass">
-      <button class="tab-btn active" onclick="switchTab('dashboard', this)" data-i18n="dashboard">لوحة التحكم</button>
-      <button class="tab-btn" onclick="switchTab('settings', this)" data-i18n="settings">الإعدادات</button>
-    </nav>
-
-    <main class="content">
-      <section id="dashboardTab" class="tab-content active">
-        <div class="hero glass">
-          <div class="hero-icon" id="bigStatusIcon">||</div>
-          <div class="hero-text">
-            <h2 id="bigStatusText" data-i18n="syncStopped">المزامنة متوقفة</h2>
-            <p id="lastSyncText" data-i18n="noSyncYet">لا توجد مزامنة بعد</p>
-          </div>
-          <div class="hero-actions">
-            <button id="toggleSyncBtn" class="btn btn-primary" data-i18n="startSync">بدء المزامنة</button>
-            <button id="forceSyncBtn" class="btn btn-secondary" data-i18n="syncNow">مزامنة الآن</button>
-            <button id="resetSyncBtn" class="btn btn-ghost" data-i18n="resetWatermark" data-i18n-title="resetWatermarkTitle" title="إعادة ضبط علامة المزامنة ورفع كل السجلات مرة أخرى">إعادة الضبط</button>
-          </div>
-        </div>
-
-        <div class="logs-panel glass">
-          <div class="panel-head">
-            <h3 data-i18n="eventLog">سجل الأحداث</h3>
-            <button class="clear-btn" onclick="document.getElementById('logsView').innerHTML=''" data-i18n="clear">مسح</button>
-          </div>
-          <div id="logsView" class="logs-view">
-            <div class="log-entry info" data-i18n="readyLog">[بدء] جاهز. اضبط الإعدادات ثم شغّل المزامنة.</div>
+    <!-- ─── Main Content Shell ────────────────────────────── -->
+    <div class="main-shell" id="mainShell">
+      
+      <!-- Enterprise Top Header Bar -->
+      <header class="top-header" id="topHeader">
+        <div class="header-left">
+          <button class="sidebar-toggle-btn" id="btnToggleSidebar" type="button" onclick="toggleSidebar()" title="القائمة الرئيسية">
+            <span class="material-symbols-outlined">menu</span>
+          </button>
+          <div class="header-titles">
+            <div class="header-headline-row">
+              <h1 class="header-title" id="pageHeaderTitle" data-i18n="dashboardTitle">لوحة التحكم والمراقبة</h1>
+              <span class="operational-badge badge-active" id="headerOperationalBadge">
+                <span class="op-dot"></span>
+                <span id="headerOperationalText" data-i18n="opActive">الوضع التشغيلي: نشط</span>
+              </span>
+            </div>
+            <p class="header-subtitle" id="pageHeaderSubtitle" data-i18n="dashboardSubtitle">مراقبة دورات المزامنة اللحظية وحالة اتصال أجهزة البصمة بالسيرفر السحابي</p>
           </div>
         </div>
-      </section>
 
-      <section id="settingsTab" class="tab-content">
-        <form id="settingsForm" class="settings-grid">
-          <article class="card glass">
-            <div class="card-head">
-              <h3 data-i18n="licenseKey">مفتاح الترخيص</h3>
-              <p data-i18n="licenseHelp">أدخل مفتاح ترخيص الشركة وتحقق من الاتصال.</p>
-            </div>
-            <div class="input-row">
-              <input type="text" id="licenseKey" dir="ltr" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" required />
-              <button type="button" id="verifyLicenseBtn" class="btn btn-primary small" data-i18n="verify">تحقق</button>
-            </div>
-            <div id="licenseStatus" class="license-status"></div>
-          </article>
+        <!-- Header Quick Action Buttons -->
+        <div class="header-actions">
+          <button class="btn btn-dark-outline header-action-btn" id="btnQuickTestConn" type="button" title="اختبار الاتصال بجميع الأجهزة">
+            <span class="material-symbols-outlined text-blue-400">network_check</span>
+            <span class="btn-label-text" data-i18n="testAllDevices">اختبار الاتصال بالأجهزة</span>
+          </button>
 
-          <article class="card glass" id="deviceSettingsSection">
-            <div class="card-head">
-              <h3 data-i18n="deviceSettings">إعدادات الجهاز</h3>
-              <p data-i18n="deviceHelp">اختر نوع الجهاز وأدخل بيانات الشبكة.</p>
-            </div>
+          <button class="btn btn-indigo-outline header-action-btn" id="btnHeaderSmartDiag" type="button" title="تشغيل كشف الأعطال الذكي">
+            <span class="material-symbols-outlined text-indigo-400">troubleshoot</span>
+            <span class="btn-label-text" data-i18n="runDiagnosticsBtn">فحص الأعطال الذكي</span>
+          </button>
 
-            <div class="device-type-selector">
-              <label class="device-type-btn active" id="btnZKTeco">
-                <input type="radio" name="deviceType" id="deviceTypeZK" value="zkteco" checked />
-                <span class="name">ZKTeco</span>
-                <span class="meta">UDP/TCP</span>
-              </label>
-              <label class="device-type-btn" id="btnHikvision">
-                <input type="radio" name="deviceType" id="deviceTypeHik" value="hikvision" />
-                <span class="name">Hikvision</span>
-                <span class="meta">ISAPI HTTP/HTTPS</span>
-              </label>
-            </div>
+          <button class="btn btn-gradient-primary header-action-btn" id="btnHeaderSave" type="button" title="حفظ جميع التغييرات">
+            <span class="material-symbols-outlined">save</span>
+            <span class="btn-label-text" data-i18n="saveChanges">حفظ التغييرات</span>
+          </button>
 
-            <div class="field">
-              <label data-i18n="deviceIp">عنوان IP للجهاز</label>
-              <input type="text" id="deviceIp" dir="ltr" placeholder="192.168.1.201" />
-            </div>
+          <div class="header-v-divider"></div>
 
-            <div id="zkteco-fields">
-              <div class="two-col">
-                <div class="field">
-                  <label data-i18n="port">المنفذ</label>
-                  <input type="number" id="devicePort" dir="ltr" value="4370" />
+          <button class="btn btn-icon-glass" id="languageToggle" type="button" title="تبديل اللغة">
+            <span class="material-symbols-outlined">language</span>
+            <span id="langText">EN</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Scrollable Main Content Container -->
+      <main class="page-body">
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- 1. DASHBOARD PAGE (لوحة التحكم)                    -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <section class="page-tab active" id="page-dashboard">
+          <div class="dashboard-grid">
+            
+            <!-- Left Column: Status Gauge & Controls -->
+            <div class="dash-left-col">
+              <!-- Main Circular Status Card -->
+              <div class="card status-hero-card">
+                <div class="hero-top-highlight"></div>
+
+                <!-- Animated Circular Status Ring -->
+                <div class="pulse-ring-wrapper">
+                  <div class="ring-backdrop"></div>
+                  <svg class="ring-svg" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="44" class="ring-track"></circle>
+                    <circle cx="50" cy="50" r="44" class="ring-progress" id="ringProgressCircle"></circle>
+                  </svg>
+                  <div class="ring-center-icon" id="bigStatusIconBox">
+                    <span class="material-symbols-outlined text-4xl" id="bigStatusIcon">sync</span>
+                  </div>
                 </div>
-                <div class="field">
-                  <label data-i18n="deviceSerial">رقم الجهاز (S/N)</label>
-                  <input type="text" id="deviceSn" dir="ltr" data-i18n-placeholder="optional" placeholder="اختياري" />
+
+                <div class="status-pill-badge badge-active" id="dashStatusPill">
+                  <span class="dot-indicator"></span>
+                  <span id="dashStatusPillText" data-i18n="syncRunning">المزامنة تعمل الآن</span>
+                </div>
+
+                <h2 class="hero-status-title" id="dashHeroTitle" data-i18n="syncActiveTitle">المحرك في حالة مزامنة نشطة</h2>
+                <p class="hero-status-desc" id="dashHeroDesc" data-i18n="syncActiveDesc">يتم ترحيل سجلات الحركات تلقائياً من الأجهزة المربوطة إلى سحابة كوادر بأمان فائق.</p>
+
+                <div class="card-divider"></div>
+
+                <!-- Action Buttons -->
+                <div class="hero-buttons-stack">
+                  <button class="btn btn-gradient-primary btn-large w-full" id="toggleSyncBtn" type="button">
+                    <span class="material-symbols-outlined" id="toggleSyncIcon">pause</span>
+                    <span id="toggleSyncText" data-i18n="stopSync">إيقاف المزامنة التلقائية</span>
+                  </button>
+
+                  <div class="hero-dual-btn-row">
+                    <button class="btn btn-dark-outline w-full" id="forceSyncBtn" type="button">
+                      <span class="material-symbols-outlined text-blue-400">sync</span>
+                      <span data-i18n="syncNow">مزامنة الآن</span>
+                    </button>
+                    <button class="btn btn-dark-ghost" id="resetSyncBtn" type="button" title="إعادة ضبط علامة المزامنة لترحيل كافة الحركات السابقة">
+                      <span class="material-symbols-outlined text-amber-400">restart_alt</span>
+                      <span data-i18n="resetWatermark">إعادة ضبط</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick Metric Cards -->
+              <div class="metric-cards-grid">
+                <div class="card metric-card">
+                  <div class="metric-icon-wrap bg-blue-500/10 text-blue-400">
+                    <span class="material-symbols-outlined">schedule</span>
+                  </div>
+                  <div>
+                    <span class="metric-label" data-i18n="lastSync">آخر مزامنة ناجحة</span>
+                    <p class="metric-value" id="metricLastSync">--:--:--</p>
+                  </div>
+                </div>
+
+                <div class="card metric-card">
+                  <div class="metric-icon-wrap bg-indigo-500/10 text-indigo-400">
+                    <span class="material-symbols-outlined">dataset</span>
+                  </div>
+                  <div>
+                    <span class="metric-label" data-i18n="processedRecords">السجلات المعالجة</span>
+                    <p class="metric-value" id="metricRecordsCount">0</p>
+                  </div>
+                </div>
+
+                <div class="card metric-card">
+                  <div class="metric-icon-wrap bg-emerald-500/10 text-emerald-400">
+                    <span class="material-symbols-outlined">router</span>
+                  </div>
+                  <div>
+                    <span class="metric-label" data-i18n="activeDevicesCount">الأجهزة النشطة</span>
+                    <p class="metric-value" id="metricActiveDevices">0</p>
+                  </div>
+                </div>
+
+                <div class="card metric-card">
+                  <div class="metric-icon-wrap bg-amber-500/10 text-amber-400">
+                    <span class="material-symbols-outlined">cloud_sync</span>
+                  </div>
+                  <div>
+                    <span class="metric-label" data-i18n="systemHealth">صحة الاتصال</span>
+                    <p class="metric-value text-emerald-400" id="metricHealthScore">100%</p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div id="hikvision-fields" style="display:none;">
-              <div class="two-col">
-                <div class="field">
-                  <label data-i18n="port">المنفذ</label>
-                  <input type="number" id="hikPort" dir="ltr" value="80" />
-                </div>
-                <div class="field">
-                  <label data-i18n="deviceSerial">رقم الجهاز (S/N)</label>
-                  <input type="text" id="deviceSnHik" dir="ltr" data-i18n-placeholder="optional" placeholder="اختياري" />
-                </div>
-              </div>
-              <div class="two-col">
-                <div class="field">
-                  <label data-i18n="username">اسم المستخدم</label>
-                  <input type="text" id="hikUsername" dir="ltr" value="admin" />
-                </div>
-                <div class="field">
-                  <label data-i18n="password">كلمة المرور</label>
-                  <input type="password" id="hikPassword" dir="ltr" placeholder="********" />
-                </div>
-              </div>
-              <div class="row">
-                <label class="switch small">
-                  <input type="checkbox" id="hikHttps" />
-                  <span></span>
-                </label>
-                <span class="muted" data-i18n="useHttps">استخدام HTTPS</span>
-              </div>
-              <div class="input-row">
-                <div id="hikConnStatus" class="muted flex-grow" data-i18n="ready">جاهز</div>
-                <button type="button" id="testHikBtn" class="btn btn-secondary small" data-i18n="testConnection">اختبار الاتصال</button>
-              </div>
-            </div>
-          </article>
+            <!-- Right Column: Live Terminal Stream -->
+            <div class="dash-right-col">
+              <div class="card terminal-card">
+                <!-- Terminal Header Bar -->
+                <div class="terminal-header">
+                  <div class="terminal-title-group">
+                    <span class="material-symbols-outlined text-blue-400 text-xl">terminal</span>
+                    <h3 class="terminal-title" data-i18n="liveTerminalTitle">سجل الأحداث والعمليات اللحظي</h3>
+                  </div>
 
-          <article class="card glass">
-            <div class="card-head">
-              <h3 data-i18n="startupSync">التشغيل والمزامنة</h3>
-              <p data-i18n="startupHelp">إعدادات التشغيل التلقائي وفترة المزامنة.</p>
-            </div>
-            <div class="row">
-              <label class="switch">
-                <input type="checkbox" id="autoStartToggle" />
-                <span></span>
-              </label>
-              <strong id="autoStartLabel" data-i18n="disabled">معطل</strong>
-            </div>
-            <div class="field">
-              <label data-i18n="syncInterval">فترة المزامنة (بالدقائق)</label>
-              <input type="number" id="syncInterval" min="1" max="60" value="5" />
-            </div>
-          </article>
+                  <div class="terminal-controls">
+                    <select class="terminal-select" id="terminalFilter">
+                      <option value="all" data-i18n="filterAll">جميع السجلات</option>
+                      <option value="error" data-i18n="filterErrors">الأخطاء فقط [ERROR]</option>
+                      <option value="warning" data-i18n="filterWarnings">التحذيرات [WARN]</option>
+                      <option value="success" data-i18n="filterSuccess">العمليات الناجحة [OK]</option>
+                    </select>
 
-          <button type="submit" id="saveSettingsBtn" class="btn btn-primary save-btn" data-i18n="saveSettings">حفظ الإعدادات</button>
-          <div id="saveToast" class="save-toast" aria-live="polite" data-i18n="settingsSaved">تم حفظ الإعدادات بنجاح</div>
-        </form>
-      </section>
-    </main>
+                    <button class="terminal-tool-btn" id="btnExportLogs" type="button" title="تصدير السجلات إلى ملف">
+                      <span class="material-symbols-outlined text-sm">download</span>
+                    </button>
+
+                    <button class="terminal-tool-btn text-rose-400 hover:text-rose-300" id="btnClearLogs" type="button" title="مسح شاشة السجلات">
+                      <span class="material-symbols-outlined text-sm">delete_sweep</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Terminal Body Log Stream -->
+                <div class="terminal-body custom-scrollbar" id="terminalLogView">
+                  <div class="term-line info">
+                    <span class="term-time">[00:00:00]</span>
+                    <span class="term-tag tag-info">[INIT]</span>
+                    <span class="term-msg">KWADER Sync Agent engine v1.4.2 initialized. Ready for operations.</span>
+                  </div>
+                </div>
+
+                <!-- Terminal Footer Status Bar -->
+                <div class="terminal-footer">
+                  <div class="term-foot-left">
+                    <span class="term-foot-indicator active" id="termFootStatus">
+                      <span class="foot-dot"></span>
+                      <span id="termFootStatusText">Live Feed Connected</span>
+                    </span>
+                    <span class="foot-sep">|</span>
+                    <span>UTF-8 / TLS 1.3</span>
+                    <span class="foot-sep">|</span>
+                    <span id="terminalLinesCount">Lines: 1</span>
+                  </div>
+                  <div class="term-foot-right font-mono">KWADER Engine v2.1.0</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- 2. ADVANCED SETTINGS PAGE (الإعدادات المتطورة)        -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <section class="page-tab" id="page-settings">
+          <div class="settings-container space-y-6">
+            
+            <!-- ── Section 1: Device Architecture & Hardware Topology ── -->
+            <div class="card settings-section-card">
+              <div class="section-card-header">
+                <div class="section-header-title-wrap">
+                  <div class="section-icon-box bg-blue-500/10 text-blue-400 border border-blue-500/25">
+                    <span class="material-symbols-outlined">router</span>
+                  </div>
+                  <div>
+                    <h2 class="section-heading">
+                      <span data-i18n="hardwareTopologyTitle">إدارة وهيكلية ربط الأجهزة</span>
+                      <span class="section-badge-code">Hardware Topology</span>
+                    </h2>
+                    <p class="section-subheading" data-i18n="hardwareTopologyDesc">مراقبة سعة وحصة الأجهزة المصرح بربطها وإدارة مصفوفة أجهزة الحضور</p>
+                  </div>
+                </div>
+                <div class="header-tag-pill">
+                  <span class="text-slate-400 text-xs font-medium" data-i18n="networkMode">نوع الاتصال العام:</span>
+                  <span class="text-xs font-mono font-bold text-blue-400 bg-blue-950/40 border border-blue-800/60 px-2.5 py-1 rounded-lg">Local LAN / Static IP</span>
+                </div>
+              </div>
+
+              <div class="p-6 space-y-6">
+                <!-- Capacity & Quota Entitlement Card (Enterprise Cloud Quota) -->
+                <div class="quota-meter-box">
+                  <!-- Header Row: Title, Tier Badge, and Cloud Sync Actions -->
+                  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="space-y-1.5">
+                      <div class="flex items-center gap-2.5 flex-wrap">
+                        <div class="w-8 h-8 rounded-lg bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-glow-sm">
+                          <span class="material-symbols-outlined text-[20px]">verified_user</span>
+                        </div>
+                        <h3 class="text-sm font-bold text-white" data-i18n="quotaTitle">سعة الأجهزة المسموحة وحصة الترخيص (License Capacity & Quota)</h3>
+                        <span class="quota-tier-badge" id="quotaTierBadge" data-i18n="enterpriseTier">
+                          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> باقة Enterprise Active
+                        </span>
+                      </div>
+                      <p class="text-xs text-slate-400" id="quotaDescText">
+                        الأجهزة المربوطة حالياً: <strong class="text-white font-mono" id="quotaUsedDevices">0 أجهزة نشطة</strong> من أصل <strong class="text-blue-400 font-mono" id="quotaTotalDevices">10 أجهزة</strong> مصرح بها بموجب اشتراك المنشأة السحابي.
+                      </p>
+                    </div>
+
+                    <!-- Cloud Entitlement Action Controls (Read-Only + Cloud Sync) -->
+                    <div class="flex items-center gap-2.5 flex-wrap">
+                      <div class="quota-status-pill" id="quotaStatusPill" title="نسبة الأجهزة النشطة من الحصة المرخصة">
+                        <span class="material-symbols-outlined text-[15px] text-emerald-400">check_circle</span>
+                        <span class="text-xs font-mono font-bold text-slate-200" id="quotaPillRatio">00 / 10 نشط</span>
+                      </div>
+
+                      <button class="btn btn-indigo-outline btn-sm" id="btnSyncLicenseQuota" type="button" title="تحديث بيانات السعة وحصة الأجهزة من السيرفر السحابي">
+                        <span class="material-symbols-outlined text-sm" id="syncQuotaIcon">sync</span>
+                        <span data-i18n="refreshQuotaBtn">تحديث من السيرفر</span>
+                      </button>
+
+                      <a href="https://kwader.sa" target="_blank" class="btn btn-dark-outline btn-sm" id="btnUpgradeQuota" title="طلب زيادة سعة الأجهزة أو ترقية الباقة السحابية">
+                        <span class="material-symbols-outlined text-sm text-amber-400">arrow_circle_up</span>
+                        <span data-i18n="upgradeQuotaBtn">ترقية السعة</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <!-- Visual Progress & Metric Breakdown -->
+                  <div class="quota-bar-wrapper">
+                    <div class="flex justify-between items-center text-[11px] font-mono text-slate-400 mb-1.5 flex-wrap gap-2">
+                      <span class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                        <span id="quotaPercentLabel">0% مستخدمة</span>
+                      </span>
+                      <span class="flex items-center gap-1.5 text-emerald-400 font-medium">
+                        <span id="quotaAvailableLabel">10 شاغرة متوفرة للإضافة الفورية</span>
+                      </span>
+                    </div>
+                    <div class="quota-progress-track">
+                      <div class="quota-progress-fill" id="quotaFillBar" style="width: 20%;"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Multi-Device Inventory Matrix (Interactive Grid) -->
+                <div class="inventory-matrix-section">
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-2">
+                      <span class="material-symbols-outlined text-slate-400 text-[20px]">dns</span>
+                      <span class="text-sm font-bold text-white" data-i18n="inventoryTitle">قائمة الأجهزة المربوطة والمخصصة (Inventory Matrix)</span>
+                      <span class="text-xs text-slate-400 font-mono" id="inventoryCountLabel">(0 Devices Configured)</span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                      <button class="btn btn-dark-outline btn-sm" id="btnAutoScanSubnet" type="button">
+                        <span class="material-symbols-outlined text-[16px] text-indigo-400">radar</span>
+                        <span data-i18n="autoScanSubnet">فحص الشبكة الفرعية (Auto-Scan Subnet)</span>
+                      </button>
+                      <button class="btn btn-primary-glass btn-sm" id="btnAddNewDevice" type="button">
+                        <span class="material-symbols-outlined text-[16px]">add_circle</span>
+                        <span data-i18n="addNewDevice">إضافة جهاز جديد +</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Table Matrix Container -->
+                  <div class="inventory-table-container">
+                    <table class="inventory-table">
+                      <thead>
+                        <tr>
+                          <th data-i18n="thDevice">الجهاز والموقع</th>
+                          <th data-i18n="thModel">الموديل والبروتوكول</th>
+                          <th data-i18n="thIpPort">عنوان IP والمنفذ</th>
+                          <th data-i18n="thStatus">الحالة وزمن الاستجابة</th>
+                          <th class="text-center" data-i18n="thActions">إجراءات</th>
+                        </tr>
+                      </thead>
+                      <tbody id="deviceInventoryTableBody">
+                        <!-- Rendered dynamically by JavaScript -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- ── Section 2 & 3: Two-Column Layout for License & Sync Settings ── -->
+            <div class="settings-two-col grid grid-cols-1 lg:grid-cols-12 gap-6">
+              
+              <!-- License & Security Entitlements (Col 7) -->
+              <div class="lg:col-span-7 card p-6 flex flex-col justify-between">
+                <div class="space-y-4">
+                  <div class="flex items-center justify-between border-b border-slate-800/80 pb-4">
+                    <div class="flex items-center gap-3">
+                      <div class="section-icon-box bg-indigo-500/10 text-indigo-400 border border-indigo-500/25">
+                        <span class="material-symbols-outlined">key</span>
+                      </div>
+                      <div>
+                        <h3 class="text-base font-bold text-white" data-i18n="licenseKeyCardTitle">مفتاح الترخيص والتحقق الأمني</h3>
+                        <p class="text-xs text-slate-400" data-i18n="licenseKeyCardDesc">رمز التفعيل السحابي المعتمد للمزامنة المشفرة RSA-4096</p>
+                      </div>
+                    </div>
+                    <span class="license-status-badge" id="licenseCardBadge">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> ENTERPRISE ACTIVE
+                    </span>
+                  </div>
+
+                  <!-- Stripe/Vercel Style License Box -->
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between text-xs font-mono text-slate-300 font-semibold">
+                      <span>KWADER CLIENT SECRET KEY</span>
+                      <span class="text-slate-400 text-[11px] font-sans transition-colors" id="licensedCorpName" data-i18n="licensedToCorp">مرخص للشركات المتعددة</span>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-2.5">
+                      <div class="flex-1 license-input-box">
+                        <span class="material-symbols-outlined text-slate-400 text-[18px] ms-2.5 flex-shrink-0">vpn_key</span>
+                        <input type="password" id="licenseKey" dir="ltr" class="license-secret-input" placeholder="kw_live_xxxxxxxx-xxxx-xxxx-xxxx" />
+                        <div class="flex items-center gap-1 pe-1.5 flex-shrink-0">
+                          <button class="license-icon-btn" id="btnToggleLicenseReveal" type="button" title="إظهار/إخفاء المفتاح">
+                            <span class="material-symbols-outlined text-[18px]" id="licenseRevealIcon">visibility</span>
+                          </button>
+                          <button class="license-icon-btn" id="btnCopyLicenseKey" type="button" title="نسخ المفتاح">
+                            <span class="material-symbols-outlined text-[18px]">content_copy</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <button class="btn btn-indigo-glass flex-shrink-0" id="verifyLicenseBtn" type="button">
+                        <span class="material-symbols-outlined text-[18px]">cloud_sync</span>
+                        <span data-i18n="verifyWithServer">التحقق من السيرفر</span>
+                      </button>
+                    </div>
+                    <div id="licenseFeedback" class="text-xs mt-1"></div>
+                  </div>
+
+                  <!-- License Meta Info Cards -->
+                  <div class="grid grid-cols-2 gap-3 pt-2">
+                    <div class="p-3 rounded-xl bg-slate-900/70 border border-slate-800/80">
+                      <p class="text-[11px] text-slate-400" data-i18n="licenseExpiry">تاريخ انتهاء الصلاحية</p>
+                      <p class="text-xs font-bold text-white font-mono mt-0.5 flex items-center gap-1" id="licenseExpiryVal">
+                        <span class="material-symbols-outlined text-[16px] text-emerald-400">event_available</span>
+                        2026/12/31 (متبقي 310 يوم)
+                      </p>
+                    </div>
+                    <div class="p-3 rounded-xl bg-slate-900/70 border border-slate-800/80">
+                      <p class="text-[11px] text-slate-400" data-i18n="syncSpeedRate">معدل نقل البيانات السحابي</p>
+                      <p class="text-xs font-bold text-white font-mono mt-0.5 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[16px] text-blue-400">speed</span>
+                        غير محدود (Unlimited Sync)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center gap-2">
+                  <span class="material-symbols-outlined text-[16px] text-blue-400">lock</span>
+                  <span data-i18n="sslNotice">يتم تشفير كافة سجلات الحركات تلقائياً قبل إرسالها إلى سحابة كوادر عبر SSL TLS 1.3.</span>
+                </div>
+              </div>
+
+              <!-- Sync Engine & Automation Settings (Col 5) -->
+              <div class="lg:col-span-5 card p-6 space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800/80 pb-4">
+                  <div class="flex items-center gap-3">
+                    <div class="section-icon-box bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
+                      <span class="material-symbols-outlined">sync_alt</span>
+                    </div>
+                    <div>
+                      <h3 class="text-base font-bold text-white" data-i18n="syncEngineTitle">محرك المزامنة التلقائية</h3>
+                      <p class="text-xs text-slate-400" data-i18n="syncEngineDesc">جدولة الترحيل الدوري للحركات</p>
+                    </div>
+                  </div>
+                  <span class="material-symbols-outlined text-emerald-400">bolt</span>
+                </div>
+
+                <!-- Main Live Sync Toggle -->
+                <div class="flex items-center justify-between p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+                  <div>
+                    <p class="text-sm font-bold text-white" data-i18n="liveDirectSync">المزامنة الحية المباشرة</p>
+                    <p class="text-xs text-slate-400 mt-0.5" data-i18n="liveDirectSyncDesc">ترحيل سجلات البصمة بشكل آني ومستمر</p>
+                  </div>
+                  <label class="switch-toggle">
+                    <input type="checkbox" id="liveSyncToggle" checked />
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+
+                <!-- Auto-Start with Windows Toggle -->
+                <div class="flex items-center justify-between p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+                  <div>
+                    <p class="text-sm font-bold text-white" data-i18n="autoStartWin">بدء التشغيل مع ويندوز</p>
+                    <p class="text-xs text-slate-400 mt-0.5" data-i18n="autoStartWinDesc">تشغيل المزامنة تلقائياً عند إقلاع الحاسوب</p>
+                  </div>
+                  <label class="switch-toggle">
+                    <input type="checkbox" id="autoStartToggle" />
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+
+                <!-- Frequency Interval Inputs -->
+                <div class="space-y-2">
+                  <label class="text-xs font-semibold text-slate-300 flex items-center justify-between">
+                    <span data-i18n="syncIntervalLabel">الفترة الزمنية بين دورات المزامنة:</span>
+                    <span class="font-mono text-blue-400 text-xs font-bold" id="intervalPreviewLabel">60 ثانية</span>
+                  </label>
+                  <div class="flex gap-2">
+                    <div class="flex-1 relative interval-input-wrap">
+                      <input class="interval-number-input" dir="ltr" type="number" id="syncInterval" min="10" max="3600" value="60" />
+                      <span class="material-symbols-outlined interval-timer-icon text-slate-400 text-[18px]">timer</span>
+                    </div>
+                    <div class="interval-chips-group">
+                      <button class="interval-chip" type="button" onclick="setIntervalPreset(30)">30 ث</button>
+                      <button class="interval-chip active" type="button" onclick="setIntervalPreset(60)">1 د</button>
+                      <button class="interval-chip" type="button" onclick="setIntervalPreset(300)">5 د</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Offline Buffer Feature Toggle -->
+                <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-2">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="material-symbols-outlined text-amber-400 text-[18px]">cloud_off</span>
+                      <span class="text-xs font-bold text-slate-200" data-i18n="offlineBufferTitle">التخزين الاحتياطي (Offline Buffer)</span>
+                    </div>
+                    <input type="checkbox" id="offlineBufferToggle" checked class="checkbox-custom" />
+                  </div>
+                  <p class="text-[11px] text-slate-400 leading-normal" data-i18n="offlineBufferDesc">
+                    حفظ السجلات محلياً في قاعدة بيانات SQLite عند انقطاع الإنترنت، وإعادة إرسالها فور عودة الاتصال دون فقدان أي بصمة.
+                  </p>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- 3. CONNECTED DEVICES MATRIX PAGE (الأجهزة المتصلة)    -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <section class="page-tab" id="page-devices">
+          <div class="space-y-6">
+            <div class="card p-6">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+                <div>
+                  <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-blue-400">devices</span>
+                    <span data-i18n="devicesMatrixTitle">إدارة أجهزة البصمة البيومترية</span>
+                  </h2>
+                  <p class="text-xs text-slate-400 mt-1" data-i18n="devicesMatrixDesc">إدارة ومراقبة كافة أجهزة الحضور المتصلة بشبكة المنشأة وفحص زمن استجابتها لحظياً</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button class="btn btn-dark-outline btn-sm" onclick="triggerSubnetModal()">
+                    <span class="material-symbols-outlined text-indigo-400 text-sm">radar</span>
+                    <span data-i18n="scanNetwork">فحص الشبكة</span>
+                  </button>
+                  <button class="btn btn-gradient-primary btn-sm" onclick="openAddDeviceModal()">
+                    <span class="material-symbols-outlined text-sm">add</span>
+                    <span data-i18n="addDeviceBtn">إضافة جهاز جديد</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Device Cards Grid -->
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-6" id="devicesCardsGrid">
+                <!-- Dynamically injected device cards -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- 4. SMART DIAGNOSTICS & FAULT DETECTION CENTER       -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <section class="page-tab" id="page-diagnostics">
+          <div class="space-y-6">
+            
+            <!-- Smart Diagnostics Hero Banner -->
+            <div class="card p-6 bg-gradient-to-r from-[#121829] to-[#0c1220] border-slate-800 relative overflow-hidden">
+              <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+                <div class="space-y-2">
+                  <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shadow-glow">
+                      <span class="material-symbols-outlined text-2xl">health_and_safety</span>
+                    </div>
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <h2 class="text-xl font-bold text-white" data-i18n="smartDiagCenterTitle">نظام كشف الأعطال والتشخيص الذكي (Smart AI Diagnostics)</h2>
+                        <span class="diag-score-tag" id="diagScoreTag">100% HEALTHY</span>
+                      </div>
+                      <p class="text-xs text-slate-400 mt-1" data-i18n="smartDiagCenterDesc">
+                        فحص آلي شامل لـ 6 مستويات حيوية: السحابة، التراخيص، منافذ الشبكة وجدار الحماية، أجهزة البصمة، وفارق التوقيت مع الحلول الفورية بنقرة واحدة.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                  <button class="btn btn-gradient-primary btn-large" id="btnRunFullDiagnostics" type="button">
+                    <span class="material-symbols-outlined" id="diagRunBtnIcon">troubleshoot</span>
+                    <span data-i18n="startDiagnosticScan">بدء الفحص الذكي الشامل</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Diagnostics 6-Level Progress Matrix -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="diagChecksGrid">
+              <!-- Dynamically populated check cards -->
+            </div>
+
+            <!-- Smart Root-Cause & Actionable Solutions Container -->
+            <div class="card p-6 space-y-4">
+              <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                <div class="flex items-center gap-2.5">
+                  <span class="material-symbols-outlined text-amber-400 text-xl">auto_fix_high</span>
+                  <h3 class="text-base font-bold text-white" data-i18n="faultsMatrixTitle">مصفوفة الأعطال المكتشفة والحلول المقترحة (Root-Cause Matrix)</h3>
+                </div>
+                <span class="text-xs font-mono text-slate-400" id="detectedFaultsCount">0 أعطال مكتشفة</span>
+              </div>
+
+              <!-- List of Faults & Recommendations -->
+              <div class="space-y-3" id="detectedFaultsList">
+                <div class="all-healthy-box">
+                  <span class="material-symbols-outlined text-emerald-400 text-3xl">verified</span>
+                  <div>
+                    <h4 class="text-sm font-bold text-white" data-i18n="allSystemsHealthy">جميع الأنظمة والأجهزة تعمل بكفاءة وبدون أعطال</h4>
+                    <p class="text-xs text-slate-400 mt-0.5" data-i18n="allSystemsHealthyDesc">الربط السحابي، مفتاح الترخيص، استجابة أجهزة البصمة، وتوقيت الساعات متطابق بنسبة 100%.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- 5. LIVE LOGS FULL VIEW PAGE                         -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <section class="page-tab" id="page-logs">
+          <div class="card p-6 flex flex-col full-logs-card">
+            <div class="flex items-center justify-between border-b border-slate-800/80 pb-4 mb-4">
+              <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-blue-400">history_edu</span>
+                <h2 class="text-base font-bold text-white" data-i18n="liveSyncLogsTitle">سجلات المزامنة المباشرة الكاملة</h2>
+              </div>
+              <div class="flex items-center gap-2">
+                <button class="btn btn-dark-outline btn-sm" onclick="exportFullLogs()">
+                  <span class="material-symbols-outlined text-sm">download</span>
+                  <span data-i18n="export">تصدير</span>
+                </button>
+                <button class="btn btn-dark-ghost btn-sm text-rose-400" onclick="clearLogs()">
+                  <span class="material-symbols-outlined text-sm">delete_sweep</span>
+                  <span data-i18n="clear">مسح</span>
+                </button>
+              </div>
+            </div>
+            <div class="flex-1 overflow-y-auto custom-scrollbar terminal-full-body font-mono text-xs space-y-2" id="fullLogsView">
+              <!-- Replicated real-time logs -->
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
   </div>
 
-  <script src="renderer.js"></script>
+  <!-- ─── Subnet Auto-Scanner Modal ───────────────────────── -->
+  <div class="modal-overlay hidden" id="subnetModal">
+    <div class="modal-dialog max-w-2xl">
+      <div class="modal-header">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shadow-glow-sm">
+            <span class="material-symbols-outlined text-[22px]">radar</span>
+          </div>
+          <div>
+            <h3 class="modal-title" data-i18n="subnetModalTitle">فحص الشبكة الفرعية الذكي (Network Scanner)</h3>
+            <p class="text-[11px] text-slate-400 mt-0.5" data-i18n="subnetModalDesc">اكتشاف أجهزة الحضور (Hikvision و ZKTeco) المتصلة تلقائياً في شبكة المنشأة</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeSubnetModal()" title="إغلاق">&times;</button>
+      </div>
+
+      <div class="modal-body space-y-4">
+        <!-- Modern Subnet Scanner Input Bar with Presets -->
+        <div class="space-y-2">
+          <div class="subnet-input-wrapper">
+            <span class="material-symbols-outlined subnet-input-icon">travel_explore</span>
+            <span class="subnet-prefix-tag">CIDR / LAN:</span>
+            <input type="text" id="subnetCidrInput" class="subnet-input-field font-mono text-xs" placeholder="192.168.1." />
+            <button class="btn btn-gradient-primary btn-sm subnet-scan-btn" id="btnExecuteSubnetScan" type="button">
+              <span class="material-symbols-outlined text-sm" id="subnetScanIcon">search</span>
+              <span data-i18n="startScan">بدء الفحص السريع</span>
+            </button>
+          </div>
+
+          <!-- Quick Preset Subnet Chips -->
+          <div class="flex items-center gap-2 pt-1 flex-wrap">
+            <span class="text-[11px] text-slate-400 font-medium">نطاقات سريعة:</span>
+            <div class="flex flex-wrap gap-1.5">
+              <button type="button" class="preset-pill" onclick="setSubnetPreset('192.168.1.')">192.168.1.x</button>
+              <button type="button" class="preset-pill" onclick="setSubnetPreset('192.168.0.')">192.168.0.x</button>
+              <button type="button" class="preset-pill" onclick="setSubnetPreset('10.0.0.')">10.0.0.x</button>
+              <button type="button" class="preset-pill" onclick="setSubnetPreset('172.16.0.')">172.16.0.x</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="subnet-scan-progress hidden" id="subnetScanProgress">
+          <div class="quota-progress-track">
+            <div class="quota-progress-fill bg-indigo-500 animate-pulse" style="width: 100%;"></div>
+          </div>
+          <p class="text-[11px] font-mono text-center text-indigo-400 mt-2" data-i18n="scanningLan">جار فحص 254 عنوان IP في الشبكة الفرعية على المنافذ (4370 / 80 / 443 / 8000)...</p>
+        </div>
+
+        <!-- Scan Results List -->
+        <div class="subnet-results-list space-y-2 max-h-64 overflow-y-auto custom-scrollbar" id="subnetResultsList">
+          <div class="subnet-empty-state">
+            <div class="subnet-radar-pulse">
+              <span class="material-symbols-outlined text-indigo-400 text-3xl">radar</span>
+            </div>
+            <p class="text-xs font-semibold text-slate-300 mt-2" data-i18n="pressScanToStart">اضغط "بدء الفحص السريع" لكشف جميع أجهزة البصمة المتصلة بنطاق الـ IP المحلي.</p>
+            <div class="flex items-center justify-center gap-2 mt-2.5 flex-wrap">
+              <span class="protocol-chip zk">ZKTeco • Port 4370 (UDP/TCP)</span>
+              <span class="protocol-chip hik">Hikvision • Port 80/443/8000 (ISAPI)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer justify-between">
+        <div class="text-[11px] text-slate-500 flex items-center gap-1 font-mono">
+          <span class="material-symbols-outlined text-sm">keyboard</span> اضغط ESC للإغلاق
+        </div>
+        <button class="btn btn-dark-outline btn-sm" onclick="closeSubnetModal()" data-i18n="close">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Add / Edit Device Modal ──────────────────────────── -->
+  <div class="modal-overlay hidden" id="deviceModal">
+    <div class="modal-dialog max-w-lg">
+      <div class="modal-header">
+        <div class="flex items-center gap-2.5">
+          <span class="material-symbols-outlined text-blue-400" id="deviceModalIcon">add_circle</span>
+          <h3 class="modal-title" id="deviceModalTitle" data-i18n="addDeviceModalTitle">إضافة جهاز بصمة جديد</h3>
+        </div>
+        <button class="modal-close-btn" onclick="closeDeviceModal()">&times;</button>
+      </div>
+
+      <form id="deviceForm">
+        <div class="modal-body space-y-4">
+          <input type="hidden" id="modalDeviceId" />
+
+          <div class="field">
+            <label class="field-label" data-i18n="deviceNameLabel">اسم الجهاز والموقع</label>
+            <input type="text" id="modalDeviceName" class="input-dark text-xs" placeholder="بوابة المقر الرئيسي - المدخل" required />
+          </div>
+
+          <div class="field">
+            <label class="field-label" data-i18n="deviceTypeLabel">نوع المنظومة والبروتوكول</label>
+            <select id="modalDeviceType" class="input-dark text-xs" onchange="onModalDeviceTypeChange()">
+              <option value="zkteco">ZKTeco Standalone (UDP/TCP 4370)</option>
+              <option value="hikvision">Hikvision Facial/Terminal (ISAPI HTTP/S)</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-3 gap-3">
+            <div class="col-span-2 field">
+              <label class="field-label" data-i18n="deviceIpLabel">عنوان IP</label>
+              <input type="text" id="modalDeviceIp" dir="ltr" class="input-dark font-mono text-xs" placeholder="192.168.1.201" required />
+            </div>
+            <div class="field">
+              <label class="field-label" data-i18n="devicePortLabel">المنفذ</label>
+              <input type="number" id="modalDevicePort" dir="ltr" class="input-dark font-mono text-xs" value="4370" required />
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label" data-i18n="deviceSnLabel">الرقم التسلسلي (S/N)</label>
+            <input type="text" id="modalDeviceSn" dir="ltr" class="input-dark font-mono text-xs" placeholder="DS-K1T671MF / ZK-UFACE" />
+          </div>
+
+          <!-- Hikvision Specific Fields -->
+          <div id="modalHikFields" class="space-y-3 hidden">
+            <div class="grid grid-cols-2 gap-3">
+              <div class="field">
+                <label class="field-label" data-i18n="usernameLabel">اسم المستخدم</label>
+                <input type="text" id="modalHikUsername" dir="ltr" class="input-dark text-xs" value="admin" />
+              </div>
+              <div class="field">
+                <label class="field-label" data-i18n="passwordLabel">كلمة المرور</label>
+                <input type="password" id="modalHikPassword" dir="ltr" class="input-dark text-xs" placeholder="••••••••" />
+              </div>
+            </div>
+            <label class="flex items-center gap-2 cursor-pointer pt-1">
+              <input type="checkbox" id="modalHikHttps" class="checkbox-custom" />
+              <span class="text-xs text-slate-300" data-i18n="useHttpsLabel">استخدام اتصال مشفر HTTPS</span>
+            </label>
+          </div>
+
+          <!-- Test Status in Modal -->
+          <div id="modalTestResult" class="text-xs p-2.5 rounded-lg hidden font-mono"></div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-dark-outline btn-sm" id="btnModalTestDev" type="button">
+            <span class="material-symbols-outlined text-sm">network_check</span>
+            <span data-i18n="testDevice">اختبار الاتصال</span>
+          </button>
+          <button class="btn btn-gradient-primary btn-sm" type="submit" data-i18n="saveDevice">حفظ الجهاز</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ─── Clock Synchronization & Correction Modal ───────────── -->
+  <div class="modal-overlay hidden" id="clockSyncModal">
+    <div class="modal-dialog max-w-lg">
+      <div class="modal-header">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-glow-sm">
+            <span class="material-symbols-outlined text-[22px]">update</span>
+          </div>
+          <div>
+            <h3 class="modal-title" data-i18n="clockSyncModalTitle">تصحيح ومزامنة وقت أجهزة البصمة</h3>
+            <p class="text-[11px] text-slate-400 mt-0.5" data-i18n="clockSyncModalDesc">ضبط الساعة الداخلية لأجهزة البصمة وفق المعيار الزمني المعتمد</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeClockSyncModal()" title="إغلاق">&times;</button>
+      </div>
+
+      <div class="modal-body space-y-4">
+        <!-- Target Device Info Box -->
+        <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-blue-400">devices</span>
+            <div>
+              <p class="text-xs font-bold text-white" id="clockModalTargetDeviceName">جميع أجهزة البصمة المتصلة</p>
+              <p class="text-[11px] text-slate-400 font-mono" id="clockModalTargetDeviceIp">مزامنة موحدة لكافة الأجهزة</p>
+            </div>
+          </div>
+          <span class="text-xs font-mono px-2 py-1 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 font-bold" id="clockModalDriftBadge">
+            فارق زمني بحاجة لتصحيح
+          </span>
+        </div>
+
+        <!-- Time Source Selection Cards -->
+        <div class="space-y-2">
+          <label class="text-xs font-bold text-slate-200">اختر مصدر التوقيت المراد إرساله للساعة:</label>
+          
+          <div class="grid grid-cols-1 gap-2.5">
+            <!-- Option 1: Local Computer Time -->
+            <label class="time-source-card active" id="sourceCardComputer" onclick="selectClockTimeSource('computer')">
+              <input type="radio" name="clockTimeSource" value="computer" checked class="hidden" />
+              <div class="flex items-center justify-between w-full">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                    <span class="material-symbols-outlined text-[18px]">laptop_windows</span>
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-bold text-white">وقت الكمبيوتر المحلي (Local PC Time)</h4>
+                    <p class="text-[11px] text-slate-400">إرسال ساعة النظام الحالي للحاسوب</p>
+                  </div>
+                </div>
+                <span class="font-mono text-xs font-bold text-blue-400 px-2 py-1 rounded bg-blue-950/60 border border-blue-800/40" id="previewComputerTime">--:--:--</span>
+              </div>
+            </label>
+
+            <!-- Option 2: Organization Cloud Timezone -->
+            <label class="time-source-card" id="sourceCardAccount" onclick="selectClockTimeSource('account')">
+              <input type="radio" name="clockTimeSource" value="account" class="hidden" />
+              <div class="flex items-center justify-between w-full">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                    <span class="material-symbols-outlined text-[18px]">public</span>
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-bold text-white">توقيت حساب المنشأة السحابي (Account Timezone)</h4>
+                    <p class="text-[11px] text-slate-400" id="previewAccountTzName">توقيت مكة والرياض المعتمد (Asia/Riyadh - GMT+3)</p>
+                  </div>
+                </div>
+                <span class="font-mono text-xs font-bold text-emerald-400 px-2 py-1 rounded bg-emerald-950/60 border border-emerald-800/40" id="previewAccountTime">--:--:--</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 text-[11px] text-slate-400 flex items-center gap-2">
+          <span class="material-symbols-outlined text-emerald-400 text-sm">check_circle</span>
+          <span>سيتم تحديث الساعة الداخلية لذاكرة الجهاز البيومتري فورياً عبر بروتوكول الاتصال المباشر.</span>
+        </div>
+      </div>
+
+      <div class="modal-footer justify-between">
+        <button class="btn btn-dark-outline btn-sm" onclick="closeClockSyncModal()" type="button">إلغاء</button>
+        <button class="btn btn-gradient-primary btn-sm" id="btnExecuteClockSync" onclick="executeClockSync()" type="button">
+          <span class="material-symbols-outlined text-sm">update</span>
+          <span id="btnClockSyncText">تصحيح ومزامنة وقت البصمة الآن</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Toast Notifications ──────────────────────────────── -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="renderer.js?v=20260907_1"></script>
 </body>
 </html>
