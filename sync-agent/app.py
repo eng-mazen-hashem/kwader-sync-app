@@ -518,8 +518,8 @@ class GitHubSessionManager:
             except Exception as e:
                 print(f'[LEADER-SYNC] Error in leader loop: {e}')
                 
-            # Loop every 20 seconds
-            if self._stop_event.wait(20):
+            # Loop every 60 seconds (leader timeout threshold is 60s, so 60s interval is safe)
+            if self._stop_event.wait(60):
                 break
 
     def _get_device_sn(self):
@@ -562,9 +562,9 @@ class GitHubSessionManager:
                         self._last_upload_time = now_ts
                     return
                 else:
-                    # Someone else is leader. Check if they are dead (hb > 60s ago)
-                    if (now_ts - last_hb) > 60:
-                        print(f'[LEADER-SYNC] Leader {leader_sn} seems dead. Claiming leadership.')
+                    # Someone else is leader. Check if they are dead (hb > 150s ago — 2.5× the 60s heartbeat interval)
+                    if (now_ts - last_hb) > 150:
+                        print(f'[LEADER-SYNC] Leader {leader_sn} seems dead (no heartbeat for >150s). Claiming leadership.')
                         should_claim = True
                     else:
                         # Someone else is active leader. I should NOT run whatsapp-node.

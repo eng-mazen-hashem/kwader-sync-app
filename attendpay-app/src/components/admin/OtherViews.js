@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { supabase } from "../../supabaseClient";
 import { useLocale } from "../../context/LocaleContext";
+import QRCode from "react-qr-code";
 
 
 // -------------------------------------------------------------------------
@@ -19,10 +20,12 @@ export function SubscriptionPlansView({ planStats, loading: statsLoading = false
   const [loading, setLoading] = useState(true);
   const [plans, setPlans] = useState([]);
   const [editingPlan, setEditingPlan] = useState(null);
-  
+
   // Modal Edit states
   const [editMonthly, setEditMonthly] = useState(0);
   const [editYearly, setEditYearly] = useState(0);
+  const [editDeviceQuota, setEditDeviceQuota] = useState(1);
+  const [editEmployeeQuota, setEditEmployeeQuota] = useState(25);
   const [editBadge, setEditBadge] = useState("");
   const [editFeatures, setEditFeatures] = useState([]);
   const [newFeatureText, setNewFeatureText] = useState("");
@@ -37,8 +40,8 @@ export function SubscriptionPlansView({ planStats, loading: statsLoading = false
 
       if (error) throw error;
 
-      let monthlyPrices = [29, 79, 199];
-      let yearlyPrices = [23, 63, 159];
+      let monthlyPrices = [690, 1690, 3290];
+      let yearlyPrices = [550, 1350, 2650];
       let plansDetails = null;
 
       if (settings) {
@@ -52,25 +55,51 @@ export function SubscriptionPlansView({ planStats, loading: statsLoading = false
       if (!plansDetails) {
         plansDetails = [
           {
-            name: "Free",
+            name: "Starter",
             color: "border-gray-200",
             headerColor: "bg-gray-50",
             badge: null,
-            features: ["Up to 25 employees", "Employee profiles & docs", "Leave management", "Basic attendance", "Email support"],
+            deviceQuota: 1,
+            employeeQuota: 25,
+            features: [
+              "حتى 25 موظفاً (1 فرع / 1 جهاز بصمة ZK)",
+              "ربط ومزامنة أجهزة ZKTeco تلقائياً بدون IP ثابت",
+              "تطبيق الموظفين بالموبايل (حضور GPS وبصمة ورصيد)",
+              "إدارة الإجازات والأذونات ومسير رواتب أساسي",
+              "دعم فني سريع عبر المنصة والواتساب",
+            ],
           },
           {
             name: "Pro",
             color: "border-blue-300",
             headerColor: "bg-blue-600",
-            badge: "Most Popular",
-            features: ["Up to 200 employees", "Everything in Free", "AI-powered ATS", "Performance reviews", "Priority support", "API access"],
+            badge: "الأكثر طلباً",
+            deviceQuota: 3,
+            employeeQuota: 60,
+            features: [
+              "حتى 60 موظفاً (حتى 3 فروع / 3 أجهزة ZK)",
+              "تطبيق موظفين متكامل (قسائم رواتب + سلف + طلبات)",
+              "المساعد الذكي (وتين AI) للتحليلات الإدارية الفورية",
+              "بوابة إشعارات الواتساب الآلية التفاعلية للشركة",
+              "محرك الرواتب والضرائب والتأمينات المصرية (قانون 148)",
+              "دعم فني ذو أولوية فائقة عبر الواتساب",
+            ],
           },
           {
             name: "Enterprise",
             color: "border-violet-300",
             headerColor: "bg-violet-600",
-            badge: "Highest Tier",
-            features: ["Unlimited employees", "Everything in Pro", "Multi-entity support", "Dedicated CSM", "SSO & advanced security", "Custom contracts"],
+            badge: "المؤسسات الكبرى",
+            deviceQuota: 999,
+            employeeQuota: 150,
+            features: [
+              "حتى 150 موظفاً (فروع وأجهزة غير محدودة)",
+              "كل مميزات باقة Pro بلا أي قيود أو حدود",
+              "بوابة واتساب مخصصة برقم الشركة (QR مستقل)",
+              "ذكاء اصطناعي غير محدود وأتمتة التقارير التنفيذية",
+              "محرك قواعد الورديات المعقد والجزاءات التراكمية",
+              "مدير حساب مخصص وعقود خاصة وتدريب شامل",
+            ],
           },
         ];
       }
@@ -99,6 +128,8 @@ export function SubscriptionPlansView({ planStats, loading: statsLoading = false
     setEditingPlan(plan);
     setEditMonthly(plan.monthlyPrice);
     setEditYearly(plan.yearlyPrice);
+    setEditDeviceQuota(plan.deviceQuota ?? (plan.name === 'Enterprise' ? 999 : plan.name === 'Pro' ? 3 : 1));
+    setEditEmployeeQuota(plan.employeeQuota ?? (plan.name === 'Enterprise' ? 150 : plan.name === 'Pro' ? 60 : 25));
     setEditBadge(plan.badge || "");
     setEditFeatures([...plan.features]);
     setNewFeatureText("");
@@ -126,18 +157,22 @@ export function SubscriptionPlansView({ planStats, loading: statsLoading = false
         ...editingPlan,
         monthlyPrice: parseFloat(editMonthly) || 0,
         yearlyPrice: parseFloat(editYearly) || 0,
+        deviceQuota: parseInt(editDeviceQuota) || 1,
+        employeeQuota: parseInt(editEmployeeQuota) || 25,
         badge: editBadge.trim() || null,
         features: editFeatures
       };
 
       const monthlyPrices = updatedPlans.map((p) => p.monthlyPrice || 0);
       const yearlyPrices = updatedPlans.map((p) => p.yearlyPrice || 0);
-      const plansDetails = updatedPlans.map(({ name, badge, color, headerColor, features }) => ({
+      const plansDetails = updatedPlans.map(({ name, badge, color, headerColor, features, deviceQuota, employeeQuota }) => ({
         name: name || "",
         badge: badge || "",
         color: color || "",
         headerColor: headerColor || "",
-        features: features || []
+        features: features || [],
+        deviceQuota: deviceQuota ?? (name === 'Enterprise' ? 999 : name === 'Pro' ? 3 : 1),
+        employeeQuota: employeeQuota ?? (name === 'Enterprise' ? 150 : name === 'Pro' ? 60 : 25)
       }));
 
       const { error } = await supabase
@@ -155,7 +190,7 @@ export function SubscriptionPlansView({ planStats, loading: statsLoading = false
       toast.success(`تم تحديث باقة "${editingPlan.name}" وحفظ الأسعار بنجاح! ✅`);
     } catch (err) {
       console.error("Save plan error:", err);
-      toast.error("فشل في حفظ تعديلات الباقة.");
+      toast.error("فشل في حفظ تعديلات الباقة: " + (err.message || "حدث خطأ غير متوقع"));
     } finally {
       setIsSaving(false);
     }
@@ -179,8 +214,37 @@ export function SubscriptionPlansView({ planStats, loading: statsLoading = false
     );
   }
 
+  const totalPlanRevenue = planCards.reduce((acc, p) => acc + (p.revenue || 0), 0);
+  const totalPayingUsers = planCards.filter(p => (p.revenue > 0 || p.name === "Starter" || p.name === "Pro" || p.name === "Enterprise")).reduce((acc, p) => acc + (p.users || 0), 0);
+
   return (
     <div className="space-y-6" style={{ textAlign: "right", direction: "rtl" }}>
+      {/* Revenue & Profit Banner in Plans View */}
+      <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-2xl p-6 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-5">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-amber-300 font-bold text-xs uppercase tracking-wider">
+            <span>✨</span> لوحة إيرادات وأرباح الباقات
+          </div>
+          <h2 className="text-xl font-extrabold text-white">تحليل دخل الاشتراكات الفعلي</h2>
+          <p className="text-xs text-slate-300">يتم تجميع الإيرادات شهرياً وسنوياً بناءً على المبالغ الحقيقية المدفوعة من عملائك</p>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full md:w-auto">
+          <div className="bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-center">
+            <div className="text-[10px] text-slate-300 font-bold">الدخل الشهري الفعلي</div>
+            <div className="text-emerald-400 font-black text-base mt-1">{totalPlanRevenue.toLocaleString()} ج.م</div>
+          </div>
+          <div className="bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-center">
+            <div className="text-[10px] text-slate-300 font-bold">الدخل السنوي المتوقع</div>
+            <div className="text-amber-300 font-black text-base mt-1">{(totalPlanRevenue * 12).toLocaleString()} ج.م</div>
+          </div>
+          <div className="bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-center col-span-2 sm:col-span-1">
+            <div className="text-[10px] text-slate-300 font-bold">العملاء المشتركون</div>
+            <div className="text-sky-300 font-black text-base mt-1">{totalPayingUsers} منشأة</div>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {planCards.map((plan, i) => (
           <motion.div
@@ -188,11 +252,11 @@ export function SubscriptionPlansView({ planStats, loading: statsLoading = false
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
-            className={`bg-white rounded-2xl border-2 ${plan.color} overflow-hidden shadow-sm hover:shadow-lg transition-shadow`}
+            className={`bg-white rounded-2xl border-2 ${plan.color || 'border-gray-200'} overflow-hidden shadow-sm hover:shadow-lg transition-shadow`}
           >
-            <div className={`${plan.headerColor} px-6 py-5`}>
+            <div className={`${plan.headerColor || 'bg-slate-800'} px-6 py-5`}>
               <div className="flex items-start justify-between mb-2">
-                <h3 className={`${plan.name === "Free" ? "text-gray-800" : "text-white"}`} style={{ fontWeight: 800, fontSize: "1.2rem" }}>
+                <h3 className="text-white" style={{ fontWeight: 800, fontSize: "1.2rem" }}>
                   {plan.name}
                 </h3>
                 {plan.badge && (
@@ -201,10 +265,10 @@ export function SubscriptionPlansView({ planStats, loading: statsLoading = false
                   </span>
                 )}
               </div>
-              <div className={plan.name === "Free" ? "text-gray-700" : "text-white"} style={{ fontWeight: 800, fontSize: "1.6rem" }}>
+              <div className="text-white" style={{ fontWeight: 800, fontSize: "1.6rem" }}>
                 {plan.monthlyPrice} ج.م<span style={{ fontWeight: 400, fontSize: "0.85rem" }}>/شهرياً</span>
               </div>
-              <div className={plan.name === "Free" ? "text-gray-400 text-xs mt-1 font-semibold" : "text-white/80 text-xs mt-1 font-semibold"}>
+              <div className="text-white/80 text-xs mt-1 font-semibold">
                 الدفع السنوي: {plan.yearlyPrice} ج.م/شهرياً
               </div>
             </div>
@@ -257,7 +321,7 @@ export function SubscriptionPlansView({ planStats, loading: statsLoading = false
             return (
               <div key={plan.name} className="flex-1 flex flex-col items-center gap-2">
                 <div
-                  className={`w-full rounded-t-lg ${plan.name === "Free" ? "bg-gray-200" : plan.name === "Pro" ? "bg-blue-500" : "bg-violet-500"}`}
+                  className={`w-full rounded-t-lg ${plan.name === "Starter" || plan.name === "Free" ? "bg-emerald-500" : plan.name === "Pro" ? "bg-blue-500" : "bg-violet-500"}`}
                   style={{ height: `${height}%` }}
                 />
               </div>
@@ -267,7 +331,7 @@ export function SubscriptionPlansView({ planStats, loading: statsLoading = false
         <div className="grid grid-cols-3 gap-4">
           {planCards.map((plan) => (
             <div key={plan.name} className="text-center">
-              <div className={plan.name === "Free" ? "text-gray-600" : plan.name === "Pro" ? "text-blue-600" : "text-violet-600"} style={{ fontWeight: 800, fontSize: "1.1rem" }}>
+              <div className={plan.name === "Starter" || plan.name === "Free" ? "text-emerald-600" : plan.name === "Pro" ? "text-blue-600" : "text-violet-600"} style={{ fontWeight: 800, fontSize: "1.1rem" }}>
                 {statsLoading ? "—" : `${plan.revenue.toLocaleString()} ج.م`}
               </div>
               <div className="text-gray-400 text-xs mt-1">{plan.name} MRR</div>
@@ -287,7 +351,7 @@ export function SubscriptionPlansView({ planStats, loading: statsLoading = false
               onClick={() => setEditingPlan(null)}
               className="absolute inset-0 bg-black/50 backdrop-blur-xs"
             />
-            
+
             <motion.div
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -313,7 +377,7 @@ export function SubscriptionPlansView({ planStats, loading: statsLoading = false
 
               {/* Body */}
               <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
-                
+
                 {/* Prices row */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -338,6 +402,30 @@ export function SubscriptionPlansView({ planStats, loading: statsLoading = false
                   </div>
                 </div>
 
+                {/* Quotas row */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1.5">سعة الأجهزة (جهاز/فرع)</label>
+                    <input
+                      type="number"
+                      value={editDeviceQuota}
+                      onChange={(e) => setEditDeviceQuota(parseInt(e.target.value) || 0)}
+                      className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition-all outline-none font-semibold"
+                      style={{ direction: "ltr" }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1.5">سعة الموظفين (الحد الأقصى)</label>
+                    <input
+                      type="number"
+                      value={editEmployeeQuota}
+                      onChange={(e) => setEditEmployeeQuota(parseInt(e.target.value) || 0)}
+                      className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition-all outline-none font-semibold"
+                      style={{ direction: "ltr" }}
+                    />
+                  </div>
+                </div>
+
                 {/* Badge info */}
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1.5">الشارة المميزة للباقة (Badge)</label>
@@ -353,7 +441,7 @@ export function SubscriptionPlansView({ planStats, loading: statsLoading = false
                 {/* Features List Customizer */}
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1.5">مميزات وخصائص الباقة</label>
-                  
+
                   {/* Add feature input */}
                   <div className="flex gap-2 mb-3">
                     <input
@@ -518,7 +606,7 @@ export function SupportTicketsView({ tickets = [], stats, totalCount, loading = 
 
       // Reverse the batch back to chronological order for visual display
       const newReplies = data ? [...data].reverse() : [];
-      
+
       // If we got exactly 30 replies, there might be more on the server
       setHasMoreReplies(newReplies.length === 30);
 
@@ -718,9 +806,9 @@ export function SupportTicketsView({ tickets = [], stats, totalCount, loading = 
           message: originalText.trim(),
         }])
         .select();
-        
+
       if (error) throw error;
-      
+
       // Update state with verified database record (giving it the permanent UUID)
       if (data && data.length > 0) {
         setReplies((prev) =>
@@ -731,9 +819,9 @@ export function SupportTicketsView({ tickets = [], stats, totalCount, loading = 
           prev.map((r) => (r.id === tempId ? { ...newReplyOptimistic, isOptimistic: false } : r))
         );
       }
-      
+
       toast.success("تم إرسال الرد بنجاح.");
-      
+
       // Auto transition state to "In Progress" if it is currently "Open"
       if (statusValue === "Open") {
         await handleStatusChange("In Progress");
@@ -741,7 +829,7 @@ export function SupportTicketsView({ tickets = [], stats, totalCount, loading = 
     } catch (err) {
       console.error(err);
       toast.error("فشل في إرسال الرد: " + err.message);
-      
+
       // Rollback: Remove the optimistic reply and restore draft input
       setReplies((prev) => prev.filter((r) => r.id !== tempId));
       setReplyText(originalText);
@@ -938,9 +1026,8 @@ export function SupportTicketsView({ tickets = [], stats, totalCount, loading = 
               <button
                 key={p}
                 onClick={() => setPage(p)}
-                className={`w-8 h-8 rounded-lg border text-sm transition-colors ${
-                  p === page ? "bg-blue-600 border-blue-600 text-white" : "border-gray-200 text-gray-600 hover:bg-gray-50"
-                }`}
+                className={`w-8 h-8 rounded-lg border text-sm transition-colors ${p === page ? "bg-blue-600 border-blue-600 text-white" : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                  }`}
                 style={{ fontWeight: 600 }}
               >
                 {p}
@@ -1060,7 +1147,7 @@ export function SupportTicketsView({ tickets = [], stats, totalCount, loading = 
                 {/* Live replies chat history */}
                 <div>
                   <h4 className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-3">تحديثات وسجل الردود الحية</h4>
-                  
+
                   {loadingReplies && (
                     <div className="py-12 flex flex-col items-center justify-center gap-3">
                       <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
@@ -1102,11 +1189,10 @@ export function SupportTicketsView({ tickets = [], stats, totalCount, loading = 
                             className={`flex ${isAdmin ? "justify-start" : "justify-end"}`}
                           >
                             <div
-                              className={`max-w-[85%] rounded-2xl px-4 py-2.5 shadow-xs text-xs leading-relaxed transition-opacity duration-200 ${
-                                isAdmin
-                                  ? "bg-slate-800 text-white rounded-tr-none"
-                                  : "bg-blue-600 text-white rounded-tl-none"
-                              }`}
+                              className={`max-w-[85%] rounded-2xl px-4 py-2.5 shadow-xs text-xs leading-relaxed transition-opacity duration-200 ${isAdmin
+                                ? "bg-slate-800 text-white rounded-tr-none"
+                                : "bg-blue-600 text-white rounded-tl-none"
+                                }`}
                               style={{ opacity: r.isOptimistic ? 0.7 : 1 }}
                             >
                               <div className="flex items-center gap-2 mb-1.5 opacity-80" style={{ fontSize: "0.65rem" }}>
@@ -1244,6 +1330,167 @@ export function SystemSettingsView() {
   const [editingAd, setEditingAd] = useState(null);
   const [isAdModalOpen, setIsAdModalOpen] = useState(false);
 
+  // Platform WhatsApp Status (Leader node QR scanner)
+  const [waStatus, setWaStatus] = useState("checking"); // checking, disconnected, qr_pending, connected
+  const [waQr, setWaQr] = useState(null);
+  const [activeNode, setActiveNode] = useState(null);
+  const [lastBeat, setLastBeat] = useState(null);
+  const [waQueueStats, setWaQueueStats] = useState({ pending: 0, sent: 0 });
+  const [clusterNodeCount, setClusterNodeCount] = useState(1);
+  const [centralChannelPhone, setCentralChannelPhone] = useState(null);
+  // Realtime-driven WA status — zero polling egress
+  // waStatusDataRef holds latest fetched snapshot for derive logic
+  const waStatusDataRef = useRef({ defaultCh: null, lockData: null, qrData: null });
+
+  // ─── One-time initial fetch (replaces the old 7-request polling cycle) ───
+  const fetchWaStatusSnapshot = async () => {
+    try {
+      const [{ data: defaultCh }, { data: lockData }, { data: qrData }] = await Promise.all([
+        supabase.from('whatsapp_channels').select('id,status,phone_number,qr_code,last_heartbeat,active_node_id,is_default').eq('is_default', true).maybeSingle(),
+        supabase.from('system_settings').select('value').eq('key', 'whatsapp_lock').maybeSingle(),
+        supabase.from('system_settings').select('value,updated_at').eq('key', 'whatsapp_qr_pending').maybeSingle(),
+      ]);
+      waStatusDataRef.current = { defaultCh, lockData, qrData };
+      _deriveWaStatus({ defaultCh, lockData, qrData });
+
+      // Lightweight count-only queries (no row data)
+      const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      const [{ count: pendingCount }, { count: sentCount }, { count: nodesCount }] = await Promise.all([
+        supabase.from('whatsapp_queue').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('whatsapp_queue').select('id', { count: 'exact', head: true }).eq('status', 'sent'),
+        supabase.from('whatsapp_nodes').select('id', { count: 'exact', head: true }).gte('last_seen', fiveMinAgo),
+      ]);
+      setWaQueueStats({ pending: pendingCount || 0, sent: sentCount || 0 });
+      if (nodesCount && nodesCount > 0) setClusterNodeCount(nodesCount);
+    } catch (e) {
+      console.error('Error fetching WA status snapshot:', e);
+    }
+  };
+
+  // ─── Pure derive function — no network calls ───
+  const _deriveWaStatus = ({ defaultCh, lockData, qrData }) => {
+    if (defaultCh?.phone_number) setCentralChannelPhone(defaultCh.phone_number);
+    const now = Date.now();
+    let isAlive = false;
+    let activeNodeName = null;
+    let heartbeatTime = null;
+
+    if (lockData?.value?.node_id && lockData.value.last_heartbeat) {
+      const beatMs = new Date(lockData.value.last_heartbeat).getTime();
+      const ageMs = now - beatMs;
+      if (!isNaN(beatMs) && ageMs >= -5000 && ageMs < 120000) {
+        isAlive = true;
+        activeNodeName = lockData.value.node_id;
+        heartbeatTime = lockData.value.last_heartbeat;
+      }
+    }
+    if (!isAlive && defaultCh?.last_heartbeat) {
+      const beatMs = new Date(defaultCh.last_heartbeat).getTime();
+      const ageMs = now - beatMs;
+      if (!isNaN(beatMs) && ageMs >= -5000 && ageMs < 120000) {
+        isAlive = true;
+        activeNodeName = defaultCh.active_node_id || 'سيرفر ويندوز';
+        heartbeatTime = defaultCh.last_heartbeat;
+      }
+    }
+
+    const qrTimestamp = qrData?.value?.timestamp || qrData?.updated_at;
+    const qrAgeMs = qrTimestamp ? now - new Date(qrTimestamp).getTime() : Infinity;
+    const isQrFresh = Boolean(qrData?.value?.qr && qrAgeMs < 90000);
+    const activeChannelQr = defaultCh?.qr_code;
+    const isChannelConnected = Boolean(isAlive && defaultCh?.status === 'connected' && defaultCh?.phone_number);
+
+    if (isChannelConnected) {
+      setWaStatus('connected');
+      setActiveNode(activeNodeName || defaultCh?.active_node_id || 'سيرفر ويندوز');
+      setLastBeat(heartbeatTime || defaultCh?.last_heartbeat);
+      setWaQr(null);
+    } else if (isAlive && (isQrFresh || activeChannelQr || defaultCh?.status === 'qr_pending')) {
+      setWaStatus('qr_pending');
+      setWaQr(activeChannelQr || (isQrFresh ? qrData?.value?.qr : null));
+    } else {
+      setWaStatus('disconnected');
+      setWaQr(null);
+    }
+  };
+
+  // ─── Realtime subscription — fires only on actual DB changes (zero polling) ───
+  useEffect(() => {
+    fetchWaStatusSnapshot();
+
+    const rtChannel = supabase
+      .channel('wa-status-realtime-v2')
+      // whatsapp_channels changes → re-derive immediately
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'whatsapp_channels', filter: 'is_default=eq.true' }, (payload) => {
+        const updated = { ...waStatusDataRef.current, defaultCh: payload.new || waStatusDataRef.current.defaultCh };
+        waStatusDataRef.current = updated;
+        _deriveWaStatus(updated);
+        if (payload.new?.phone_number) setCentralChannelPhone(payload.new.phone_number);
+      })
+      // whatsapp_lock changes → re-derive
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'system_settings', filter: 'key=eq.whatsapp_lock' }, (payload) => {
+        const updated = { ...waStatusDataRef.current, lockData: payload.new };
+        waStatusDataRef.current = updated;
+        _deriveWaStatus(updated);
+      })
+      // QR pending changes → re-derive
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'system_settings', filter: 'key=eq.whatsapp_qr_pending' }, (payload) => {
+        const updated = { ...waStatusDataRef.current, qrData: payload.new };
+        waStatusDataRef.current = updated;
+        _deriveWaStatus(updated);
+      })
+      // Queue count changes → lightweight count only
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'whatsapp_queue' }, (payload) => {
+        if (payload.new?.status === 'pending') {
+          setWaQueueStats(prev => ({ ...prev, pending: prev.pending + 1 }));
+        }
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'whatsapp_queue' }, (payload) => {
+        if (payload.old?.status === 'pending' && payload.new?.status === 'sent') {
+          setWaQueueStats(prev => ({ pending: Math.max(0, prev.pending - 1), sent: prev.sent + 1 }));
+        }
+      })
+      // Nodes count changes
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'whatsapp_nodes' }, () => {
+        const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+        supabase.from('whatsapp_nodes').select('id', { count: 'exact', head: true }).gte('last_seen', fiveMinAgo)
+          .then(({ count }) => { if (count && count > 0) setClusterNodeCount(count); });
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(rtChannel); };
+  }, []);
+
+  const handleWaDisconnect = async () => {
+    if (!window.confirm("هل أنت متأكد من تسجيل الخروج وفصل حساب الواتساب الخاص بالمنصة؟")) return;
+    try {
+      // 1. إرسال أمر فوري عبر Realtime للعقدة النشطة لمسح الجلسة
+      await supabase.from('system_settings').upsert({
+        key: 'whatsapp_control_master',
+        value: { action: 'force_disconnect', requested_at: new Date().toISOString(), requested_by: 'admin' },
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'key' });
+
+      // 2. تحديث القناة الافتراضية
+      await supabase.from('whatsapp_channels').update({
+        status: 'qr_pending',
+        phone_number: null,
+        qr_code: null,
+        updated_at: new Date().toISOString()
+      }).eq('is_default', true);
+
+      await supabase.from('system_settings').delete().eq('key', 'whatsapp_session_zip');
+      await supabase.from('system_settings').delete().eq('key', 'whatsapp_qr_pending');
+
+      toast.success("تم إرسال أمر فصل الواتساب بنجاح. جاري طلب رمز QR جديد...");
+      setWaStatus("qr_pending");
+      setWaQr(null);
+      fetchWaStatusSnapshot(); // Realtime will auto-update from here
+    } catch (e) {
+      toast.error("فشل في قطع الاتصال: " + e.message);
+    }
+  };
+
   const [toggles, setToggles] = useState({
     "Internal Alerts": true, "External Alerts (TG/WA)": true, "Admin Digest": true,
     "2FA Enforcement": true, "IP Whitelist": false, "Auto Backups": true, "Maintenance Mode": false,
@@ -1316,20 +1563,21 @@ export function SystemSettingsView() {
         }
       }
 
+      const nowIso = new Date().toISOString();
       const { error } = await supabase
         .from('system_settings')
         .upsert([
-          { key: 'platform_name', value: platformName },
-          { key: 'support_email', value: supportEmail },
-          { key: 'trial_days', value: parseInt(trialDays) || 35 },
-          { key: 'sync_agent_version', value: syncAgentVersion },
-          { key: 'sync_agent_download_url', value: finalDownloadUrl },
-          { key: 'whatsapp_notifications_enabled', value: whatsappNotificationsEnabled },
-          { key: 'whatsapp_recipient_phone', value: whatsappRecipientPhone },
-          { key: 'contact_phone', value: contactPhone },
-          { key: 'contact_whatsapp', value: contactWhatsapp },
-          { key: 'contact_offices', value: contactOffices },
-          { key: 'desktop_ads', value: desktopAds }
+          { key: 'platform_name', value: platformName, updated_at: nowIso },
+          { key: 'support_email', value: supportEmail, updated_at: nowIso },
+          { key: 'trial_days', value: parseInt(trialDays) || 35, updated_at: nowIso },
+          { key: 'sync_agent_version', value: syncAgentVersion, updated_at: nowIso },
+          { key: 'sync_agent_download_url', value: finalDownloadUrl, updated_at: nowIso },
+          { key: 'whatsapp_notifications_enabled', value: whatsappNotificationsEnabled, updated_at: nowIso },
+          { key: 'whatsapp_recipient_phone', value: whatsappRecipientPhone, updated_at: nowIso },
+          { key: 'contact_phone', value: contactPhone, updated_at: nowIso },
+          { key: 'contact_whatsapp', value: contactWhatsapp, updated_at: nowIso },
+          { key: 'contact_offices', value: contactOffices, updated_at: nowIso },
+          { key: 'desktop_ads', value: desktopAds, updated_at: nowIso }
         ], { onConflict: 'key' });
 
       if (error) throw error;
@@ -1337,7 +1585,7 @@ export function SystemSettingsView() {
       toast.success("تم حفظ إعدادات النظام وتحديث برنامج المزامنة بنجاح! ✅");
     } catch (err) {
       console.error("Save error:", err);
-      toast.error("فشل في حفظ إعدادات النظام.");
+      toast.error("فشل في حفظ إعدادات النظام: " + (err.message || "حدث خطأ غير متوقع"));
     } finally {
       setIsSaving(false);
     }
@@ -1425,7 +1673,7 @@ export function SystemSettingsView() {
           <h3 className="text-gray-900" style={{ fontWeight: 700, fontSize: "0.95rem" }}>إدارة وتحديث برنامج المزامنة (Sync Agent)</h3>
         </div>
         <div className="px-6 py-4 space-y-4">
-          
+
           <div className="flex items-center justify-between gap-6">
             <div className="flex-1 min-w-0">
               <div className="text-gray-800" style={{ fontWeight: 600, fontSize: "0.875rem" }}>رقم إصدار البرنامج النشط</div>
@@ -1457,7 +1705,7 @@ export function SystemSettingsView() {
           <div className="pt-2 border-t border-dashed border-gray-100 flex flex-col gap-2">
             <div className="text-gray-800" style={{ fontWeight: 600, fontSize: "0.875rem" }}>رفع ملف برنامج المزامنة الجديد (.exe / .zip)</div>
             <div className="text-gray-400" style={{ fontSize: "0.75rem" }}>سيتم رفع الملف مباشرة إلى خوادم تخزين المنصة (Supabase Storage) وربط رابط التحميل به عند الحفظ</div>
-            
+
             <div className="mt-2 flex items-center gap-4">
               <label className="px-4 py-2 rounded-xl border border-purple-200 text-purple-600 hover:bg-purple-50 transition-colors text-xs font-semibold cursor-pointer flex items-center gap-2">
                 <UploadCloud className="w-4 h-4" />
@@ -1520,13 +1768,11 @@ export function SystemSettingsView() {
               </div>
               <button
                 onClick={() => setToggles((t) => ({ ...t, [item.label]: !t[item.label] }))}
-                className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
-                  toggles[item.label] ? "bg-blue-600" : "bg-gray-200"
-                }`}
+                className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${toggles[item.label] ? "bg-blue-600" : "bg-gray-200"
+                  }`}
               >
-                <div className={`absolute top-0.5 right-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
-                  toggles[item.label] ? "translate-x-[-20px]" : "translate-x-0"
-                }`} />
+                <div className={`absolute top-0.5 right-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${toggles[item.label] ? "translate-x-[-20px]" : "translate-x-0"
+                  }`} />
               </button>
             </div>
           ))}
@@ -1551,12 +1797,12 @@ export function SystemSettingsView() {
           {/* Unified server info badge */}
           <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-100">
             <div className="mt-0.5 w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2 2 4-4" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </div>
             <div>
-              <div style={{ fontWeight: 700, fontSize: "0.8rem", color: "#065f46" }}>سيرفر الواتساب الموحد (Railway)</div>
+              <div style={{ fontWeight: 700, fontSize: "0.8rem", color: "#065f46" }}>خادم الواتساب اللامركزي (Kwader Sync)</div>
               <div style={{ fontSize: "0.72rem", color: "#047857", marginTop: 2 }}>
-                الإشعارات تُرسل عبر نفس سيرفر الواتساب المستخدم في الجداول الزمنية التلقائية. لا حاجة لإدخال API URL أو مفتاح — الإعداد مدمج في المشروع.
+                الإشعارات تُرسل عبر تطبيق المزامنة اللامركزي. تأكد من تشغيل تطبيق Kwader Sync لضمان إرسال الإشعارات التلقائية للعملاء بدون الحاجة لمفاتيح API.
               </div>
             </div>
           </div>
@@ -1568,13 +1814,11 @@ export function SystemSettingsView() {
             </div>
             <button
               onClick={() => setWhatsappNotificationsEnabled(v => !v)}
-              className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
-                whatsappNotificationsEnabled ? "bg-emerald-600" : "bg-gray-200"
-              }`}
+              className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${whatsappNotificationsEnabled ? "bg-emerald-600" : "bg-gray-200"
+                }`}
             >
-              <div className={`absolute top-0.5 right-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
-                whatsappNotificationsEnabled ? "translate-x-[-20px]" : "translate-x-0"
-              }`} />
+              <div className={`absolute top-0.5 right-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${whatsappNotificationsEnabled ? "translate-x-[-20px]" : "translate-x-0"
+                }`} />
             </button>
           </div>
 
@@ -1594,6 +1838,118 @@ export function SystemSettingsView() {
                   style={{ direction: "ltr" }}
                 />
               </div>
+            </div>
+          )}
+        </div>
+      </motion.div>
+
+      {/* 5.5 Platform Central WhatsApp Link (Super Admin) */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.38 }}
+        className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+      >
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100">
+          <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
+            <span style={{ fontSize: '1.2rem' }}>📲</span>
+          </div>
+          <h3 className="text-gray-900" style={{ fontWeight: 700, fontSize: "0.95rem" }}>ربط وتفعيل واتساب المنصة المركزي</h3>
+        </div>
+        <div className="px-6 py-4 space-y-4">
+          <p className="text-gray-400" style={{ fontSize: '0.75rem' }}>
+            هذا هو الرقم الرسمي الذي يرسل رسائل الـ OTP والتقارير لجميع عملاء المنصة. يعمل النظام بالبنية اللامركزية التلقائية.
+          </p>
+
+          {waStatus === "checking" && (
+            <div className="py-4 flex items-center justify-center gap-2 text-gray-500 text-xs">
+              <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+              <span>جاري التحقق من حالة الاتصال بالواتساب...</span>
+            </div>
+          )}
+
+          {waStatus === "connected" && (
+            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-emerald-800" style={{ fontWeight: 700, fontSize: "0.85rem" }}>
+                  <span>🟢 متصل بالكامل وشغال بنجاح</span>
+                  {centralChannelPhone && (
+                    <span className="font-mono text-xs bg-white text-emerald-900 px-2 py-0.5 rounded-lg border border-emerald-200 font-bold">
+                      +{centralChannelPhone}
+                    </span>
+                  )}
+                  <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                    نظام عنقودي لا مركزي (Cluster v2.0)
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleWaDisconnect}
+                  className="px-3 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold transition-all border border-red-100"
+                >
+                  تسجيل الخروج وقطع الربط
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-emerald-100/60 text-xs text-emerald-700">
+                <div className="bg-white/80 p-2.5 rounded-xl border border-emerald-100 shadow-sm">
+                  <div className="text-[10px] text-emerald-500 font-semibold">العقدة النشطة (Leader Node)</div>
+                  <div className="font-mono text-[11px] font-bold truncate mt-0.5" title={activeNode}>{activeNode}</div>
+                </div>
+                <div className="bg-white/80 p-2.5 rounded-xl border border-emerald-100 shadow-sm">
+                  <div className="text-[10px] text-emerald-500 font-semibold">طابور الرسائل الفوري</div>
+                  <div className="font-bold text-[11px] mt-0.5 flex items-center gap-3">
+                    <span className="text-emerald-700">✅ تم الإرسال: {waQueueStats.sent}</span>
+                    <span className="text-amber-600">⏳ انتظار: {waQueueStats.pending}</span>
+                  </div>
+                </div>
+                <div className="bg-white/80 p-2.5 rounded-xl border border-emerald-100 shadow-sm">
+                  <div className="text-[10px] text-emerald-500 font-semibold">آخر نبضة حياة (Heartbeat)</div>
+                  <div className="font-bold text-[11px] mt-0.5 text-emerald-700">
+                    {lastBeat ? new Date(lastBeat).toLocaleTimeString('ar-SA') : 'الآن'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {waStatus === "qr_pending" && (
+            <div className="p-5 rounded-xl bg-amber-50 border border-amber-100 flex flex-col items-center gap-4">
+              <div className="text-amber-800 text-center" style={{ fontWeight: 700, fontSize: "0.85rem" }}>
+                ⚠️ السيرفر اللامركزي نشط ولكنه بانتظار مسح كود الـ QR!
+              </div>
+              <p className="text-xs text-amber-600 text-center max-w-sm">
+                افتح الواتساب على هاتف المنصة الرئيسي ← الأجهزة المرتبطة ← ربط جهاز، وامسح الكود أدناه لتفعيل الخدمة للجميع.
+              </p>
+              <div className="bg-white p-3 rounded-xl border border-amber-200 shadow-sm">
+
+                {waQr ? (
+                  <QRCode value={waQr} size={192} style={{ height: "auto", maxWidth: "100%", width: "100%" }} />
+                ) : (
+                  <div className="flex flex-col items-center justify-center w-48 h-48 text-gray-400">
+                    <Loader2 className="w-8 h-8 animate-spin mb-2" />
+                    <span className="text-xs">جاري انتظار الـ QR...</span>
+                  </div>
+                )}
+
+              </div>
+              <span className="text-[10px] text-amber-500 animate-pulse font-semibold">🔄 يتحدث الكود تلقائياً عند التغيير...</span>
+            </div>
+          )}
+
+          {waStatus === "disconnected" && (
+            <div className="p-4 rounded-xl bg-rose-50 border border-rose-100 space-y-2">
+              <div className="flex items-center gap-2 text-rose-800" style={{ fontWeight: 700, fontSize: "0.85rem" }}>
+                <span>🔴 غير متصل حالياً (برنامج KWADER Sync متوقف)</span>
+              </div>
+              <p className="text-xs text-rose-700">
+                لا توجد أي عقدة نشطة ترسل نبضات حياة حالياً. يرجى تشغيل برنامج <strong>KWADER Sync</strong> على جهازك لبدء إرسال رسائل الواتساب والـ OTP فوراً.
+              </p>
+              {lastBeat && (
+                <div className="text-[11px] text-rose-500 font-semibold">
+                  آخر نبضة حياة مسجلة: {new Date(lastBeat).toLocaleString('ar-SA')}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1652,7 +2008,7 @@ export function SystemSettingsView() {
                 + إضافة فرع جديد
               </button>
             </div>
-            
+
             <div className="space-y-3">
               {contactOffices.map((office, idx) => (
                 <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex flex-col gap-2 relative">
@@ -1664,7 +2020,7 @@ export function SystemSettingsView() {
                   >
                     <X className="w-4 h-4" />
                   </button>
-                  
+
                   <div className="grid grid-cols-3 gap-3">
                     <div>
                       <label className="block text-[10px] font-bold text-slate-500 mb-1">اسم المدينة (عربي)</label>
@@ -1710,7 +2066,7 @@ export function SystemSettingsView() {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[10px] font-bold text-slate-500 mb-1">العنوان بالتفصيل (عربي)</label>
@@ -1787,9 +2143,8 @@ export function SystemSettingsView() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold text-gray-800">{ad.title || "بدون عنوان"}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1 ${
-                      ad.active ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-gray-200 text-gray-500 border border-gray-355"
-                    }`}>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1 ${ad.active ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-gray-200 text-gray-500 border border-gray-355"
+                      }`}>
                       {ad.active ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
                       <span>{ad.active ? "نشط" : "معطل"}</span>
                     </span>
@@ -1804,7 +2159,7 @@ export function SystemSettingsView() {
                     </div>
                   )}
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
@@ -1812,13 +2167,11 @@ export function SystemSettingsView() {
                       updated[idx] = { ...updated[idx], active: !updated[idx].active };
                       setDesktopAds(updated);
                     }}
-                    className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${
-                      ad.active ? "bg-emerald-600" : "bg-gray-200"
-                    }`}
+                    className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${ad.active ? "bg-emerald-600" : "bg-gray-200"
+                      }`}
                   >
-                    <div className={`absolute top-0.5 right-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${
-                      ad.active ? "translate-x-[-16px]" : "translate-x-0"
-                    }`} />
+                    <div className={`absolute top-0.5 right-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${ad.active ? "translate-x-[-16px]" : "translate-x-0"
+                      }`} />
                   </button>
 
                   <button
@@ -1871,7 +2224,7 @@ export function SystemSettingsView() {
             }}
             className="absolute inset-0 bg-black/50 backdrop-blur-xs"
           />
-          
+
           <motion.div
             initial={{ scale: 0.95, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -1954,13 +2307,11 @@ export function SystemSettingsView() {
                 <button
                   type="button"
                   onClick={() => setEditingAd({ ...editingAd, active: !editingAd.active })}
-                  className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
-                    editingAd.active ? "bg-emerald-600" : "bg-gray-200"
-                  }`}
+                  className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${editingAd.active ? "bg-emerald-600" : "bg-gray-200"
+                    }`}
                 >
-                  <div className={`absolute top-0.5 right-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
-                    editingAd.active ? "translate-x-[-20px]" : "translate-x-0"
-                  }`} />
+                  <div className={`absolute top-0.5 right-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${editingAd.active ? "translate-x-[-20px]" : "translate-x-0"
+                    }`} />
                 </button>
               </div>
             </div>
@@ -1984,7 +2335,7 @@ export function SystemSettingsView() {
                     toast.error("يرجى إدخال عنوان الإعلان ووصفه!");
                     return;
                   }
-                  
+
                   const isNew = !desktopAds.some(ad => ad.id === editingAd.id);
                   let updatedAds;
                   if (isNew) {
@@ -2046,7 +2397,7 @@ export function DevicesDiagnosticsView() {
   const analyzeDeviceStatus = (device) => {
     const syncData = device.companies?.sync_service_status?.[0];
     const now = new Date();
-    
+
     // Check device.last_sync first to see if there's recent activity
     const lastDeviceSync = device.last_sync ? new Date(device.last_sync) : null;
     const syncDiffMinutes = lastDeviceSync ? (now - lastDeviceSync) / 1000 / 60 : null;
@@ -2054,7 +2405,7 @@ export function DevicesDiagnosticsView() {
 
     const lastHeartbeat = syncData ? new Date(syncData.last_heartbeat) : null;
     const diffMinutes = lastHeartbeat ? (now - lastHeartbeat) / 1000 / 60 : null;
-    
+
     // Consider sync online if either syncData is recent OR device recently synced
     const isSyncOnline = isDeviceRecentlySynced || (diffMinutes !== null && diffMinutes < 5);
 
@@ -2112,7 +2463,7 @@ export function DevicesDiagnosticsView() {
         code: "DEVICE_PING_FAILED",
         statusText: "البصمة غير متصلة بالشبكة المحلية للشركة",
         severity: "critical",
-        explanation: syncData?.last_error_message 
+        explanation: syncData?.last_error_message
           ? `حاول برنامج المزامنة الاتصال ولكن ظهر الخطأ التالي: ${syncData.last_error_message}`
           : "برنامج المزامنة للعميل يعمل ويتصل بالإنترنت بنجاح، ولكنه لا يستطيع الوصول لجهاز البصمة في الشبكة الداخلية للشركة (LAN/Wi-Fi).",
         steps: [
@@ -2157,7 +2508,7 @@ export function DevicesDiagnosticsView() {
     setPingingId(device.id);
     try {
       toast.info(`جاري تحديث وقراءة حالة الجهاز "${device.device_name}" من الخادم...`);
-      
+
       // Delay slightly for UI response
       await new Promise((resolve) => setTimeout(resolve, 800));
 
@@ -2322,19 +2673,18 @@ export function DevicesDiagnosticsView() {
             {devices.map((device) => {
               const isConnected = device.status === "connected";
               const isPinging = pingingId === device.id;
-              
+
               return (
                 <motion.div
                   key={device.id}
                   whileHover={{ scale: 1.03, translateY: -2 }}
                   onClick={() => !isPinging && handlePing(device)}
-                  className={`relative p-4 rounded-xl border cursor-pointer transition-all ${
-                    isPinging 
-                      ? "border-blue-400 bg-blue-50/30 shadow-md ring-2 ring-blue-100" 
-                      : isConnected
-                        ? "border-emerald-100 bg-emerald-50/10 hover:border-emerald-300 hover:bg-emerald-50/30"
-                        : "border-rose-100 bg-rose-50/10 hover:border-rose-300 hover:bg-rose-50/30"
-                  }`}
+                  className={`relative p-4 rounded-xl border cursor-pointer transition-all ${isPinging
+                    ? "border-blue-400 bg-blue-50/30 shadow-md ring-2 ring-blue-100"
+                    : isConnected
+                      ? "border-emerald-100 bg-emerald-50/10 hover:border-emerald-300 hover:bg-emerald-50/30"
+                      : "border-rose-100 bg-rose-50/10 hover:border-rose-300 hover:bg-rose-50/30"
+                    }`}
                 >
                   {/* Status Indicator */}
                   <div className="absolute top-3 left-3 flex items-center gap-1">
@@ -2352,9 +2702,9 @@ export function DevicesDiagnosticsView() {
                       <span className="text-slate-800 font-bold text-xs truncate max-w-[120px]">{device.device_name}</span>
                       <Server className={`w-3.5 h-3.5 ${isConnected ? "text-emerald-500" : "text-rose-500"}`} />
                     </div>
-                    
+
                     <span className="text-slate-400 text-[0.65rem] truncate">{device.companies?.name || "شركة غير معروفة"}</span>
-                    
+
                     <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[0.65rem] text-slate-500">
                       <span className="font-mono">{device.ip_address || "192.168.1.201"}</span>
                       {isPinging ? (
@@ -2390,7 +2740,7 @@ export function DevicesDiagnosticsView() {
             <h3 className="text-gray-900 font-bold text-[0.95rem]">تشخيص ومراقبة أجهزة البصمة</h3>
             <p className="text-gray-400 text-xs mt-1">قائمة تفاعلية لمراقبة سلامة اتصال أجهزة ZK وحل مشاكل المزامنة فورياً</p>
           </div>
-          
+
           <div className="flex items-center gap-3">
             {/* Search */}
             <div className="relative">
@@ -2449,7 +2799,7 @@ export function DevicesDiagnosticsView() {
                   </td>
                 </tr>
               )}
-              
+
               {!loading && filteredDevices.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-6 py-20 bg-slate-50/30">
@@ -2460,9 +2810,9 @@ export function DevicesDiagnosticsView() {
                         <div className="absolute inset-4 rounded-full border border-blue-200/50" />
                         <div className="absolute inset-10 rounded-full border border-blue-200/50" />
                         <div className="absolute inset-16 rounded-full border border-blue-200/50" />
-                        
+
                         {/* Radar Sweep */}
-                        <motion.div 
+                        <motion.div
                           className="absolute inset-0 rounded-full bg-[conic-gradient(from_0deg,transparent_0deg,rgba(59,130,246,0.1)_90deg,rgba(59,130,246,0.4)_360deg)]"
                           animate={{ rotate: 360 }}
                           transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
@@ -2473,27 +2823,27 @@ export function DevicesDiagnosticsView() {
                           <div className="absolute inset-0 rounded-full bg-blue-400 animate-ping opacity-50"></div>
                           <Wifi className="w-5 h-5 text-white" />
                         </div>
-                        
+
                         {/* Pulsing Dots simulating scanning */}
-                        <motion.div 
+                        <motion.div
                           className="absolute w-2 h-2 bg-blue-500 rounded-full top-8 right-12"
                           animate={{ opacity: [0, 1, 0] }}
                           transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
                         />
-                        <motion.div 
+                        <motion.div
                           className="absolute w-2 h-2 bg-emerald-500 rounded-full bottom-10 left-10"
                           animate={{ opacity: [0, 1, 0] }}
                           transition={{ duration: 2, repeat: Infinity, delay: 1.2 }}
                         />
                       </div>
-                      
+
                       <h4 className="text-gray-900 font-bold text-lg mb-2">جاري البحث ومراقبة الشبكة...</h4>
                       <p className="text-gray-500 text-sm max-w-sm text-center mb-6 leading-relaxed">
-                        {searchQuery || statusFilter !== 'All' 
-                          ? "لا توجد أجهزة مطابقة لمعايير البحث الحالية. جرب تغيير الفلاتر." 
+                        {searchQuery || statusFilter !== 'All'
+                          ? "لا توجد أجهزة مطابقة لمعايير البحث الحالية. جرب تغيير الفلاتر."
                           : "لم يتم ربط أي أجهزة بصمة بالخادم حتى الآن. نحن في وضع الاستعداد بانتظار أول إشارة (Heartbeat)."}
                       </p>
-                      
+
                       {!(searchQuery || statusFilter !== 'All') && (
                         <button className="px-5 py-2.5 bg-white border border-gray-200 text-blue-600 rounded-xl text-sm font-bold shadow-sm hover:bg-blue-50 transition-colors flex items-center gap-2 group">
                           <BookOpen className="w-4 h-4 group-hover:scale-110 transition-transform" />
@@ -2509,18 +2859,18 @@ export function DevicesDiagnosticsView() {
                 const isPinging = pingingId === device.id;
                 const isSendingAlert = sendingAlertId === device.id;
                 const isSyncing = syncingId === device.id;
-                
+
                 const syncData = device.companies?.sync_service_status?.[0];
                 const lastHeartbeat = syncData ? new Date(syncData.last_heartbeat) : null;
                 const diffMinutes = lastHeartbeat ? (new Date() - lastHeartbeat) / 1000 / 60 : null;
-                
+
                 const lastDeviceSync = device.last_sync ? new Date(device.last_sync) : null;
                 const syncDiffMinutes = lastDeviceSync ? (new Date() - lastDeviceSync) / 1000 / 60 : null;
                 const isDeviceRecentlySynced = syncDiffMinutes !== null && syncDiffMinutes < 15;
 
                 const isSyncOnline = isDeviceRecentlySynced || (diffMinutes !== null && diffMinutes < 5);
                 const isDevicePingOk = (syncData && syncData.device_ping_status) || isDeviceRecentlySynced || device.status === 'connected';
-                
+
                 // Real-time dynamic connection state: device is connected if the local app is online, ping is OK, or it synced recently
                 const isConnected = device.status === "connected" || isDeviceRecentlySynced;
 
@@ -2532,24 +2882,22 @@ export function DevicesDiagnosticsView() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.04 }}
-                      className={`transition-all duration-300 ${
-                        expandedDeviceId === device.id
-                          ? "bg-slate-50/70"
-                          : isPinging 
-                            ? "bg-blue-50/40 hover:bg-blue-50/50" 
-                            : isSyncing 
-                              ? "bg-violet-50/40 hover:bg-violet-50/50" 
-                              : "hover:bg-slate-50/50"
-                      }`}
+                      className={`transition-all duration-300 ${expandedDeviceId === device.id
+                        ? "bg-slate-50/70"
+                        : isPinging
+                          ? "bg-blue-50/40 hover:bg-blue-50/50"
+                          : isSyncing
+                            ? "bg-violet-50/40 hover:bg-violet-50/50"
+                            : "hover:bg-slate-50/50"
+                        }`}
                     >
                       {/* Device Name */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2.5">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${
-                            isConnected 
-                              ? "bg-emerald-50 text-emerald-600 shadow-sm shadow-emerald-100" 
-                              : "bg-rose-50 text-rose-600 shadow-sm shadow-rose-100"
-                          }`}>
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${isConnected
+                            ? "bg-emerald-50 text-emerald-600 shadow-sm shadow-emerald-100"
+                            : "bg-rose-50 text-rose-600 shadow-sm shadow-rose-100"
+                            }`}>
                             <Server className="w-4 h-4" />
                           </div>
                           <span className="text-slate-800 font-bold text-sm">{device.device_name}</span>
@@ -2578,30 +2926,27 @@ export function DevicesDiagnosticsView() {
                       {/* Connection Status & Last Sync */}
                       <td className="px-6 py-4">
                         <div className="flex flex-col gap-1.5">
-                          <span className={`inline-flex w-fit items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition-all ${
-                            isPinging
-                              ? "bg-blue-50 text-blue-700 border-blue-200"
-                              : isSyncing
-                                ? "bg-violet-50 text-violet-700 border-violet-200 animate-pulse"
-                                : isConnected
-                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                  : "bg-rose-50 text-rose-700 border-rose-200"
-                          }`}>
+                          <span className={`inline-flex w-fit items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition-all ${isPinging
+                            ? "bg-blue-50 text-blue-700 border-blue-200"
+                            : isSyncing
+                              ? "bg-violet-50 text-violet-700 border-violet-200 animate-pulse"
+                              : isConnected
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : "bg-rose-50 text-rose-700 border-rose-200"
+                            }`}>
                             <span className="relative flex h-1.5 w-1.5">
                               {(isPinging || isSyncing || isConnected) && (
-                                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                                  isPinging ? "bg-blue-400" : isSyncing ? "bg-violet-400" : "bg-emerald-400"
-                                }`} />
+                                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isPinging ? "bg-blue-400" : isSyncing ? "bg-violet-400" : "bg-emerald-400"
+                                  }`} />
                               )}
-                              <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${
-                                isPinging
-                                  ? "bg-blue-500"
-                                  : isSyncing
-                                    ? "bg-violet-500"
-                                    : isConnected
-                                      ? "bg-emerald-500"
-                                      : "bg-rose-500"
-                              }`} />
+                              <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${isPinging
+                                ? "bg-blue-500"
+                                : isSyncing
+                                  ? "bg-violet-500"
+                                  : isConnected
+                                    ? "bg-emerald-500"
+                                    : "bg-rose-500"
+                                }`} />
                             </span>
                             {isPinging ? "جاري الفحص..." : isSyncing ? "مزامنة كاملة..." : isConnected ? "متصل بالخادم" : "غير متصل"}
                           </span>
@@ -2617,14 +2962,13 @@ export function DevicesDiagnosticsView() {
                         <div className="flex flex-col gap-1">
                           {(() => {
                             if (!syncData && !device.last_sync) return <span className="text-gray-400 text-xs font-bold">غير مفعل</span>;
-                            
+
                             const isSyncActive = isSyncOnline;
 
                             return (
                               <>
-                                <span className={`inline-flex w-fit items-center gap-1.5 px-2.5 py-1 rounded-md text-[0.7rem] font-bold ${
-                                  isSyncActive ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800 animate-pulse"
-                                }`}>
+                                <span className={`inline-flex w-fit items-center gap-1.5 px-2.5 py-1 rounded-md text-[0.7rem] font-bold ${isSyncActive ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800 animate-pulse"
+                                  }`}>
                                   <span className={`w-1.5 h-1.5 rounded-full ${isSyncActive ? "bg-emerald-500" : "bg-rose-500"}`} />
                                   {isSyncActive ? "البرنامج يعمل" : "البرنامج متوقف"}
                                 </span>
@@ -2643,9 +2987,8 @@ export function DevicesDiagnosticsView() {
                           if (!syncData && !device.last_sync) return <span className="text-gray-400 text-xs">—</span>;
                           const pingOk = isDevicePingOk;
                           return (
-                            <span className={`inline-flex items-center gap-1.5 text-xs font-bold ${
-                              pingOk ? "text-emerald-600" : "text-rose-600"
-                            }`}>
+                            <span className={`inline-flex items-center gap-1.5 text-xs font-bold ${pingOk ? "text-emerald-600" : "text-rose-600"
+                              }`}>
                               {pingOk ? <Wifi className="w-3.5 h-3.5 animate-pulse text-emerald-500" /> : <WifiOff className="w-3.5 h-3.5 text-rose-500" />}
                               {pingOk ? "استجابة ممتازة" : "لا يوجد رد"}
                             </span>
@@ -2659,11 +3002,10 @@ export function DevicesDiagnosticsView() {
                           {/* Intelligent Diagnostics Panel Trigger */}
                           <button
                             onClick={() => setExpandedDeviceId(expandedDeviceId === device.id ? null : device.id)}
-                            className={`flex items-center gap-1 px-2.5 py-1.5 text-[0.7rem] rounded-lg font-bold transition-all border ${
-                              expandedDeviceId === device.id
-                                ? "bg-slate-800 border-slate-800 text-white shadow-sm"
-                                : "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700 shadow-sm active:scale-95"
-                            }`}
+                            className={`flex items-center gap-1 px-2.5 py-1.5 text-[0.7rem] rounded-lg font-bold transition-all border ${expandedDeviceId === device.id
+                              ? "bg-slate-800 border-slate-800 text-white shadow-sm"
+                              : "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700 shadow-sm active:scale-95"
+                              }`}
                             title="التشخيص الذكي"
                           >
                             <Activity className="w-3.5 h-3.5" />
@@ -2679,7 +3021,7 @@ export function DevicesDiagnosticsView() {
                           >
                             {isPinging ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                           </button>
-                          
+
                           {/* Force Full Sync Action */}
                           <button
                             onClick={() => handleForceSync(device)}
@@ -2695,11 +3037,10 @@ export function DevicesDiagnosticsView() {
                           <button
                             onClick={() => handleSendAlert(device)}
                             disabled={isConnected || isPinging || isSendingAlert || syncingId === device.id}
-                            className={`flex items-center gap-1 px-2.5 py-1.5 text-[0.7rem] rounded-lg font-bold transition-all border ${
-                              isConnected
-                                ? "bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed"
-                                : "bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-700 shadow-sm active:scale-95"
-                            }`}
+                            className={`flex items-center gap-1 px-2.5 py-1.5 text-[0.7rem] rounded-lg font-bold transition-all border ${isConnected
+                              ? "bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed"
+                              : "bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-700 shadow-sm active:scale-95"
+                              }`}
                             title="تنبيه الشركة"
                           >
                             {isSendingAlert ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <AlertTriangle className="w-3.5 h-3.5" />}
@@ -2718,20 +3059,19 @@ export function DevicesDiagnosticsView() {
                               <Activity className="w-5 h-5 text-blue-600 animate-pulse" />
                               <span className="font-bold text-slate-800 text-sm">تقرير التشخيص الذكي والتحليل الفوري للمشكلة</span>
                             </div>
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                              diagnosis.severity === "success" 
-                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200" 
-                                : diagnosis.severity === "warning"
-                                  ? "bg-amber-50 text-amber-700 border border-amber-200"
-                                  : "bg-rose-50 text-rose-700 border border-rose-200"
-                            }`}>
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${diagnosis.severity === "success"
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : diagnosis.severity === "warning"
+                                ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                : "bg-rose-50 text-rose-700 border border-rose-200"
+                              }`}>
                               {diagnosis.statusText}
                             </span>
                           </div>
 
                           {/* Connection Path Diagram */}
                           <div className="py-4 bg-slate-50/50 rounded-xl border border-slate-100 flex flex-col md:flex-row items-center justify-around gap-4 px-4 text-center">
-                            
+
                             {/* Node 1: Cloud Server */}
                             <div className="flex flex-col items-center gap-1.5">
                               <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-200/50">
@@ -2753,11 +3093,10 @@ export function DevicesDiagnosticsView() {
 
                             {/* Node 2: Client Sync App */}
                             <div className="flex flex-col items-center gap-1.5">
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${
-                                isSyncOnline 
-                                  ? "bg-emerald-500 text-white shadow-emerald-200/50" 
-                                  : "bg-slate-300 text-slate-600 shadow-slate-100"
-                              }`}>
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${isSyncOnline
+                                ? "bg-emerald-500 text-white shadow-emerald-200/50"
+                                : "bg-slate-300 text-slate-600 shadow-slate-100"
+                                }`}>
                                 <Server className="w-5 h-5" />
                               </div>
                               <span className="text-[0.7rem] font-bold text-slate-700">برنامج المزامنة المحلي (Sync App)</span>
@@ -2768,9 +3107,8 @@ export function DevicesDiagnosticsView() {
 
                             {/* Line 2 */}
                             <div className="hidden md:flex flex-1 items-center justify-center relative px-2">
-                              <div className={`h-1 w-full rounded-full ${
-                                (isSyncOnline && isDevicePingOk) ? "bg-emerald-400" : "bg-slate-200 border-dashed border-t-2"
-                              }`} />
+                              <div className={`h-1 w-full rounded-full ${(isSyncOnline && isDevicePingOk) ? "bg-emerald-400" : "bg-slate-200 border-dashed border-t-2"
+                                }`} />
                               {(isSyncOnline && isDevicePingOk) ? (
                                 <span className="absolute text-[0.6rem] font-bold text-emerald-600 bg-white px-2 py-0.5 border border-emerald-100 rounded-full -top-3">نشط</span>
                               ) : (
@@ -2780,11 +3118,10 @@ export function DevicesDiagnosticsView() {
 
                             {/* Node 3: Fingerprint Device */}
                             <div className="flex flex-col items-center gap-1.5">
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${
-                                (isSyncOnline && isDevicePingOk) 
-                                  ? "bg-emerald-500 text-white shadow-emerald-200/50" 
-                                  : "bg-rose-50 text-white shadow-rose-200/50"
-                              }`}>
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${(isSyncOnline && isDevicePingOk)
+                                ? "bg-emerald-500 text-white shadow-emerald-200/50"
+                                : "bg-rose-50 text-white shadow-rose-200/50"
+                                }`}>
                                 <Wifi className="w-5 h-5" />
                               </div>
                               <span className="text-[0.7rem] font-bold text-slate-700">جهاز البصمة (ZK Device)</span>
@@ -2797,7 +3134,7 @@ export function DevicesDiagnosticsView() {
 
                           {/* Explanation and Troubleshooting steps */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
-                            
+
                             {/* Diagnosis details */}
                             <div className="space-y-2">
                               <h4 className="text-xs font-bold text-slate-500">تحليل المشكلة الفعلي:</h4>
@@ -2850,6 +3187,8 @@ export function RenewalRequestsView({ renewals = [], totalCount = 0, loading = f
   const [approvingReq, setApprovingReq] = useState(null);
   const [newEndDate, setNewEndDate] = useState("");
   const [newPlan, setNewPlan] = useState("Pro");
+  const [renewalAmount, setRenewalAmount] = useState("");
+  const [renewalCycle, setRenewalCycle] = useState("monthly");
   const [submittingApprove, setSubmittingApprove] = useState(false);
 
   useEffect(() => {
@@ -2865,8 +3204,15 @@ export function RenewalRequestsView({ renewals = [], totalCount = 0, loading = f
 
   const openApproveModal = (req) => {
     setApprovingReq(req);
-    setNewPlan(req.companies?.plan || "Pro");
-    
+    const plan = req.companies?.plan || "Pro";
+    setNewPlan(plan);
+    setRenewalAmount(
+      req.companies?.subscription_amount !== undefined && req.companies?.subscription_amount !== null
+        ? req.companies.subscription_amount
+        : (req.companies?.settings?.subscription_amount ?? "")
+    );
+    setRenewalCycle(req.companies?.settings?.billing_cycle || (plan === "Enterprise" ? "yearly" : "monthly"));
+
     // Default next end date to +1 month from today, or +1 month from current end date if in future
     const currentEnd = req.companies?.settings?.subscription_end_date || req.companies?.settings?.trial_end_date;
     let baseDate = new Date();
@@ -2875,7 +3221,7 @@ export function RenewalRequestsView({ renewals = [], totalCount = 0, loading = f
       if (curDate > baseDate) baseDate = curDate;
     }
     baseDate.setMonth(baseDate.getMonth() + 1);
-    
+
     // Format to yyyy-mm-dd
     const yyyy = baseDate.getFullYear();
     const mm = String(baseDate.getMonth() + 1).padStart(2, '0');
@@ -2887,7 +3233,7 @@ export function RenewalRequestsView({ renewals = [], totalCount = 0, loading = f
     if (!approvingReq) return;
     setSubmittingApprove(true);
     try {
-      await onApprove(approvingReq.id, approvingReq.company_id, newEndDate, newPlan);
+      await onApprove(approvingReq.id, approvingReq.company_id, newEndDate, newPlan, parseFloat(renewalAmount) || 0, renewalCycle);
       setApprovingReq(null);
     } catch (err) {
       console.error(err);
@@ -2909,8 +3255,8 @@ export function RenewalRequestsView({ renewals = [], totalCount = 0, loading = f
     if (!dateStr) return "—";
     try {
       const d = new Date(dateStr);
-      return d.toLocaleDateString(language === "ar" ? "ar-EG" : "en-US", { month: "short", day: "numeric", year: "numeric" }) + " " + 
-             d.toLocaleTimeString(language === "ar" ? "ar-EG" : "en-US", { hour: "2-digit", minute: "2-digit" });
+      return d.toLocaleDateString(language === "ar" ? "ar-EG" : "en-US", { month: "short", day: "numeric", year: "numeric" }) + " " +
+        d.toLocaleTimeString(language === "ar" ? "ar-EG" : "en-US", { hour: "2-digit", minute: "2-digit" });
     } catch {
       return "—";
     }
@@ -2938,7 +3284,7 @@ export function RenewalRequestsView({ renewals = [], totalCount = 0, loading = f
 
   return (
     <div className="space-y-6" dir={isRtl ? "rtl" : "ltr"} style={{ textAlign: isRtl ? "right" : "left" }}>
-      
+
       {/* Title & Filters */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
@@ -2960,11 +3306,10 @@ export function RenewalRequestsView({ renewals = [], totalCount = 0, loading = f
             <button
               key={tab.key}
               onClick={() => handleStatusFilterChange(tab.key)}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                statusFilter === tab.key
-                  ? "bg-white text-slate-800 shadow-sm"
-                  : "text-slate-400 hover:text-slate-600"
-              }`}
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${statusFilter === tab.key
+                ? "bg-white text-slate-800 shadow-sm"
+                : "text-slate-400 hover:text-slate-600"
+                }`}
             >
               {tab.label}
             </button>
@@ -3020,8 +3365,8 @@ export function RenewalRequestsView({ renewals = [], totalCount = 0, loading = f
                           <span className="text-slate-600 font-semibold text-xs">{req.details?.requested_by || "—"}</span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold">
-                            {req.companies?.plan || req.details?.current_plan || "Free"}
+                          <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold">
+                            {((req.companies?.plan || req.details?.current_plan) === "Free" ? "Starter" : (req.companies?.plan || req.details?.current_plan || "Starter"))}
                           </span>
                         </td>
                         <td className="px-6 py-4">
@@ -3035,13 +3380,12 @@ export function RenewalRequestsView({ renewals = [], totalCount = 0, loading = f
                           </span>
                         </td>
                         <td className="px-6 py-4 text-center">
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold inline-block ${
-                            req.status === "pending"
-                              ? "bg-amber-50 text-amber-700 border border-amber-200"
-                              : req.status === "approved"
-                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                : "bg-red-50 text-red-700 border border-red-200"
-                          }`}>
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold inline-block ${req.status === "pending"
+                            ? "bg-amber-50 text-amber-700 border border-amber-200"
+                            : req.status === "approved"
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : "bg-red-50 text-red-700 border border-red-200"
+                            }`}>
                             {req.status === "pending" && t.saRenewalStatusPending}
                             {req.status === "approved" && t.saRenewalStatusApproved}
                             {req.status === "rejected" && t.saRenewalStatusRejected}
@@ -3121,11 +3465,10 @@ export function RenewalRequestsView({ renewals = [], totalCount = 0, loading = f
                 <button
                   key={num}
                   onClick={() => handlePageChange(num)}
-                  className={`w-9 h-9 rounded-lg text-xs font-bold transition-colors ${
-                    page === num
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : "border border-slate-200 text-slate-600 hover:bg-slate-50"
-                  }`}
+                  className={`w-9 h-9 rounded-lg text-xs font-bold transition-colors ${page === num
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "border border-slate-200 text-slate-600 hover:bg-slate-50"
+                    }`}
                 >
                   {num}
                 </button>
@@ -3153,7 +3496,7 @@ export function RenewalRequestsView({ renewals = [], totalCount = 0, loading = f
               onClick={() => setApprovingReq(null)}
               className="absolute inset-0 bg-black/50 backdrop-blur-xs"
             />
-            
+
             <motion.div
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -3194,7 +3537,7 @@ export function RenewalRequestsView({ renewals = [], totalCount = 0, loading = f
                       onChange={(e) => setNewPlan(e.target.value)}
                       className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition-all outline-none font-bold"
                     >
-                      <option value="Free">Free</option>
+                      <option value="Starter">Starter</option>
                       <option value="Pro">Pro</option>
                       <option value="Enterprise">Enterprise</option>
                     </select>
@@ -3210,6 +3553,36 @@ export function RenewalRequestsView({ renewals = [], totalCount = 0, loading = f
                       className="w-full text-xs px-3.5 py-2 rounded-xl border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition-all outline-none font-semibold"
                       style={{ direction: "ltr" }}
                     />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Renewal Amount */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1.5">مبلغ التجديد (ج.م)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      placeholder="0.00"
+                      value={renewalAmount}
+                      onChange={(e) => setRenewalAmount(e.target.value)}
+                      className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition-all outline-none font-bold"
+                      style={{ direction: "ltr" }}
+                    />
+                  </div>
+
+                  {/* Billing Cycle */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1.5">دورة الاشتراك</label>
+                    <select
+                      value={renewalCycle}
+                      onChange={(e) => setRenewalCycle(e.target.value)}
+                      className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition-all outline-none font-bold"
+                    >
+                      <option value="monthly">شهري (Monthly)</option>
+                      <option value="yearly">سنوي (Annual)</option>
+                    </select>
                   </div>
                 </div>
 
@@ -3307,12 +3680,16 @@ export function BroadcastAlertsView() {
         send_email: sendEmail,
       }));
 
-      // 3. Insert into company_notifications
-      const { error: insertError } = await supabase
-        .from("company_notifications")
-        .insert(notifications);
+      // 3. Insert into company_notifications in chunks
+      const chunkSize = 100;
+      for (let i = 0; i < notifications.length; i += chunkSize) {
+        const chunk = notifications.slice(i, i + chunkSize);
+        const { error: insertError } = await supabase
+          .from("company_notifications")
+          .insert(chunk);
 
-      if (insertError) throw insertError;
+        if (insertError) throw insertError;
+      }
 
       // 4. Log admin activity
       await supabase.from("admin_activity").insert({
@@ -3336,8 +3713,8 @@ export function BroadcastAlertsView() {
       console.error("Broadcast notification error:", err);
       toast.error(
         language === "ar"
-          ? "فشل في إرسال الإشعار الجماعي"
-          : "Failed to send broadcast notification"
+          ? `فشل في إرسال الإشعار الجماعي: ${err.message || "خطأ غير معروف"}`
+          : `Failed to send broadcast notification: ${err.message || "Unknown error"}`
       );
     } finally {
       setSubmitting(false);
@@ -3430,9 +3807,8 @@ export function BroadcastAlertsView() {
                       key={key}
                       type="button"
                       onClick={() => setType(key)}
-                      className={`flex flex-col items-center gap-2 p-3.5 rounded-xl border text-center transition-all duration-200 ${
-                        isActive ? cfg.activeBg : "border-gray-200 bg-gray-50/50 hover:bg-gray-50 text-gray-500 hover:text-gray-700"
-                      }`}
+                      className={`flex flex-col items-center gap-2 p-3.5 rounded-xl border text-center transition-all duration-200 ${isActive ? cfg.activeBg : "border-gray-200 bg-gray-50/50 hover:bg-gray-50 text-gray-500 hover:text-gray-700"
+                        }`}
                     >
                       <Icon className="w-5 h-5" />
                       <span className="text-[0.7rem] font-bold">{cfg.label}</span>
@@ -3559,21 +3935,19 @@ export function BroadcastAlertsView() {
               {/* Notification Bubble */}
               <div className="bg-slate-950/90 border border-slate-800 rounded-xl p-4 shadow-lg relative overflow-hidden transition-all duration-300">
                 {/* Visual Glow Line representing the severity */}
-                <div className={`absolute top-0 bottom-0 right-0 w-1 ${
-                  type === "info" ? "bg-blue-500 shadow-[0_0_12px_#3b82f6]" :
+                <div className={`absolute top-0 bottom-0 right-0 w-1 ${type === "info" ? "bg-blue-500 shadow-[0_0_12px_#3b82f6]" :
                   type === "success" ? "bg-emerald-500 shadow-[0_0_12px_#10b981]" :
-                  type === "warning" ? "bg-amber-500 shadow-[0_0_12px_#f59e0b]" :
-                  "bg-red-500 shadow-[0_0_12px_#ef4444]"
-                }`} />
+                    type === "warning" ? "bg-amber-500 shadow-[0_0_12px_#f59e0b]" :
+                      "bg-red-500 shadow-[0_0_12px_#ef4444]"
+                  }`} />
 
                 <div className="flex gap-3">
                   {/* Icon Indicator bubble */}
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    type === "info" ? "bg-blue-500/10 text-blue-400" :
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${type === "info" ? "bg-blue-500/10 text-blue-400" :
                     type === "success" ? "bg-emerald-500/10 text-emerald-400" :
-                    type === "warning" ? "bg-amber-500/10 text-amber-400" :
-                    "bg-red-500/10 text-red-400"
-                  }`}>
+                      type === "warning" ? "bg-amber-500/10 text-amber-400" :
+                        "bg-red-500/10 text-red-400"
+                    }`}>
                     {type === "info" && <Bell className="w-4.5 h-4.5" />}
                     {type === "success" && <CheckCircle className="w-4.5 h-4.5" />}
                     {type === "warning" && <AlertTriangle className="w-4.5 h-4.5" />}
@@ -3608,6 +3982,11 @@ export function BroadcastAlertsView() {
     </div>
   );
 }
+
+
+
+
+
 
 
 
