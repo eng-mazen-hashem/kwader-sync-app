@@ -18,12 +18,27 @@ const path = require('path');
 const crypto = require('crypto');
 const https = require('https');
 
+const { execSync } = require('child_process');
+
+function getGitHubToken() {
+    if (process.env.GITHUB_TOKEN) return process.env.GITHUB_TOKEN;
+    try {
+        const out = execSync('git credential fill', {
+            input: 'protocol=https\nhost=github.com\n',
+            encoding: 'utf8',
+            stdio: ['pipe', 'pipe', 'ignore']
+        });
+        const m = out.match(/password=(.+)/);
+        if (m) return m[1].trim();
+    } catch {}
+    return '';
+}
+
 // Config & Credentials
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://whuopqnhmsevlilkcfre.supabase.co';
 const _defSrk = Buffer.from('c2Jfc2VjcmV0X0tCeW1oQ25RRW1WOTMyQ0J3R0tTVWdfcUZHZDJYTmo=', 'base64').toString('utf8');
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || _defSrk;
-const _defGh = Buffer.from('Z2hwXzNCOUg4NllZTnFJQ1JJeW9LVGZQWTNIR1g3eUtNNjE1V2MyUQ==', 'base64').toString('utf8');
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN || _defGh;
+const GITHUB_TOKEN = getGitHubToken();
 const GITHUB_REPO  = 'eng-mazen-hashem/kwader-sync-app';
 const [GH_OWNER, GH_REPO] = GITHUB_REPO.split('/');
 
@@ -72,50 +87,22 @@ function githubRequest(method, reqPath, body = null) {
     });
 }
 
-function uploadReleaseAsset(uploadUrl, fileName, fileBuffer) {
-    return new Promise((resolve, reject) => {
-        const cleanUrl = uploadUrl.replace(/\{[^}]+\}/, '');
-        const url = new URL(`${cleanUrl}?name=${encodeURIComponent(fileName)}`);
-
-        const options = {
-            hostname: url.hostname,
-            path:     url.pathname + url.search,
-            method:   'POST',
-            headers: {
-                'Authorization': `token ${GITHUB_TOKEN}`,
-                'Accept':        'application/vnd.github+json',
-                'User-Agent':    'kwader-sync-publisher/1.1.0',
-                'Content-Type':  'application/octet-stream',
-                'Content-Length': fileBuffer.length,
-            },
-        };
-
-        const req = https.request(options, res => {
-            let data = '';
-            res.on('data', chunk => data += chunk);
-            res.on('end', () => {
-                try {
-                    const parsed = JSON.parse(data);
-                    if (res.statusCode >= 400) {
-                        reject(new Error(`Upload ${res.statusCode}: ${parsed.message || data}`));
-                    } else {
-                        resolve(parsed);
-                    }
-                } catch {
-                    resolve(data);
-                }
-            });
-        });
-
-        req.on('error', reject);
-        req.write(fileBuffer);
-        req.end();
-    });
+function uploadReleaseAsset(uploadUrl, fileName, filePath) {
+    const cleanUrl = uploadUrl.replace(/\{[^}]+\}/, '');
+    const targetUrl = `${cleanUrl}?name=${encodeURIComponent(fileName)}`;
+    console.log(`   Uploading ${fileName} via curl...`);
+    const cmd = `curl.exe -s -S -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/octet-stream" --data-binary @"${filePath}" "${targetUrl}"`;
+    const res = execSync(cmd, { encoding: 'utf8', maxBuffer: 20 * 1024 * 1024 });
+    const parsed = JSON.parse(res);
+    if (!parsed.browser_download_url) {
+        throw new Error(`Upload failed: ${res}`);
+    }
+    return parsed;
 }
 
 async function main() {
     console.log('🚀 Starting KWADER Sync Agent Release Deployment...\n');
-    const version = '1.2.0';
+    const version = '1.3.0';
     const tagName = `v${version}`;
 
     const setupFile = path.join(__dirname, 'installer', `KWADER_Sync_Setup_v${version}.exe`);
@@ -134,7 +121,7 @@ async function main() {
     console.log(`   Size    : ${sizeMb} MB (${fileBuffer.length} bytes)`);
     console.log(`   SHA-256 : ${sha256}\n`);
 
-    // ── 1. Create or Update Release v1.2.0 ────────────────────────────────────
+    // ── 1. Create or Update Release v1.3.0 ────────────────────────────────────
     console.log(`🔍 Checking if release "${tagName}" exists on GitHub...`);
     let release = null;
     try {
@@ -157,20 +144,20 @@ async function main() {
         tag_name:         tagName,
         target_commitish: 'main',
         name:             `KWADER Sync v${version}`,
-        body:             `## KWADER Sync Agent v${version}\n\n### What's New:\n- WhatsApp Decentralized Node v2.4.0 integration\n- Verified fresh build release v${version}\n- Enhanced session management and warm standby\n\n**SHA-256:** \`${sha256}\``,
+        body:             `## KWADER Sync Agent v${version}\n\n### What's New:\n- Egress bandwidth optimization (60s smart heartbeat & leader election)\n- WhatsApp Decentralized Node v2.4.0 integration\n- Enhanced session management and warm standby\n- Verified fresh clean build release v${version}\n\n**SHA-256:** \`${sha256}\``,
         draft:            false,
         prerelease:       false,
     });
     console.log(`✅ Release created: ${release.html_url}`);
 
-    // Upload KWADER_Sync_Setup_v1.2.0.exe
+    // Upload KWADER_Sync_Setup_v1.3.0.exe
     console.log(`⬆️ Uploading ${path.basename(setupFile)} to release ${tagName}...`);
-    const asset1 = await uploadReleaseAsset(release.upload_url, path.basename(setupFile), fileBuffer);
+    const asset1 = uploadReleaseAsset(release.upload_url, path.basename(setupFile), setupFile);
     console.log(`   ✅ Uploaded: ${asset1.browser_download_url}`);
 
     // Upload generic KWADER.Sync.Setup.exe
     console.log(`⬆️ Uploading KWADER.Sync.Setup.exe to release ${tagName}...`);
-    const asset2 = await uploadReleaseAsset(release.upload_url, 'KWADER.Sync.Setup.exe', fileBuffer);
+    const asset2 = uploadReleaseAsset(release.upload_url, 'KWADER.Sync.Setup.exe', setupFile);
     console.log(`   ✅ Uploaded: ${asset2.browser_download_url}`);
 
     const primaryDownloadUrl = asset1.browser_download_url;
@@ -188,7 +175,7 @@ async function main() {
                 }
             }
             console.log('   ⬆️ Uploading latest KWADER.Sync.Setup.exe to "Kwader" release...');
-            const kwaderAsset = await uploadReleaseAsset(kwaderRel.upload_url, 'KWADER.Sync.Setup.exe', fileBuffer);
+            const kwaderAsset = uploadReleaseAsset(kwaderRel.upload_url, 'KWADER.Sync.Setup.exe', setupFile);
             console.log(`   ✅ Updated canonical URL: ${kwaderAsset.browser_download_url}`);
         }
     } catch (err) {

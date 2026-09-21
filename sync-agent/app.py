@@ -703,7 +703,7 @@ class SyncAppUpdater:
     def __init__(self, manager):
         self.manager = manager
         self.github_repo = 'eng-mazen-hashem/kwader-sync-app'
-        self.current_version = '1.2.0'
+        self.current_version = '1.3.0'
         self._thread = None
         self._stop_event = threading.Event()
 
