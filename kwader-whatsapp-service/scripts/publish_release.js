@@ -223,7 +223,7 @@ async function publishRelease() {
     console.log(`\n🚀 Creating GitHub Release "${tagName}"...`);
     const release = await githubRequest('POST', `/repos/${GH_OWNER}/${GH_REPO}/releases`, {
         tag_name:         tagName,
-        target_commitish: 'main',
+        target_commitish: 'master',
         name:             `WhatsApp Node v${version}`,
         body:             `## KWADER WhatsApp Node v${version}\n\n**SHA-256:** \`${sha256}\`\n\n> Auto-deployed by KWADER Release Publisher. Clients update silently via OTA.`,
         draft:            false,
