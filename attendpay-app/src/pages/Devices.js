@@ -89,6 +89,27 @@ function Devices() {
         fetchAgentSettings();
     }, [fetchDevices, fetchAgentSettings]);
 
+    const [triggeringSync, setTriggeringSync] = useState(false);
+
+    const handleForceSync = async () => {
+        if (!company?.id) return;
+        setTriggeringSync(true);
+        try {
+            const { error } = await supabase.from('sync_service_status').upsert({
+                company_id: company.id,
+                force_full_sync: true,
+                updated_at: new Date().toISOString()
+            });
+            if (error) throw error;
+            toast.success(language === 'ar' ? 'تم إرسال أمر المزامنة الشاملة لبرنامج المزامنة بنجاح (سيتم سحب جميع البصمات فوراً)' : 'Force full sync command sent to sync agent successfully');
+        } catch (err) {
+            console.error('[handleForceSync]', err);
+            toast.error(language === 'ar' ? 'تعذر إرسال أمر المزامنة' : 'Failed to send sync command');
+        } finally {
+            setTriggeringSync(false);
+        }
+    };
+
 
 
     const handleSubmitDevice = async (formData) => {
@@ -304,9 +325,16 @@ function Devices() {
                                         </div>
                                     </div>
 
-                                    <button className={`device-sync-btn ${device.status !== 'connected' ? 'offline-mode' : ''}`}>
-                                        <HiOutlineRefresh />
-                                        {device.status === 'connected' ? (t.dev_sync_now || 'Sync Now') : (t.dev_troubleshoot || 'Troubleshoot')}
+                                    <button
+                                        className={`device-sync-btn ${device.status !== 'connected' ? 'offline-mode' : ''}`}
+                                        onClick={handleForceSync}
+                                        disabled={triggeringSync}
+                                    >
+                                        <HiOutlineRefresh className={triggeringSync ? 'animate-spin' : ''} />
+                                        {triggeringSync
+                                            ? (language === 'ar' ? 'جاري طلب المزامنة...' : 'Requesting Sync...')
+                                            : (device.status === 'connected' ? (t.dev_sync_now || 'مزامنة شاملة الآن') : (t.dev_troubleshoot || 'Troubleshoot'))
+                                        }
                                     </button>
                                 </div>
                                 <div className="device-card-glow"></div>
@@ -324,7 +352,7 @@ function Devices() {
                                 <p className="insight-desc">
                                     {t.dev_sync_agent_desc || 'لربط أجهزة البصمة المحلية بالمنصة السحابية، يجب تثبيت أداة المزامنة على أي جهاز كمبيوتر (Windows 10/11) متصل بنفس شبكة أجهزة البصمة. تدعم جميع أجهزة ZKTeco.'}
                                 </p>
-                                <a href={agentDownloadUrl} download="KWADER_Sync_Setup_v1.2.0.exe" className="insight-button">
+                                <a href={agentDownloadUrl} target="_blank" rel="noopener noreferrer" download="KWADER_Sync_Setup_v1.3.2.exe" className="insight-button">
                                     <HiOutlineDesktopComputer size={20} />
                                     {t.dev_download_agent || 'تحميل الأداة'}
                                 </a>

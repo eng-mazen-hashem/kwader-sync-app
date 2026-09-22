@@ -1311,8 +1311,8 @@ export function SystemSettingsView() {
   const [trialDays, setTrialDays] = useState(35);
 
   // Sync Agent dynamic settings
-  const [syncAgentVersion, setSyncAgentVersion] = useState("v1.0.2");
-  const [syncAgentDownloadUrl, setSyncAgentDownloadUrl] = useState("https://github.com/eng-mazen-hashem/attendpay-agent/releases/download/v1.0.0/KWADER.Sync.Setup.exe");
+  const [syncAgentVersion, setSyncAgentVersion] = useState("v1.3.2");
+  const [syncAgentDownloadUrl, setSyncAgentDownloadUrl] = useState("https://github.com/eng-mazen-hashem/kwader-sync-app/releases/download/v1.3.2/KWADER_Sync_Setup_v1.3.2.exe");
   const [selectedAgentFile, setSelectedAgentFile] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
 
