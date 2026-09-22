@@ -93,6 +93,21 @@ SETTINGS_LOCK = threading.Lock()
 
 WEB_DIR = resource_path('web')
 
+def log_agent(msg, level='INFO'):
+    try:
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        log_line = f"[{timestamp}] [{level}] {msg}\n"
+        log_file = DATA_DIR / 'agent-startup.log'
+        with open(log_file, 'a', encoding='utf-8', errors='replace') as f:
+            f.write(log_line)
+    except Exception:
+        pass
+    try:
+        clean_msg = str(msg).encode('ascii', errors='replace').decode('ascii')
+        print(f"[{level}] {clean_msg}")
+    except Exception:
+        pass
+
 def is_gui_subsystem(file_path):
     try:
         path = Path(file_path)
@@ -123,8 +138,8 @@ def ensure_gui_subsystem(file_path):
             f.seek(pe_off + 0x5c)
             f.write(struct.pack('<H', 2))
             return True
-    except Exception:
-        pass
+    except Exception as e:
+        log_agent(f"ensure_gui_subsystem notice for {file_path}: {e}", level='DEBUG')
     return False
 
 class WhatsappNodeManager:
@@ -139,7 +154,7 @@ class WhatsappNodeManager:
         self._start_process()
         
         if not self.monitor_thread or not self.monitor_thread.is_alive():
-            self.monitor_thread = threading.Thread(target=self._monitor_loop, daemon=True)
+            self.monitor_thread = threading.Thread(target=self._monitor_loop, daemon=True, name="WANodeMonitorLoop")
             self.monitor_thread.start()
 
         if hasattr(self, 'updater') and self.updater:
@@ -152,47 +167,29 @@ class WhatsappNodeManager:
         bundled_exe = resource_path('bin', 'whatsapp-node.exe')
         user_node_exe = DATA_DIR / 'bin' / 'whatsapp-node.exe'
         
-        if bundled_exe.exists():
-            ensure_gui_subsystem(bundled_exe)
-            try:
-                import shutil
-                user_node_exe.parent.mkdir(parents=True, exist_ok=True)
-                bundled_ver_file = resource_path('bin', 'whatsapp-node.version.json')
-                user_ver_file = DATA_DIR / 'bin' / 'whatsapp-node.version.json'
-                should_sync = not user_node_exe.exists()
-
-                if not should_sync:
-                    if bundled_ver_file.exists() and user_ver_file.exists():
-                        try:
-                            with open(bundled_ver_file, 'r', encoding='utf-8') as f1, open(user_ver_file, 'r', encoding='utf-8') as f2:
-                                if json.load(f1).get('version') != json.load(f2).get('version'):
-                                    should_sync = True
-                        except Exception:
-                            pass
-                    elif bundled_exe.stat().st_size != user_node_exe.stat().st_size:
-                        should_sync = True
-                    elif not is_gui_subsystem(user_node_exe):
-                        should_sync = True
-
-                if should_sync:
-                    shutil.copy2(bundled_exe, user_node_exe)
-                    if bundled_ver_file.exists():
-                        shutil.copy2(bundled_ver_file, user_ver_file)
-            except Exception:
-                pass
-
-        if user_node_exe.exists() and is_gui_subsystem(user_node_exe):
+        # Priority:
+        # 1. user_node_exe (if downloaded and verified by OTA updater, > 10MB)
+        # 2. bundled_exe (pre-packaged with KWADER Sync, zero-copy, runs directly from _internal)
+        exe_path = None
+        if user_node_exe.exists() and user_node_exe.stat().st_size > 10 * 1024 * 1024:
             exe_path = user_node_exe
-        elif bundled_exe.exists():
+        elif bundled_exe.exists() and bundled_exe.stat().st_size > 10 * 1024 * 1024:
             exe_path = bundled_exe
         elif user_node_exe.exists():
             exe_path = user_node_exe
+        elif bundled_exe.exists():
+            exe_path = bundled_exe
         else:
+            log_agent(f"CRITICAL: whatsapp-node.exe not found at {bundled_exe} or {user_node_exe}", level='ERROR')
             return
             
-        ensure_gui_subsystem(exe_path)
+        try:
+            ensure_gui_subsystem(exe_path)
+        except Exception:
+            pass
             
         try:
+            log_agent(f"Launching WhatsApp Node process using: {exe_path}")
             env = os.environ.copy()
             env['DATA_DIR'] = str(DATA_DIR)
             env['SUPABASE_URL'] = SUPABASE_URL
@@ -208,7 +205,6 @@ class WhatsappNodeManager:
             env['GITHUB_TOKEN'] = os.getenv('GITHUB_TOKEN') or _gh_def
             env['GITHUB_SESSION_REPO'] = os.getenv('GITHUB_SESSION_REPO') or 'eng-mazen-hashem/whatsapp-kwader'
 
-            
             creationflags = 0
             startupinfo = None
             if os.name == 'nt':
@@ -226,6 +222,11 @@ class WhatsappNodeManager:
                     log_path.rename(old_log)
             except Exception:
                 pass
+                
+            if hasattr(self, 'log_file') and self.log_file and not self.log_file.closed:
+                try: self.log_file.close()
+                except Exception: pass
+
             self.log_file = open(log_path, 'a', encoding='utf-8', errors='replace')
             
             self.process = subprocess.Popen(
@@ -237,19 +238,19 @@ class WhatsappNodeManager:
                 stderr=subprocess.STDOUT,
                 cwd=str(DATA_DIR)
             )
-        except Exception:
-            pass
+            log_agent(f"WhatsApp Node process started successfully (PID: {self.process.pid})")
+        except Exception as e:
+            log_agent(f"Exception launching WhatsApp Node: {e}", level='ERROR')
 
     def _monitor_loop(self):
         while not IS_QUITTING and not self._stop_monitor.is_set():
             time.sleep(5)
             if self.process and self.process.poll() is not None:
                 exit_code = self.process.returncode
-                # ✅ إصلاح CMD Flash: إذا انتهت العملية بشكل طبيعي (exit 0 = graceful stepdown)
-                # ننتظر 15 ثانية قبل إعادة التشغيل لمنح القائد الجديد وقتاً للاستقرار
-                # ومنع ظهور نوافذ CMD متعددة عند الانتقال السريع بين القادة
+                log_agent(f"WhatsApp Node process exited with code {exit_code}")
+                # If graceful exit (exit 0 = stepdown), wait 15s to let new leader stabilize
                 if exit_code == 0:
-                    print('[WA-NODE] Graceful exit detected. Waiting 15s before restart to allow new leader to stabilize...')
+                    log_agent("Graceful exit detected. Waiting 15s before restart to allow leader stabilization...")
                     for _ in range(15):
                         if IS_QUITTING or self._stop_monitor.is_set():
                             return
@@ -302,10 +303,15 @@ class WhatsappNodeUpdater:
             if self.version_file.exists():
                 with open(self.version_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                    return data.get('version', '2.0.0')
+                    return data.get('version', '2.4.1')
+            bundled_ver_file = resource_path('bin', 'whatsapp-node.version.json')
+            if bundled_ver_file.exists():
+                with open(bundled_ver_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    return data.get('version', '2.4.1')
         except Exception:
             pass
-        return '2.0.0'
+        return '2.4.1'
 
     def set_local_metadata(self, version, sha256_hash):
         try:
@@ -317,7 +323,7 @@ class WhatsappNodeUpdater:
                     'updated_at': datetime.now().isoformat()
                 }, f, indent=2)
         except Exception as e:
-            print(f"[OTA-UPDATER] Failed saving local metadata: {e}")
+            log_agent(f"[OTA-UPDATER] Failed saving local metadata: {e}", level='WARNING')
 
     @staticmethod
     def _parse_semver(ver_str):
@@ -344,7 +350,7 @@ class WhatsappNodeUpdater:
             try:
                 self.check_and_apply_update()
             except Exception as e:
-                print(f"[OTA-UPDATER] Error during update check: {e}")
+                log_agent(f"[OTA-UPDATER] Error during update check: {e}", level='WARNING')
 
             # Check every 6 hours (21600 seconds)
             if self._stop_event.wait(21600):
@@ -377,10 +383,10 @@ class WhatsappNodeUpdater:
             if self._parse_semver(remote_version) <= self._parse_semver(local_version):
                 return False
 
-            print(f"[OTA-UPDATER] 🚀 New WhatsApp Node update detected: v{remote_version} (local: v{local_version})")
+            log_agent(f"[OTA-UPDATER] New WhatsApp Node update detected: v{remote_version} (local: v{local_version})")
             return self._download_and_install(remote_version, download_url, expected_sha256)
         except Exception as e:
-            print(f"[OTA-UPDATER] Check failed: {e}")
+            log_agent(f"[OTA-UPDATER] Check failed: {e}", level='WARNING')
             return False
 
     def _download_and_install(self, version, url, expected_sha256, is_zip=True):
@@ -398,7 +404,7 @@ class WhatsappNodeUpdater:
                     try: f.unlink()
                     except: pass
 
-            print(f"[OTA-UPDATER] Downloading update from {url}...")
+            log_agent(f"[OTA-UPDATER] Downloading update from {url}...")
             hasher = hashlib.sha256()
             with requests.get(url, stream=True, timeout=90) as r:
                 r.raise_for_status()
@@ -410,14 +416,13 @@ class WhatsappNodeUpdater:
 
             calculated_sha256 = hasher.hexdigest()
             if expected_sha256 and expected_sha256.lower() != calculated_sha256.lower():
-                print(f"[OTA-UPDATER] ❌ SHA-256 mismatch! Expected: {expected_sha256}, Got: {calculated_sha256}")
+                log_agent(f"[OTA-UPDATER] SHA-256 mismatch! Expected: {expected_sha256}, Got: {calculated_sha256}", level='ERROR')
                 if tmp_download.exists(): tmp_download.unlink()
                 return False
 
             if is_zip or str(url).endswith('.zip'):
-                print(f"[OTA-UPDATER] Extracting compressed binary from ZIP payload...")
+                log_agent(f"[OTA-UPDATER] Extracting compressed binary from ZIP payload...")
                 with zipfile.ZipFile(tmp_download, 'r') as zip_ref:
-                    # Find whatsapp-node.exe inside archive
                     exe_member = next((m for m in zip_ref.namelist() if m.endswith('whatsapp-node.exe')), None)
                     if not exe_member:
                         raise ValueError("whatsapp-node.exe not found inside downloaded ZIP archive")
@@ -432,7 +437,7 @@ class WhatsappNodeUpdater:
             # Verify and ensure GUI subsystem on downloaded executable
             ensure_gui_subsystem(tmp_exe)
 
-            print(f"[OTA-UPDATER] Binary verified. Performing graceful reload...")
+            log_agent(f"[OTA-UPDATER] Binary verified. Performing graceful reload...")
             self.manager.stop()
             time.sleep(2)
 
@@ -443,7 +448,7 @@ class WhatsappNodeUpdater:
                 try:
                     target_exe.rename(old_exe)
                 except Exception as rename_err:
-                    print(f"[OTA-UPDATER] Warning renaming target_exe: {rename_err}")
+                    log_agent(f"[OTA-UPDATER] Warning renaming target_exe: {rename_err}", level='WARNING')
 
             try:
                 tmp_exe.rename(target_exe)
@@ -455,7 +460,7 @@ class WhatsappNodeUpdater:
 
             ensure_gui_subsystem(target_exe)
             self.set_local_metadata(version, calculated_sha256)
-            print(f"[OTA-UPDATER] ✅ whatsapp-node.exe successfully updated to v{version}!")
+            log_agent(f"[OTA-UPDATER] whatsapp-node.exe successfully updated to v{version}!")
 
             if old_exe.exists():
                 try: old_exe.unlink()
@@ -466,7 +471,7 @@ class WhatsappNodeUpdater:
             return True
 
         except Exception as err:
-            print(f"[OTA-UPDATER] ❌ Failed during update installation: {err}")
+            log_agent(f"[OTA-UPDATER] Failed during update installation: {err}", level='ERROR')
             if tmp_exe.exists():
                 try: tmp_exe.unlink()
                 except: pass
@@ -506,7 +511,7 @@ class SyncAppUpdater:
     def __init__(self, manager):
         self.manager = manager
         self.github_repo = 'eng-mazen-hashem/kwader-sync-app'
-        self.current_version = '1.3.1'
+        self.current_version = '1.3.2'
         self._thread = None
         self._stop_event = threading.Event()
 
@@ -2091,8 +2096,14 @@ class Api:
             nodes_res = SUPABASE.table('whatsapp_nodes').select('*').order('last_seen', desc=True).limit(10).execute()
             nodes = nodes_res.data if nodes_res and nodes_res.data else []
 
-            # 3. تقييم حالة عملية whatsapp-node المحلية
+            # 3. تقييم حالة عملية whatsapp-node المحلية مع إمكانية التعافي الذاتي
             node_running = bool(WA_NODE_MANAGER.process and WA_NODE_MANAGER.process.poll() is None)
+            if not node_running and not IS_QUITTING:
+                try:
+                    WA_NODE_MANAGER.start()
+                    node_running = bool(WA_NODE_MANAGER.process and WA_NODE_MANAGER.process.poll() is None)
+                except Exception:
+                    pass
 
             return {
                 'channel_status': channel.get('status', 'unknown'),
@@ -2220,6 +2231,17 @@ def create_tray():
 def main():
     set_windows_app_id()
     init_data_dir()
+    
+    # Start WhatsApp Node immediately on app launch in a resilient thread
+    def _start_wa_background():
+        try:
+            log_agent("Initializing WhatsApp Node on app launch...")
+            WA_NODE_MANAGER.start()
+        except Exception as e:
+            log_agent(f"Error starting WhatsApp Node on launch: {e}", level='ERROR')
+            
+    threading.Thread(target=_start_wa_background, daemon=True, name="WANodeStartupThread").start()
+
     start_hidden = '--hidden' in sys.argv
     global MAIN_WINDOW
     MAIN_WINDOW = webview.create_window(
@@ -2235,19 +2257,25 @@ def main():
     MAIN_WINDOW.events.loaded += on_loaded
     MAIN_WINDOW.events.closing += on_closing
     create_tray()
+    
     def on_app_ready():
-        # ✅ إصلاح #3: تشغيل WA_NODE_MANAGER بشكل صريح بعد delay بسيط لضمان تهيئة Supabase أولاً
         GITHUB_SESSION_MANAGER.start()
         SYNC_UPDATER.start()
-        # تشغيل وكيل WA_NODE بعد 5 ثوان (يتيح لـ GitHubSessionManager وقت التحقق من القيادة)
-        def _deferred_wa_start():
-            time.sleep(5)
-            if not IS_QUITTING and not WA_NODE_MANAGER.process:
-                print('[APP] ✅ تشغيل KWADER WhatsApp Node Agent...')
-                WA_NODE_MANAGER.start()
-        threading.Thread(target=_deferred_wa_start, daemon=True).start()
+        
+        # Watchdog: ensure WhatsApp Node is running after UI loads
+        def _deferred_wa_check():
+            time.sleep(3)
+            try:
+                if not IS_QUITTING and (not WA_NODE_MANAGER.process or WA_NODE_MANAGER.process.poll() is not None):
+                    log_agent("Watchdog in on_app_ready: restarting WhatsApp Node...")
+                    WA_NODE_MANAGER.start()
+            except Exception as e:
+                log_agent(f"Watchdog exception: {e}", level='ERROR')
+        threading.Thread(target=_deferred_wa_check, daemon=True, name="WANodeWatchdogThread").start()
+        
         if get_setting('autoStart', False):
             threading.Timer(3, start_sync).start()
+            
     webview.start(
         gui='edgechromium',
         debug=False,

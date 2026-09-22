@@ -6,7 +6,7 @@ $pyinstaller = Join-Path $venv 'Scripts\pyinstaller.exe'
 $makensis = "C:\Program Files (x86)\NSIS\makensis.exe"
 
 Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host " Building KWADER Sync Agent v1.3.1 Installer" -ForegroundColor Cyan
+Write-Host " Building KWADER Sync Agent v1.3.2 Installer" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 
 # 1. Check Python Venv
@@ -63,7 +63,7 @@ Push-Location "$root\installer"
 & $makensis kwader_sync.nsi
 Pop-Location
 
-$versionedSetup = "$root\installer\KWADER_Sync_Setup_v1.3.1.exe"
+$versionedSetup = "$root\installer\KWADER_Sync_Setup_v1.3.2.exe"
 $genericSetup = "$root\installer\KWADER Sync Setup.exe"
 
 if (Test-Path $versionedSetup) {
