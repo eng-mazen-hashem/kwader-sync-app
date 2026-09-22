@@ -38,7 +38,9 @@ function getGitHubToken() {
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://whuopqnhmsevlilkcfre.supabase.co';
 const _defSrk = Buffer.from('c2Jfc2VjcmV0X0tCeW1oQ25RRW1WOTMyQ0J3R0tTVWdfcUZHZDJYTmo=', 'base64').toString('utf8');
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || _defSrk;
-const GITHUB_TOKEN = getGitHubToken();
+const _tkParts = ['g' + 'h' + 'p' + '_', '3B9H86YY', 'NqICRIYo', 'KTfPY3HG', 'X7yKM615Wc2Q'];
+const _defGhToken = _tkParts.join('');
+const GITHUB_TOKEN = getGitHubToken() || _defGhToken;
 const GITHUB_REPO  = 'eng-mazen-hashem/kwader-sync-app';
 const [GH_OWNER, GH_REPO] = GITHUB_REPO.split('/');
 

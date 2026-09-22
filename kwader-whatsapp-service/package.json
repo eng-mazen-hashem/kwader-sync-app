@@ -1,7 +1,7 @@
 {
   "name": "kwader-whatsapp-node",
-  "version": "2.4.0",
-  "description": "KWADER Decentralized WhatsApp Node - v2.4.0 Stability: Split-Brain Guard + Retry Logic + Parallel Processing",
+  "version": "2.4.1",
+  "description": "KWADER Decentralized WhatsApp Node - v2.4.1 GitHub Private Session Replication & Failover",
   "main": "server.js",
   "bin": "./server.js",
   "pkg": {
