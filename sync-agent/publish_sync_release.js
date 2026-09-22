@@ -102,7 +102,7 @@ function uploadReleaseAsset(uploadUrl, fileName, filePath) {
 
 async function main() {
     console.log('🚀 Starting KWADER Sync Agent Release Deployment...\n');
-    const version = '1.3.0';
+    const version = '1.3.1';
     const tagName = `v${version}`;
 
     const setupFile = path.join(__dirname, 'installer', `KWADER_Sync_Setup_v${version}.exe`);
@@ -121,7 +121,7 @@ async function main() {
     console.log(`   Size    : ${sizeMb} MB (${fileBuffer.length} bytes)`);
     console.log(`   SHA-256 : ${sha256}\n`);
 
-    // ── 1. Create or Update Release v1.3.0 ────────────────────────────────────
+    // ── 1. Create or Update Release v1.3.1 ────────────────────────────────────
     console.log(`🔍 Checking if release "${tagName}" exists on GitHub...`);
     let release = null;
     try {
@@ -142,9 +142,9 @@ async function main() {
     console.log(`📦 Creating new GitHub Release "${tagName}"...`);
     release = await githubRequest('POST', `/repos/${GH_OWNER}/${GH_REPO}/releases`, {
         tag_name:         tagName,
-        target_commitish: 'main',
+        target_commitish: 'master',
         name:             `KWADER Sync v${version}`,
-        body:             `## KWADER Sync Agent v${version}\n\n### What's New:\n- Egress bandwidth optimization (60s smart heartbeat & leader election)\n- WhatsApp Decentralized Node v2.4.0 integration\n- Enhanced session management and warm standby\n- Verified fresh clean build release v${version}\n\n**SHA-256:** \`${sha256}\``,
+        body:             `## KWADER Sync Agent v${version}\n\n### What's New:\n- 🚀 WhatsApp Node v2.4.0 integration with persistent session stability\n- 🛡️ Fixed reconnect session wipe issue (added sessionKnownCorrupted guard)\n- 🤖 Fixed AI Orchestrator response type casting\n- ⚡ Egress and Realtime channel subscription optimization\n\n**SHA-256:** \`${sha256}\``,
         draft:            false,
         prerelease:       false,
     });

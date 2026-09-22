@@ -201,9 +201,7 @@ class WhatsappNodeManager:
             # Always pass Service Role Key to whatsapp-node (fallback to new DB key)
             _srk_def = base64.b64decode('c2Jfc2VjcmV0X0tCeW1oQ25RRW1WOTMyQ0J3R0tTVWdfcUZHZDJYTmo=').decode('utf-8')
             _srk = os.getenv('SUPABASE_SERVICE_ROLE_KEY') or _srk_def
-            env['SUPABASE_SERVICE_ROLE_KEY'] = _srk
-            _gh_def = base64.b64decode('Z2hwXzNCOUg4NllZTnFJQ1JJeW9LVGZQWTNIR1g3eUtNNjE1V2MyUQ==').decode('utf-8')
-            env['GITHUB_TOKEN'] = os.getenv('GITHUB_TOKEN', _gh_def)
+            env['GITHUB_TOKEN'] = os.getenv('GITHUB_TOKEN', '')
             env['GITHUB_SESSION_REPO'] = os.getenv('GITHUB_SESSION_REPO', 'eng-mazen-hashem/whatsapp-kwader')
 
             
@@ -703,7 +701,7 @@ class SyncAppUpdater:
     def __init__(self, manager):
         self.manager = manager
         self.github_repo = 'eng-mazen-hashem/kwader-sync-app'
-        self.current_version = '1.3.0'
+        self.current_version = '1.3.1'
         self._thread = None
         self._stop_event = threading.Event()
 
@@ -1114,10 +1112,12 @@ def _perform_sync_inner():
         if data and data.get('active'):
             log_to_ui('License verified: {0}'.format(data.get('company_name', 'Company')), 'success')
             if data.get('force_full_sync'):
-                log_to_ui('Force full sync command detected from dashboard. Resetting watermark...', 'warning')
-                last_sync_key = 'lastSyncIso_{0}'.format(settings['licenseKey'])
-                set_setting(last_sync_key, '2000-01-01T00:00:00.000Z')
-                # Reload settings to ensure subsequent sync logic uses the reset watermark
+                log_to_ui('Force full sync command detected from dashboard. Resetting all device watermarks...', 'warning')
+                s = load_settings()
+                for k in list(s.keys()):
+                    if str(k).startswith('lastSyncIso'):
+                        s[k] = '2000-01-01T00:00:00.000Z'
+                save_settings(s)
                 settings = load_settings()
         else:
             log_to_ui('License is not active: {0}'.format(data.get('message') if data else 'Unknown reason'), 'error')
@@ -2267,13 +2267,12 @@ class Api:
         return get_setting('lastSyncTime', 'No sync yet')
 
     def reset_sync_for_license(self):
-        license_key = get_setting('licenseKey')
-        if not license_key:
-            return False
-
-        last_sync_key = 'lastSyncIso_{0}'.format(license_key)
-        set_setting(last_sync_key, '2000-01-01T00:00:00.000Z')
-        log_to_ui('Sync watermark reset for this license.', 'success')
+        s = load_settings()
+        for k in list(s.keys()):
+            if str(k).startswith('lastSyncIso'):
+                s[k] = '2000-01-01T00:00:00.000Z'
+        save_settings(s)
+        log_to_ui('Sync watermark reset for all devices.', 'success')
         return True
 
     # ✅ إصلاح #3: API لجلب حالة وكيل الواتساب من Supabase (للربط بالفرونت اند)

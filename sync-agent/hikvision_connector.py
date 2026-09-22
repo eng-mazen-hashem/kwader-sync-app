@@ -106,6 +106,27 @@ class HikvisionConnector:
         headers = {'Content-Type': 'application/json; charset=utf-8'}
         return self._request('POST', url_path, data=json.dumps(json_body).encode('utf-8'), headers=headers)
 
+    # ─── PUT Helper ───────────────────────────────────────────────────────────
+    def _put(self, path: str, xml_body: str) -> requests.Response:
+        headers = {'Content-Type': 'application/xml; charset=utf-8'}
+        return self._request('PUT', path, data=xml_body.encode('utf-8'), headers=headers)
+
+    # ─── PUT JSON Helper ──────────────────────────────────────────────────────
+    def _put_json(self, path: str, json_body: dict) -> requests.Response:
+        import json
+        url_path = path + ('&format=json' if '?' in path else '?format=json')
+        headers = {'Content-Type': 'application/json; charset=utf-8'}
+        return self._request('PUT', url_path, data=json.dumps(json_body).encode('utf-8'), headers=headers)
+
+    def disconnect(self):
+        """إغلاق جلسة الاتصال بأمان."""
+        if self.session is not None:
+            try:
+                self.session.close()
+            except Exception:
+                pass
+            self.session = None
+
     # ─── اختبار الاتصال ───────────────────────────────────────────────────────
     def test_connection(self) -> dict:
         """
@@ -136,6 +157,76 @@ class HikvisionConnector:
             if code == 401:
                 raise PermissionError('خطأ في اسم المستخدم أو كلمة المرور (401)')
             raise RuntimeError(f'خطأ HTTP {code}: {e}')
+
+    # ─── إدارة وقت وساعة الجهاز ───────────────────────────────────────────────
+    def get_device_time(self) -> datetime | None:
+        """
+        استعلام الساعة الداخلية لجهاز Hikvision عبر ISAPI /ISAPI/System/time.
+        يُعيد كائن datetime محلي أو None في حال تعذر القراءة.
+        """
+        try:
+            resp = self._get('/ISAPI/System/time')
+            text = resp.text
+            if '<localTime>' in text:
+                root = ET.fromstring(text)
+                ns = _extract_namespace(root)
+                el = root.find(f'{ns}localTime')
+                if el is not None and el.text:
+                    return _parse_hikvision_time(el.text.strip())
+            # محاولة قراءة JSON
+            try:
+                import json
+                data = json.loads(text)
+                raw_t = data.get('Time', {}).get('localTime') or data.get('localTime')
+                if raw_t:
+                    return _parse_hikvision_time(str(raw_t))
+            except Exception:
+                pass
+        except Exception:
+            pass
+        return None
+
+    def set_device_time(self, target_dt: datetime) -> dict:
+        """
+        تصحيح ومزامنة الساعة الداخلية لجهاز Hikvision إلى التوقيت المستهدف.
+        """
+        time_iso = target_dt.strftime('%Y-%m-%dT%H:%M:%S')
+        xml_body = (
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<Time version="2.0" xmlns="http://www.hikvision.com/ver20/XMLSchema">\n'
+            '    <timeMode>manual</timeMode>\n'
+            f'    <localTime>{time_iso}</localTime>\n'
+            '</Time>'
+        )
+        try:
+            resp = self._put('/ISAPI/System/time', xml_body)
+            return {
+                'success': True,
+                'time': time_iso,
+                'status_code': resp.status_code,
+                'message': f'تم ضبط ساعة جهاز Hikvision إلى {time_iso}'
+            }
+        except Exception as xml_err:
+            # محاولة ثانوية عبر JSON
+            try:
+                json_body = {
+                    "Time": {
+                        "timeMode": "manual",
+                        "localTime": time_iso
+                    }
+                }
+                resp_json = self._put_json('/ISAPI/System/time', json_body)
+                return {
+                    'success': True,
+                    'time': time_iso,
+                    'status_code': resp_json.status_code,
+                    'message': f'تم ضبط ساعة جهاز Hikvision عبر JSON إلى {time_iso}'
+                }
+            except Exception as json_err:
+                return {
+                    'success': False,
+                    'message': f'فشل تحديث وقت Hikvision: {xml_err} | {json_err}'
+                }
 
     # ─── جلب سجلات الحضور ────────────────────────────────────────────────────
     def get_attendance_logs(self, since: datetime) -> list[dict]:
