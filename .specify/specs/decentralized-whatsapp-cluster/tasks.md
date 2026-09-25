@@ -20,13 +20,13 @@
 
 ## Phase 1: Database Infrastructure & Distributed RPCs
 
-- [ ] **T01**: إنشاء ملف ترحيل SQL لقاعدة البيانات `20260925_decentralized_baileys_cluster.sql`
-- [ ] **T02**: إنشاء وتحديث جدول `whatsapp_channels` لدعم تعدد القنوات وأرقام الدورات (`current_epoch`)
-- [ ] **T03**: إنشاء جدول `whatsapp_session_keys` لتخزين مفاتيح Baileys التشفيرية بحجم < 500KB مشفرة
-- [ ] **T04**: إنشاء دالة `acquire_whatsapp_lease(p_node_id, p_channel_id, p_lease_duration, p_health_score)` الذرية
-- [ ] **T05**: إنشاء دالة `renew_whatsapp_heartbeat(p_node_id, p_channel_id, p_epoch)` للنبضات الدورية
-- [ ] **T06**: إنشاء دالة `release_whatsapp_lease(p_node_id, p_channel_id, p_reason)` للتسليم السلس السريع
-- [ ] **T07**: تفعيل `Supabase Realtime` للجداول (`whatsapp_channels`, `whatsapp_nodes`) لتمكين التنبيه اللحظي
+- [x] **T01**: إنشاء ملف ترحيل SQL لقاعدة البيانات `20260925_decentralized_baileys_cluster.sql`
+- [x] **T02**: إنشاء وتحديث جدول `whatsapp_channels` لدعم تعدد القنوات وأرقام الدورات (`current_epoch`)
+- [x] **T03**: إنشاء جدول `whatsapp_session_keys` لتخزين مفاتيح Baileys التشفيرية بحجم < 500KB مشفرة
+- [x] **T04**: إنشاء دالة `acquire_whatsapp_lease(p_node_id, p_channel_id, p_lease_duration, p_health_score)` الذرية
+- [x] **T05**: إنشاء دالة `renew_whatsapp_heartbeat(p_node_id, p_channel_id, p_epoch)` للنبضات الدورية
+- [x] **T06**: إنشاء دالة `release_whatsapp_lease(p_node_id, p_channel_id, p_reason)` للتسليم السلس السريع
+- [x] **T07**: تفعيل `Supabase Realtime` للجداول (`whatsapp_channels`, `whatsapp_nodes`) لتمكين التنبيه اللحظي
 
 ---
 
