@@ -2,10 +2,14 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     HiOutlineSave, HiOutlineKey, HiOutlineGlobe,
-    HiOutlineShieldCheck, HiOutlineCash, HiOutlineChevronLeft,
+    HiOutlineCash, HiOutlineChevronLeft,
     HiOutlineChevronRight, HiOutlineCheck, HiOutlineSearch,
-    HiOutlineBadgeCheck
+    HiOutlineBadgeCheck, HiOutlineShieldCheck
 } from 'react-icons/hi';
+import {
+    Sparkles, Crown, Zap, Shield, Clock, Calendar, CheckCircle2,
+    ArrowUpRight, RefreshCw, MessageSquare, Users
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
 import { COUNTRIES, getCountryByCode } from '../utils/countries';
@@ -133,6 +137,14 @@ function Settings() {
         ai_payroll_frequency: 'off',
         payroll_mode: 'regular',
         weekly_advance_rate: 50,
+        device_1_ip: '',
+        device_1_port: 4370,
+        device_1_type: 'zkteco',
+        device_1_sn: '',
+        device_2_ip: '',
+        device_2_port: 4370,
+        device_2_type: 'zkteco',
+        device_2_sn: '',
     };
 
     const [form, setForm] = useState({ ...defaults, ...(company?.settings || {}) });
@@ -147,6 +159,208 @@ function Settings() {
     const [sendingOtp, setSendingOtp] = useState(false);
     const [verifyingOtp, setVerifyingOtp] = useState(false);
     const [otpTimer, setOtpTimer] = useState(0);
+
+    // Subscription & Plan States
+    const [employeeCount, setEmployeeCount] = useState(0);
+    const [renewalStatus, setRenewalStatus] = useState(null);
+    const [requestingRenewal, setRequestingRenewal] = useState(false);
+    const [supportPhone, setSupportPhone] = useState('');
+
+    useEffect(() => {
+        if (!company?.id) return;
+
+        const fetchEmployeeCount = async () => {
+            try {
+                const { count, error } = await supabase
+                    .from('employees')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('company_id', company.id)
+                    .eq('status', 'active');
+                if (!error && typeof count === 'number') {
+                    setEmployeeCount(count);
+                }
+            } catch (err) {
+                console.error('Error fetching employee count:', err);
+            }
+        };
+
+        const fetchRenewalStatus = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('renewal_requests')
+                    .select('status')
+                    .eq('company_id', company.id)
+                    .order('requested_at', { ascending: false })
+                    .limit(1);
+                if (!error && data && data.length > 0) {
+                    setRenewalStatus(data[0].status);
+                }
+            } catch (err) {
+                console.error('Error fetching renewal status:', err);
+            }
+        };
+
+        const fetchSupportConfig = async () => {
+            try {
+                const { data } = await supabase
+                    .from('payment_config')
+                    .select('value')
+                    .eq('key', 'admin_whatsapp')
+                    .maybeSingle();
+                if (data?.value) setSupportPhone(data.value);
+            } catch {}
+        };
+
+        fetchEmployeeCount();
+        fetchRenewalStatus();
+        fetchSupportConfig();
+    }, [company?.id]);
+
+    // Calculate dates & days remaining
+    const rawEndDate = company?.subscription_end_date ||
+                       company?.subscription_expires_at ||
+                       company?.trial_ends_at ||
+                       company?.settings?.subscription_end_date ||
+                       company?.settings?.trial_end_date;
+
+    const endDate = useMemo(() => {
+        if (rawEndDate) {
+            const d = new Date(rawEndDate);
+            if (!isNaN(d.getTime())) return d;
+        }
+        const base = company?.created_at ? new Date(company.created_at) : new Date();
+        return new Date(base.getTime() + 14 * 86400000);
+    }, [rawEndDate, company?.created_at]);
+
+    const startDate = useMemo(() => {
+        if (company?.settings?.subscription_start_date) {
+            const d = new Date(company.settings.subscription_start_date);
+            if (!isNaN(d.getTime())) return d;
+        }
+        if (company?.created_at) {
+            const d = new Date(company.created_at);
+            if (!isNaN(d.getTime())) return d;
+        }
+        return new Date(endDate.getTime() - 30 * 86400000);
+    }, [company?.settings?.subscription_start_date, company?.created_at, endDate]);
+
+    const now = new Date();
+    const diffTime = endDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const isExpired = diffDays <= 0;
+    const isExpiringSoon = diffDays > 0 && diffDays <= 7;
+
+    const totalDuration = Math.max(86400000, endDate.getTime() - startDate.getTime());
+    const elapsedDuration = Math.min(totalDuration, Math.max(0, now.getTime() - startDate.getTime()));
+    const elapsedPercent = Math.min(100, Math.max(0, Math.round((elapsedDuration / totalDuration) * 100)));
+
+    // Plan & tier details
+    const rawPlanLower = (company?.plan || 'Starter').toLowerCase();
+    const isEnterprise = rawPlanLower.includes('enterprise');
+    const isPro = rawPlanLower.includes('pro') || rawPlanLower.includes('growth');
+    const planTierKey = isEnterprise ? 'enterprise' : isPro ? 'pro' : 'starter';
+
+    const planTitle = isEnterprise 
+        ? t.planEnterpriseTitle 
+        : isPro 
+        ? t.planProTitle 
+        : t.planStarterTitle;
+
+    const planTierLabel = isEnterprise ? 'ENTERPRISE' : isPro ? 'PRO GROWTH' : 'STARTER';
+    const maxEmployees = company?.max_employees || (isEnterprise ? 500 : isPro ? 100 : 25);
+    const maxEmployeesDisplay = isEnterprise ? t.planUnlimited : maxEmployees;
+
+    const isTrial = company?.status === 'trialing';
+    const billingCycle = company?.settings?.billing_cycle || (isEnterprise ? 'yearly' : 'monthly');
+    const billingCycleLabel = isTrial 
+        ? t.planCycleTrial 
+        : (billingCycle === 'yearly' || billingCycle === 'annual' ? t.planCycleAnnual : t.planCycleMonthly);
+
+    const planDescription = isEnterprise
+        ? (language === 'ar' ? 'حلول مؤسسية متقدمة مع دعم مخصص، سعة غير محدودة، ومزامنة حية لكافة الفروع' : 'Comprehensive enterprise HR solution with unlimited capacity and dedicated support')
+        : isPro
+        ? (language === 'ar' ? 'الباقة الاحترافية المتكاملة لإدارة الحضور والانصراف، مسيرات الرواتب الذكية، وتقارير AI' : 'Most popular plan for smart payroll, attendance tracking, and AI reports')
+        : (language === 'ar' ? 'الباقة الأساسية لإدارة الحضور والانصراف، أجهزة البصمة، وتطبيق الموظفين بكفاءة' : 'Essential HR & attendance tier with device sync and employee mobile app');
+
+    let statusThemeClass = 'status-active';
+    let statusLabel = t.planStatusActive;
+    if (isExpired) {
+        statusThemeClass = 'status-expired';
+        statusLabel = t.planStatusExpired;
+    } else if (isExpiringSoon) {
+        statusThemeClass = 'status-expiring';
+        statusLabel = t.planStatusExpiring;
+    } else if (isTrial) {
+        statusThemeClass = 'status-trial';
+        statusLabel = t.planStatusTrial;
+    }
+
+    let daysThemeClass = 'days-emerald';
+    if (isExpired) {
+        daysThemeClass = 'days-ruby';
+    } else if (isExpiringSoon) {
+        daysThemeClass = 'days-amber';
+    }
+
+    const planPerks = useMemo(() => {
+        const list = [
+            t.perkFingerprintSync,
+            t.perkSmartPayroll,
+            t.perkWhatsAppAlerts,
+            t.perkShiftManagement
+        ];
+        if (isPro || isEnterprise) {
+            list.push(t.perkAiReports);
+            list.push(t.perkPrioritySupport);
+        }
+        return list;
+    }, [t, isPro, isEnterprise]);
+
+    const formatDate = (dateObj) => {
+        if (!dateObj || isNaN(dateObj.getTime())) return '-';
+        return new Intl.DateTimeFormat(language === 'ar' ? 'ar-EG' : 'en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        }).format(dateObj);
+    };
+
+    const handleQuickRenewal = async () => {
+        if (requestingRenewal || renewalStatus === 'pending') return;
+        setRequestingRenewal(true);
+        try {
+            const { error } = await supabase
+                .from('renewal_requests')
+                .insert({
+                    company_id: company.id,
+                    status: 'pending',
+                    details: {
+                        requested_by: user?.email || 'admin',
+                        company_name: company.name,
+                        current_plan: (company.plan === 'Free' ? 'Starter' : (company.plan || 'Starter')),
+                        source: 'settings_page'
+                    }
+                });
+            if (error) throw error;
+            setRenewalStatus('pending');
+            toast.success(t.renewalRequestSuccess);
+        } catch (err) {
+            console.error('Renewal request failed:', err.message);
+            toast.error(err.message || 'Failed to submit renewal request');
+        } finally {
+            setRequestingRenewal(false);
+        }
+    };
+
+    const openWhatsAppSupport = () => {
+        const target = supportPhone || '201000000000';
+        const cleanTarget = target.replace(/\D/g, '');
+        const currentPlanDisplay = company?.plan === 'Free' ? 'Starter' : (company?.plan || 'Starter');
+        const msg = language === 'ar'
+            ? `مرحباً، أود الاستفسار حول ترقية وتجديد باقة الاشتراك لمنشأة (${company?.name || 'كوادر'}) - الباقة الحالية: ${currentPlanDisplay}.`
+            : `Hello, I would like to inquire about upgrading/renewing our subscription for (${company?.name || 'Kwader'}) - Current plan: ${currentPlanDisplay}.`;
+        window.open(`https://wa.me/${cleanTarget}?text=${encodeURIComponent(msg)}`, '_blank');
+    };
 
     useEffect(() => {
         if (company?.settings) {
@@ -274,7 +488,6 @@ function Settings() {
     const pending = getCountryByCode(form.country);
     const hasChange = form.country !== (company?.settings?.country || '');
     const totalAllow = (form.housing_allowance || 0) + (form.transport_allowance || 0);
-    const lateEx = 20 * (form.late_deduction_per_minute || 0);
 
     const ChevronIcon = language === 'ar' ? HiOutlineChevronLeft : HiOutlineChevronRight;
 
@@ -298,6 +511,80 @@ function Settings() {
 
             <div className="settings-bento-grid">
                 
+                {/* World-Class Plan & Subscription Hero Card */}
+                <section className="settings-card span-12 settings-subscription-card">
+                    <div className="subscription-header-row">
+                        <div className="subscription-brand-header">
+                            <div className="subscription-icon-glow">
+                                <Sparkles className="sub-header-icon" size={20} />
+                            </div>
+                            <div>
+                                <h2 className="subscription-title">{t.subscriptionCardTitle}</h2>
+                                <p className="subscription-subtitle">{t.subscriptionCardSubtitle}</p>
+                            </div>
+                        </div>
+                        <div className={`subscription-status-pill ${statusThemeClass}`}>
+                            <span className="status-pulse-dot" />
+                            <span>{statusLabel}</span>
+                        </div>
+                    </div>
+
+                    <div className="subscription-content-row">
+                        <div className="subscription-details-col">
+                            <div className="plan-name-block">
+                                <span className={`plan-tier-chip ${planTierKey}`}>
+                                    {planTierKey === 'enterprise' ? <Crown size={14} /> : <Zap size={14} />}
+                                    {planTierLabel}
+                                </span>
+                                <h3 className="plan-display-name">{planTitle}</h3>
+                                <p className="plan-tier-desc">{planDescription}</p>
+                            </div>
+
+                            <div className="plan-metrics-block">
+                                <div className="metric-item">
+                                    <span className="metric-label"><Users size={14} /> {t.planEmployeeCapacity}</span>
+                                    <span className="metric-value"><strong>{employeeCount}</strong> / {maxEmployeesDisplay}</span>
+                                </div>
+                                <div className="metric-item">
+                                    <span className="metric-label"><Calendar size={14} /> {t.planRenewalDate}</span>
+                                    <span className="metric-value"><strong>{formatDate(endDate)}</strong> {billingCycleLabel ? `· ${billingCycleLabel}` : ''}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="subscription-actions-col">
+                            <div className="days-remaining-block">
+                                <div className="days-number-wrapper">
+                                    <span className={`countdown-number ${daysThemeClass}`}>{diffDays > 0 ? diffDays : 0}</span>
+                                    <span className="countdown-text">
+                                        {diffDays === 0 ? t.planDaysZero : diffDays === 1 ? t.planDaysSingular : diffDays < 0 ? t.planExpiredDaysAgo.replace('{days}', Math.abs(diffDays)) : t.planDaysRemaining}
+                                    </span>
+                                </div>
+                                <div className="progress-bar-wrapper">
+                                    <div className="progress-bar-track">
+                                        <div className={`progress-bar-fill ${daysThemeClass}`} style={{ width: `${Math.max(4, elapsedPercent)}%` }} />
+                                    </div>
+                                    <span className="progress-text">{elapsedPercent}% {t.planCycleProgress}</span>
+                                </div>
+                            </div>
+
+                            <div className="action-buttons-group">
+                                <button type="button" onClick={() => navigate('/subscribe')} className="sub-btn-primary">
+                                    <Zap className="btn-icon" size={16} /> <span>{t.planUpgradeBtn}</span>
+                                </button>
+                                <button type="button" onClick={handleQuickRenewal} disabled={requestingRenewal || renewalStatus === 'pending'} className="sub-btn-secondary">
+                                    <RefreshCw className={`btn-icon ${requestingRenewal ? 'animate-spin' : ''}`} size={16} />
+                                    <span>{renewalStatus === 'pending' ? t.planRenewalRequested : t.planRequestRenewalBtn}</span>
+                                </button>
+                            </div>
+                            
+                            <button type="button" onClick={openWhatsAppSupport} className="sub-advisor-link">
+                                <MessageSquare size={14} /> <span>{t.planContactAdvisor}</span> <ArrowUpRight size={14} />
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
                 {/* Corporate Identity Card */}
                 <section className="settings-card span-8">
                     <HiOutlineBadgeCheck className="card-bg-icon" />
@@ -412,52 +699,8 @@ function Settings() {
 
                 </section>
 
-                {/* Disciplinary Rules Card */}
-                <section className="settings-card span-6">
-                    <HiOutlineShieldCheck className="card-bg-icon danger-icon" />
-                    
-                    <div className="settings-card-header danger">
-                        <HiOutlineShieldCheck className="icon" />
-                        <span>{t.deductionRulesTitle}</span>
-                    </div>
-
-                    <div className="settings-form-group">
-                        <label className="settings-label">{t.lateDeductionLabel}</label>
-                        <div className="input-with-symbol">
-                            <span className="symbol">{currencySymbol}</span>
-                            <input
-                                className="settings-input"
-                                type="number" min={0}
-                                value={form.late_deduction_per_minute}
-                                onChange={e => set('late_deduction_per_minute', Number(e.target.value))}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="settings-form-group">
-                        <label className="settings-label">{t.absenceDeductionFormulaLabel}</label>
-                        <select
-                            className="settings-select"
-                            value={form.absence_deduction_formula}
-                            onChange={e => set('absence_deduction_formula', e.target.value)}
-                        >
-                            <option value="daily_rate">{t.formulaDailyRate}</option>
-                            <option value="double_daily">{t.formulaDoubleDaily}</option>
-                            <option value="fixed">{t.formulaFixed}</option>
-                        </select>
-                    </div>
-
-                    <div className="danger-alert">
-                        {t.deductionExample}
-                        <strong className="result-amount">
-                            {t.deductionExampleResult.replace('{amount}', formatCurrency(lateEx))}
-                        </strong>
-                    </div>
-
-                </section>
-
                 {/* Financial Allowances Card */}
-                <section className="settings-card span-6">
+                <section className="settings-card span-12">
                     <HiOutlineCash className="card-bg-icon purple-icon" />
                     
                     <div className="settings-card-header purple">
@@ -465,29 +708,35 @@ function Settings() {
                         <span>{t.allowancesTitle}</span>
                     </div>
 
-                    <div className="settings-form-group">
-                        <label className="settings-label">{t.housingAllowanceLabel}</label>
-                        <div className="input-with-symbol">
-                            <span className="symbol">{currencySymbol}</span>
-                            <input
-                                className="settings-input"
-                                type="number" min={0}
-                                value={form.housing_allowance}
-                                onChange={e => set('housing_allowance', Number(e.target.value))}
-                            />
+                    <div className="form-split">
+                        <div className="form-column">
+                            <div className="settings-form-group">
+                                <label className="settings-label">{t.housingAllowanceLabel}</label>
+                                <div className="input-with-symbol">
+                                    <span className="symbol">{currencySymbol}</span>
+                                    <input
+                                        className="settings-input"
+                                        type="number" min={0}
+                                        value={form.housing_allowance}
+                                        onChange={e => set('housing_allowance', Number(e.target.value))}
+                                    />
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
-                    <div className="settings-form-group">
-                        <label className="settings-label">{t.transportAllowanceLabel}</label>
-                        <div className="input-with-symbol">
-                            <span className="symbol">{currencySymbol}</span>
-                            <input
-                                className="settings-input"
-                                type="number" min={0}
-                                value={form.transport_allowance}
-                                onChange={e => set('transport_allowance', Number(e.target.value))}
-                            />
+                        <div className="form-column">
+                            <div className="settings-form-group">
+                                <label className="settings-label">{t.transportAllowanceLabel}</label>
+                                <div className="input-with-symbol">
+                                    <span className="symbol">{currencySymbol}</span>
+                                    <input
+                                        className="settings-input"
+                                        type="number" min={0}
+                                        value={form.transport_allowance}
+                                        onChange={e => set('transport_allowance', Number(e.target.value))}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -586,6 +835,8 @@ function Settings() {
                     </div>
 
                 </section>
+
+
 
                 {/* WhatsApp OTP Verification Card */}
                 <section className="settings-card span-12">
