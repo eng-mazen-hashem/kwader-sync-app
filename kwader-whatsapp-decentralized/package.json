@@ -1,0 +1,36 @@
+{
+  "name": "kwader-whatsapp-node",
+  "version": "2.4.0",
+  "description": "KWADER Decentralized WhatsApp Cluster Engine",
+  "main": "server.js",
+  "bin": "./server.js",
+  "pkg": {
+    "scripts": [
+      "encryption.js",
+      "cloudAuthState.js",
+      "whatsappClient.js",
+      "leaseManager.js",
+      "queueProcessor.js"
+    ],
+    "assets": []
+  },
+  "scripts": {
+    "start": "node server.js",
+    "build:exe": "npx pkg ./server.js --targets node18-win-x64 --output build/whatsapp-node.exe"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.2",
+    "@whiskeysockets/baileys": "^7.0.0-rc14",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.3",
+    "express": "^5.2.1",
+    "pino": "^10.3.1",
+    "qrcode": "^1.5.4",
+    "redis": "^6.2.1",
+    "socket.io": "^4.8.4"
+  }
+}
