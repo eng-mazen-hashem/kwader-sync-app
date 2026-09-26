@@ -20,7 +20,7 @@ if (!SUPABASE_KEY) {
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 console.log('═══════════════════════════════════════════════════════════════');
-console.log(' 🚀 KWADER Decentralized WhatsApp Cluster Engine (Baileys) v2.4 ');
+console.log(' 🚀 KWADER Decentralized WhatsApp Cluster Engine (Baileys) v2.6 ');
 console.log('═══════════════════════════════════════════════════════════════');
 
 let activeClient = null;
@@ -67,7 +67,7 @@ async function startWhatsAppLeaderEngine() {
         queueProcessor = null;
     }
 
-    // Initialize Baileys client with Cloud Auth State
+    // Initialize Baileys client with GitHub-backed session (auth_info_baileys/)
     activeClient = await initWhatsAppClient({
         channelId: DEFAULT_CHANNEL_ID,
         supabase,
@@ -95,6 +95,18 @@ async function startWhatsAppLeaderEngine() {
             console.warn(`⚠️ [WhatsApp] Disconnected. Status: ${statusCode}, LoggedOut: ${isLoggedOut}`);
             if (queueProcessor) {
                 queueProcessor.stop();
+                queueProcessor = null;
+            }
+            // Auto-reconnect if still leader and not logged out
+            if (!isLoggedOut && currentRole === 'leader') {
+                console.log('[WhatsApp] Attempting auto-reconnect in 5s...');
+                setTimeout(() => {
+                    if (currentRole === 'leader') {
+                        startWhatsAppLeaderEngine().catch(err => 
+                            console.error('[WhatsApp] Auto-reconnect failed:', err.message)
+                        );
+                    }
+                }, 5000);
             }
         },
         onMessage: async (msgUpsert, sock) => {

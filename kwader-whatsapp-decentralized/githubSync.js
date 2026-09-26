@@ -16,10 +16,10 @@ function pullSessionFromGithub() {
         
         // If the folder doesn't exist remotely, this will throw, which is fine for first time
         try {
-            execSync(`git checkout origin/main -- "${authDir}"`, { stdio: 'ignore' });
+            execSync(`git checkout origin/master -- "${authDir}"`, { stdio: 'ignore' });
             console.log('[GithubSync] Successfully pulled session from GitHub.');
         } catch (checkoutErr) {
-            console.log('[GithubSync] No remote session found or first time setup.');
+            console.log('[GithubSync] No remote session found or first time setup (first run).');
         }
     } catch (e) {
         console.log('[GithubSync] Git pull skipped or failed:', e.message);
@@ -44,7 +44,7 @@ function pushSessionToGithub() {
 
         // Commit and push
         execSync('git commit -m "Auto-sync WhatsApp session via Leader Node [skip ci]"', { stdio: 'ignore' });
-        execSync('git push origin main', { stdio: 'ignore' });
+        execSync('git push origin master', { stdio: 'ignore' });
         console.log('✅ [GithubSync] Successfully synced session to GitHub.');
     } catch (e) {
         console.error('[GithubSync] Error pushing to GitHub:', e.message);
