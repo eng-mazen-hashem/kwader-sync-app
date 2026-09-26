@@ -96,7 +96,15 @@ export default function Loans() {
     }
   }, [company?.id, page, search, activeTab, t]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { 
+    fetchData(); 
+    if (company?.id) {
+      const channel = supabase.channel('loans_page_updates')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'employee_loans', filter: `company_id=eq.${company.id}` }, fetchData)
+        .subscribe();
+      return () => { supabase.removeChannel(channel); };
+    }
+  }, [fetchData, company?.id]);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);

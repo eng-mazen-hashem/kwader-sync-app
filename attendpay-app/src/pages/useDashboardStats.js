@@ -43,6 +43,7 @@ export function useDashboardStats() {
     const [stats, setStats] = useState({
         present: 0,
         absent: 0,
+        currentlyInFacility: 0,
         totalEmployees: 0,
         totalPayroll: 0,
         overtimeHours: 0,
@@ -151,7 +152,7 @@ export function useDashboardStats() {
                 // 4. حضور اليوم
                 supabase
                     .from('processed_attendance')
-                    .select('status')
+                    .select('status, check_in, check_out')
                     .eq('company_id', company.id)
                     .eq('date', today),
 
@@ -194,11 +195,18 @@ export function useDashboardStats() {
             const shifts          = shiftsResult.data    || [];
             const shiftEmps       = shiftEmpsResult.data || [];
 
+            const ARABIC_DAYS = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            const ENGLISH_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const ENGLISH_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dayIdx = new Date().getDay();
+            const arToday = ARABIC_DAYS[dayIdx];
+            const enToday = ENGLISH_DAYS[dayIdx];
+            const enShort = ENGLISH_SHORT[dayIdx];
             const dayNames = [
                 t.sunday, t.monday, t.tuesday, t.wednesday,
                 t.thursday, t.friday, t.saturday,
             ];
-            const todayName = dayNames[new Date().getDay()];
+            const locToday = dayNames[dayIdx];
 
             // بناء map للشيفتات — O(n) بدل O(n²)
             const shiftEmpMap = new Map(shiftEmps.map(se => [se.employee_id, se.shift_id]));
@@ -210,13 +218,16 @@ export function useDashboardStats() {
                 const shift   = shiftId ? shiftMap.get(shiftId) : (shifts[0] ?? null);
 
                 // يُحتسب إذا لم يُعيَّن له شيفت، أو إذا اليوم ضمن أيام عمله
-                if (!shift || !shift.work_days || shift.work_days.includes(todayName)) {
+                if (!shift || !shift.work_days || shift.work_days.length === 0 ||
+                    shift.work_days.some(d => d === arToday || d === enToday || d === enShort || d === locToday)) {
                     expectedTodayEmployees++;
                 }
             }
 
-            const att     = todayAttResult.data || [];
-            const present = att.filter(a => ['present', 'late', 'early_leave'].includes(a.status)).length;
+            const att = todayAttResult.data || [];
+            const isAttended = (a) => a.check_in != null || ['present', 'late', 'early_leave', 'manual', 'missing_checkout', 'missing_checkin'].includes(a.status);
+            const present = att.filter(isAttended).length;
+            const currentlyInFacility = att.filter(a => a.check_in != null && a.check_out == null).length;
             const absent  = Math.max(0, expectedTodayEmployees - present);
 
             const payrolls     = payrollResult.data || [];
@@ -225,6 +236,7 @@ export function useDashboardStats() {
 
             setStats({
                 present,
+                currentlyInFacility,
                 absent,
                 totalEmployees: activeEmployees.length,
                 totalPayroll,

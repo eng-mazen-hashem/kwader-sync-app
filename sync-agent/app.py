@@ -196,7 +196,7 @@ class WhatsappNodeManager:
             _gemini_def = base64.b64decode('QVEuQWI4Uk42STRBbFI0RFlmSS1oMUtib2hqVG1hbW91YU9pb3NaV1BLeXB0TGZzc01KSWc=').decode('utf-8')
             env['GEMINI_API_KEY'] = os.getenv('GEMINI_API_KEY', _gemini_def)
             # Always pass Service Role Key to whatsapp-node (fallback to new DB key)
-            _srk_def = base64.b64decode('c2Jfc2VjcmV0X0tCeW1oQ25RRW1WOTMyQ0J3R0tTVWdfcUZHZDJYTmo=').decode('utf-8')
+            _srk_def = base64.b64decode('ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmhZbUZ6WlNJc0luSmxaaUk2SW5kb2RXOXdjVzVvYlhObGRteHBiR3RqWm5KbElpd2ljbTlzWlNJNkltRnViMjRpTENKcFlYUWlPakUzT0RrNE1EYzRNVGdzSW1WNGNDSTZNakV3TlRNNE16Z3hPSDAudjdDUUw2VmdCMEhLbW9Cb3hHX29DckpoTVFFaFJHOEtsRjZTRloyU3U3SQ==').decode('utf-8')
             _srk = os.getenv('SUPABASE_SERVICE_ROLE_KEY') or _srk_def
             env['SUPABASE_KEY'] = os.getenv('SUPABASE_KEY') or _srk
             env['SUPABASE_SERVICE_ROLE_KEY'] = _srk
@@ -204,6 +204,20 @@ class WhatsappNodeManager:
             _gh_def = ''.join(_tk_parts)
             env['GITHUB_TOKEN'] = os.getenv('GITHUB_TOKEN') or _gh_def
             env['GITHUB_SESSION_REPO'] = os.getenv('GITHUB_SESSION_REPO') or 'eng-mazen-hashem/whatsapp-kwader'
+            
+            # Dynamically resolve and pass the WhatsApp Channel ID for the client
+            try:
+                settings = load_settings()
+                license_key = settings.get('licenseKey')
+                if license_key and SUPABASE:
+                    res = SUPABASE.table('companies').select('whatsapp_channel_id').eq('license_key', license_key).limit(1).execute()
+                    if getattr(res, 'data', None) and len(res.data) > 0:
+                        channel_id = res.data[0].get('whatsapp_channel_id')
+                        if channel_id:
+                            env['DEFAULT_CHANNEL_ID'] = channel_id
+                            log_agent(f"Resolved company WhatsApp Channel ID: {channel_id}")
+            except Exception as e:
+                log_agent(f"Failed to resolve WhatsApp Channel ID: {e}", level='WARNING')
 
             creationflags = 0
             startupinfo = None
@@ -264,17 +278,29 @@ class WhatsappNodeManager:
             self.updater.stop()
         if self.process:
             try:
-                self.process.terminate()
-                self.process.wait(timeout=3)
-            except Exception:
+                if os.name == 'nt':
+                    import signal
+                    # Send CTRL_BREAK_EVENT if possible, else rely on terminate
+                    try:
+                        os.kill(self.process.pid, signal.CTRL_BREAK_EVENT)
+                    except Exception:
+                        self.process.terminate()
+                else:
+                    self.process.terminate()
+                self.process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                log_agent("Graceful termination timed out after 5s. Forcing kill...", level='WARNING')
                 try:
                     self.process.kill()
-                except Exception:
-                    pass
-            self.process = None
-            if hasattr(self, 'log_file') and self.log_file:
-                try: self.log_file.close()
-                except: pass
+                except Exception as e:
+                    log_agent(f"Failed to kill WhatsApp Node: {e}", level='ERROR')
+            except Exception as e:
+                log_agent(f"Error during graceful termination: {e}", level='ERROR')
+            finally:
+                self.process = None
+                if hasattr(self, 'log_file') and self.log_file:
+                    try: self.log_file.close()
+                    except: pass
 
 class WhatsappNodeUpdater:
     """
@@ -303,15 +329,17 @@ class WhatsappNodeUpdater:
             if self.version_file.exists():
                 with open(self.version_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                    return data.get('version', '2.4.1')
+                    if data.get('version'):
+                        return data.get('version')
             bundled_ver_file = resource_path('bin', 'whatsapp-node.version.json')
             if bundled_ver_file.exists():
                 with open(bundled_ver_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                    return data.get('version', '2.4.1')
+                    if data.get('version'):
+                        return data.get('version')
         except Exception:
             pass
-        return '2.4.1'
+        return '0.0.0'
 
     def set_local_metadata(self, version, sha256_hash):
         try:
@@ -511,7 +539,7 @@ class SyncAppUpdater:
     def __init__(self, manager):
         self.manager = manager
         self.github_repo = 'eng-mazen-hashem/kwader-sync-app'
-        self.current_version = '1.3.2'
+        self.current_version = '1.4.2'
         self._thread = None
         self._stop_event = threading.Event()
 
@@ -525,7 +553,7 @@ class SyncAppUpdater:
         self._stop_event.set()
 
     def _update_loop(self):
-        if self._stop_event.wait(30):
+        if self._stop_event.wait(15):
             return
 
         while not IS_QUITTING and not self._stop_event.is_set():
@@ -534,7 +562,7 @@ class SyncAppUpdater:
             except Exception as e:
                 print(f'[SYNC-OTA] Error during update check: {e}')
 
-            if self._stop_event.wait(43200): # 12 hours
+            if self._stop_event.wait(3600): # 1 hour
                 break
 
     @staticmethod
@@ -611,18 +639,31 @@ class SyncAppUpdater:
             
             log_to_ui(f'Update downloaded. Installing v{version} silently...', 'warning')
             
-            # Start the installer silently and exit current app
+            # Stop WhatsApp Node and ensure all child processes are killed to release file locks
+            try:
+                if WA_NODE_MANAGER:
+                    WA_NODE_MANAGER.stop()
+            except Exception:
+                pass
+
+            if os.name == 'nt':
+                try:
+                    subprocess.run(['taskkill', '/F', '/IM', 'whatsapp-node.exe', '/T'], capture_output=True, timeout=5)
+                except Exception:
+                    pass
+
+            # Start the installer silently (NSIS will auto-relaunch app when completed)
             subprocess.Popen([str(tmp_exe), '/S'], 
                 creationflags=subprocess.CREATE_NO_WINDOW | getattr(subprocess, 'DETACHED_PROCESS', 0x00000008)
             )
             
-            global IS_QUITTING
-            IS_QUITTING = True
-            if MAIN_WINDOW:
-                try: MAIN_WINDOW.destroy()
-                except: pass
-            import sys
-            sys.exit(0)
+            # Forcefully terminate the process so the installer can overwrite the executable
+            try:
+                if 'TRAY_ICON' in globals() and TRAY_ICON:
+                    TRAY_ICON.stop()
+            except: pass
+            import os
+            os._exit(0)
             return True
         except Exception as e:
             print(f'[SYNC-OTA] Install failed: {e}')
@@ -1247,17 +1288,22 @@ def measure_socket_latency(ip, port, timeout=1.8):
 
 def get_host_local_subnet():
     """ط§ظƒطھط´ط§ظپ ط§ظ„ظ€ IP ط§ظ„ظ…ط­ظ„ظٹ ظˆط´ط¨ظƒط© ط§ظ„ظ€ LAN ظ„ط¬ظ‡ط§ط² ط§ظ„ظƒظ…ط¨ظٹظˆطھط±"""
+    local_ip = '127.0.0.1'
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.settimeout(0.5)
         s.connect(('8.8.8.8', 80))
         local_ip = s.getsockname()[0]
         s.close()
-        parts = local_ip.split('.')
-        if len(parts) == 4:
-            return local_ip, f"{parts[0]}.{parts[1]}.{parts[2]}."
     except Exception:
-        pass
+        try:
+            local_ip = socket.gethostbyname(socket.gethostname())
+        except Exception:
+            pass
+    
+    parts = local_ip.split('.')
+    if len(parts) == 4 and local_ip != '127.0.0.1':
+        return local_ip, f"{parts[0]}.{parts[1]}.{parts[2]}."
     return '127.0.0.1', '192.168.1.'
 
 

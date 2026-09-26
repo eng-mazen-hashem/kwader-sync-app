@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import useSWR from 'swr';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 import { logAudit } from '../utils/auditLogger';
+import { calculatePayrollLocally } from '../services/payrollCalculationService';
 import {
     DollarSign, TrendingDown, Users, CheckCircle,
     Download, Play, RefreshCcw, MoreVertical,
@@ -75,8 +77,7 @@ function Payroll() {
 
 // -------------------------------------------------------------------------
     const fetchPayrolls = useCallback(async () => {
-        if (!company) { setLoading(false); return; }
-        setLoading(true);
+        if (!company) return null;
         try {
             const { data, error } = await supabase
                 .from('payrolls')
@@ -95,19 +96,37 @@ function Payroll() {
                     employee_name: p.employees?.name || t.employee,
                 };
             });
-            setMonthPayrolls(rows);
-            setStatusMap(initialMap);
-            setSelectedRows(new Set());
-            setActiveSlipId(rows[0]?.id || null);
+            return { rows, initialMap };
         } catch (err) {
             console.error('[Payroll] fetchPayrolls:', err.message);
             toast.error(t.errFetchFailed || 'Failed to fetch payrolls');
-        } finally {
-            setLoading(false);
+            return null;
         }
     }, [company, startDate, endDate, t]);
 
-    useEffect(() => { fetchPayrolls(); }, [fetchPayrolls]);
+    const { data: payrollData, isLoading: isSWRLoading, mutate: refreshPayrolls } = useSWR(
+        company?.id ? ['payrolls', company.id, startDate, endDate, t.current_locale] : null,
+        fetchPayrolls,
+        { refreshInterval: 0, revalidateOnFocus: false }
+    );
+
+    useEffect(() => {
+        if (isSWRLoading) setLoading(true);
+        else setLoading(false);
+    }, [isSWRLoading]);
+
+    useEffect(() => {
+        if (payrollData) {
+            setMonthPayrolls(payrollData.rows);
+            setStatusMap(payrollData.initialMap);
+            setSelectedRows(new Set());
+            if (payrollData.rows.length > 0) {
+                setActiveSlipId(prev => prev || payrollData.rows[0]?.id);
+            } else {
+                setActiveSlipId(null);
+            }
+        }
+    }, [payrollData]);
 
     // Close menu on outside click
     useEffect(() => {
@@ -133,32 +152,45 @@ function Payroll() {
         if (new Date(startDate) > new Date(endDate)) { toast.error(t.dateErrorMsg); return; }
         setCalculating(true);
         try {
-            const { data, error } = await supabase.functions.invoke('process-payroll', {
-                body: {
-                    company_id: company.id,
-                    start_date: startDate,
-                    end_date: endDate,
-                }
-            });
+            let calculationSuccess = false;
+            let processedCount = 0;
 
-            // FunctionsHttpError carries the response body in context.body
-            if (error) {
-                let errMsg = error.message || t.errUnknown;
-                try {
-                    // Try to parse the body for a more specific backend error message
-                    const body = typeof error.context?.body === 'string'
-                        ? JSON.parse(error.context.body)
-                        : error.context?.body;
-                    if (body?.error) errMsg = body.error;
-                } catch (_) { /* ignore parse errors */ }
-                toast.error(t.errCalcPayroll + ': ' + errMsg);
-                console.error('[Payroll] Edge Function error:', errMsg);
-                return;
+            // 1. First attempt via Supabase Edge Function
+            try {
+                const { data, error } = await supabase.functions.invoke('process-payroll', {
+                    body: {
+                        company_id: company.id,
+                        start_date: startDate,
+                        end_date: endDate,
+                    }
+                });
+
+                if (!error && data?.success) {
+                    calculationSuccess = true;
+                    processedCount = data.processed_employees ?? 0;
+                } else if (error) {
+                    console.warn('[Payroll] Edge function unavailable or failed, switching seamlessly to local calculation fallback:', error.message);
+                }
+            } catch (edgeErr) {
+                console.warn('[Payroll] Edge function invocation network error, falling back locally:', edgeErr.message);
             }
 
-            if (data?.success) {
-                const count = data.processed_employees ?? 0;
-                toast.success(t.payrollSuccessMsg?.replace('{count}', count));
+            // 2. Seamless local fallback if Edge function is un-deployed, offline, or failed
+            if (!calculationSuccess) {
+                const localRes = await calculatePayrollLocally({
+                    supabase,
+                    companyId: company.id,
+                    startDate,
+                    endDate,
+                });
+                if (localRes?.success) {
+                    calculationSuccess = true;
+                    processedCount = localRes.processed_employees ?? 0;
+                }
+            }
+
+            if (calculationSuccess) {
+                toast.success(t.payrollSuccessMsg?.replace('{count}', processedCount));
                 await logAudit({
                     companyId: company.id,
                     userId: (await supabase.auth.getUser()).data.user?.id,
@@ -166,18 +198,13 @@ function Payroll() {
                     tableName: 'payrolls',
                     recordId: null,
                     oldData: null,
-                    newData: { startDate, endDate, processed: count }
+                    newData: { startDate, endDate, processed: processedCount }
                 });
-                fetchPayrolls();
-            } else {
-                // Backend returned success:false with an error message
-                const backendErr = data?.error || t.errBackend;
-                toast.error('Error: ' + backendErr);
-                console.error('[Payroll] Backend returned error:', backendErr);
+                refreshPayrolls();
             }
         } catch (err) {
             console.error('[Payroll] handleCalculatePayroll unexpected error:', err);
-            toast.error(t.errUnexpected + ' ' + (err?.message || String(err)));
+            toast.error(t.errCalcPayroll + ': ' + (err?.message || String(err)));
         } finally {
             setCalculating(false);
         }
@@ -639,6 +666,21 @@ function Payroll() {
                     </button>
 
                     <button
+                        className="pr-btn-ghost"
+                        title={language === 'ar' ? 'طباعة قسائم الكل' : 'Print All Slips'}
+                        disabled={monthPayrolls.length === 0}
+                        onClick={() => {
+                            if (monthPayrolls.length === 0) return;
+                            const ids = monthPayrolls.map(p => p.id).join(',');
+                            window.open(`/salary-slip/bulk?ids=${ids}`, '_blank');
+                        }}
+                        style={{ color: '#6366f1', borderColor: 'rgba(99,102,241,0.3)' }}
+                    >
+                        <Printer size={16} />
+                        <span>{language === 'ar' ? 'طباعة الكل' : 'Print All'}</span>
+                    </button>
+
+                    <button
                         className="pr-btn-primary"
                         onClick={handleCalculatePayroll}
                         disabled={calculating}
@@ -731,16 +773,26 @@ function Payroll() {
                             </tr>
                         </thead>
                         <tbody>
-                            {loading && (
-                                <tr>
-                                    <td colSpan={11} className="pr-td-empty">
-                                        <div className="pr-loading">
-                                            <RefreshCcw size={20} className="pr-spin" />
-                                            <span>{t.loadingPayrollData}</span>
+                            {loading && Array.from({ length: 5 }).map((_, i) => (
+                                <tr key={`skel-${i}`} className="pr-tr">
+                                    <td className="pr-td"><div className="animate-pulse h-4 w-4 bg-slate-700/50 rounded"></div></td>
+                                    <td className="pr-td"><div className="animate-pulse h-4 w-6 bg-slate-700/50 rounded"></div></td>
+                                    <td className="pr-td">
+                                        <div className="pr-employee-cell">
+                                            <div className="animate-pulse h-8 w-8 bg-slate-700/50 rounded-full"></div>
+                                            <div className="animate-pulse h-4 w-24 bg-slate-700/50 rounded"></div>
                                         </div>
                                     </td>
+                                    <td className="pr-td"><div className="animate-pulse h-4 w-16 bg-slate-700/50 rounded ml-auto"></div></td>
+                                    <td className="pr-td"><div className="animate-pulse h-4 w-12 bg-slate-700/50 rounded ml-auto"></div></td>
+                                    <td className="pr-td"><div className="animate-pulse h-4 w-12 bg-slate-700/50 rounded ml-auto"></div></td>
+                                    <td className="pr-td"><div className="animate-pulse h-4 w-12 bg-slate-700/50 rounded ml-auto"></div></td>
+                                    <td className="pr-td"><div className="animate-pulse h-4 w-20 bg-slate-700/50 rounded ml-auto"></div></td>
+                                    <td className="pr-td"><div className="animate-pulse h-4 w-24 bg-slate-700/50 rounded"></div></td>
+                                    <td className="pr-td"><div className="animate-pulse h-6 w-16 bg-slate-700/50 rounded-full"></div></td>
+                                    <td className="pr-td"><div className="animate-pulse h-6 w-20 bg-slate-700/50 rounded-full"></div></td>
                                 </tr>
-                            )}
+                            ))}
                             {!loading && monthPayrolls.length === 0 && (
                                 <tr>
                                     <td colSpan={11} className="pr-td-empty">
@@ -935,6 +987,18 @@ function Payroll() {
                                 <ArrowUpRight size={15} style={{ color: '#a78bfa' }} />
                                 <span>{language === 'ar' ? 'مكافأة مئوية جماعية' : 'Bulk % Bonus'}</span>
                             </button>
+                            <button
+                                className="pr-bulk-btn"
+                                style={{ borderColor: 'rgba(99,102,241,0.3)' }}
+                                onClick={() => {
+                                    const ids = Array.from(selectedRows);
+                                    if (ids.length === 0) return;
+                                    window.open(`/salary-slip/bulk?ids=${ids.join(',')}`, '_blank');
+                                }}
+                            >
+                                <Printer size={15} style={{ color: '#6366f1' }} />
+                                <span>{language === 'ar' ? 'طباعة جماعية' : 'Bulk Print'}</span>
+                            </button>
                         </div>
                         <button className="pr-bulk-close" onClick={() => setSelectedRows(new Set())}>
                             <X size={16} />
@@ -1020,7 +1084,7 @@ function Payroll() {
                                                         <div key={`add-${idx}`} className="pr-slip-row positive" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                                 {isCustom && <span style={{ fontSize: '0.9rem' }}>✨</span>}
-                                                                <span>{item.reason} {item.percentage ? `(${item.percentage}%)` : ''}</span>
+                                                                <span>{item.rule_name || item.reason || (language === 'ar' ? 'إضافة' : 'Addition')} {item.percentage ? `(${item.percentage}%)` : ''}</span>
                                                             </div>
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                                 <span className="privacy-blur" dir="ltr">+{formatCurrency(Number(item.amount))}</span>
@@ -1132,7 +1196,10 @@ function Payroll() {
                                                 ) : (
                                                     deductions.map((item, idx) => (
                                                         <div key={`ded-${idx}`} className="pr-slip-row negative">
-                                                            <span>{item.reason}</span>
+                                                            <div>
+                                                                <span>{item.rule_name || item.reason || (language === 'ar' ? 'خصم' : 'Deduction')}</span>
+                                                                {item.date && <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>{item.date}</p>}
+                                                            </div>
                                                             <span className="privacy-blur" dir="ltr">-{formatCurrency(Number(item.amount))}</span>
                                                         </div>
                                                     ))

@@ -382,6 +382,330 @@
   color: #9fa7ff;
 }
 
+/* ==========================================================================
+   World-Class Plan & Subscription Hero Card (SaaS Billing & Tier Display)
+   ========================================================================== */
+.settings-subscription-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem 2rem;
+  transition: all 0.3s ease;
+}
+
+[data-theme='dark'] .settings-subscription-card {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.settings-subscription-card:hover {
+  border-color: rgba(108, 99, 255, 0.3);
+  box-shadow: 0 6px 20px rgba(108, 99, 255, 0.08);
+}
+
+.subscription-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.subscription-brand-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.subscription-icon-glow {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(108, 99, 255, 0.15) 0%, rgba(139, 92, 246, 0.25) 100%);
+  border: 1px solid rgba(108, 99, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c63ff;
+}
+
+.subscription-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.subscription-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}
+
+.subscription-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.subscription-status-pill.status-active {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.28);
+}
+.subscription-status-pill.status-expiring {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.32);
+}
+.subscription-status-pill.status-expired {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.32);
+}
+.subscription-status-pill.status-trial {
+  background: rgba(99, 102, 241, 0.12);
+  color: #6366f1;
+  border: 1px solid rgba(99, 102, 241, 0.32);
+}
+
+.status-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 0 currentColor;
+  animation: statusPulse 2s infinite ease-in-out;
+}
+
+@keyframes statusPulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.subscription-content-row {
+  display: flex;
+  gap: 2rem;
+  align-items: stretch;
+}
+
+.subscription-details-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.plan-name-block {
+  margin-bottom: 1.5rem;
+}
+
+.plan-tier-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-bottom: 0.8rem;
+}
+
+.plan-tier-chip.enterprise { background: rgba(212, 168, 75, 0.15); color: #d4a84b; border: 1px solid rgba(212, 168, 75, 0.35); }
+.plan-tier-chip.pro { background: rgba(108, 99, 255, 0.15); color: #6c63ff; border: 1px solid rgba(108, 99, 255, 0.35); }
+.plan-tier-chip.starter { background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+
+.plan-display-name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 0.4rem 0;
+}
+
+.plan-tier-desc {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.plan-metrics-block {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.metric-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.metric-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.metric-value {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.metric-value strong {
+  color: var(--text-primary);
+  font-weight: 800;
+}
+
+.subscription-actions-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding-inline-start: 2rem;
+  border-inline-start: 1px dashed var(--border-color);
+}
+
+.days-remaining-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.days-number-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.countdown-number {
+  font-size: 2.2rem;
+  font-weight: 900;
+  line-height: 1;
+  font-family: 'Alexandria', 'Cairo', sans-serif;
+}
+
+.countdown-number.days-emerald { color: #10b981; }
+.countdown-number.days-amber { color: #f59e0b; }
+.countdown-number.days-ruby { color: #ef4444; }
+
+.countdown-text {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.progress-bar-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.progress-bar-track {
+  flex: 1;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+[data-theme='dark'] .progress-bar-track { background: rgba(255, 255, 255, 0.08); }
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.8s ease;
+}
+
+.progress-bar-fill.days-emerald { background: #10b981; }
+.progress-bar-fill.days-amber { background: #f59e0b; }
+.progress-bar-fill.days-ruby { background: #ef4444; }
+
+.progress-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.action-buttons-group {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.sub-btn-primary, .sub-btn-secondary {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.sub-btn-primary {
+  color: #fff;
+  background: linear-gradient(135deg, #6c63ff 0%, #8b5cf6 100%);
+  border: none;
+  box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3);
+}
+
+.sub-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(108, 99, 255, 0.4);
+}
+
+.sub-btn-secondary {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.sub-btn-secondary:hover:not(:disabled) {
+  background: var(--bg-card-hover);
+  border-color: rgba(108, 99, 255, 0.3);
+}
+
+.sub-btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sub-advisor-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  border-radius: 10px;
+  background: rgba(16, 185, 129, 0.08);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sub-advisor-link:hover {
+  background: rgba(16, 185, 129, 0.15);
+}
+
+/* Responsive Breakpoints */
 @media (max-width: 1024px) {
   .settings-card.span-12, .settings-card.span-8, .settings-card.span-6, .settings-card.span-4 {
     grid-column: span 12;
@@ -390,10 +714,23 @@
     flex-direction: column;
     gap: 1.5rem;
   }
+  .subscription-content-row {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  .subscription-actions-col {
+    padding-inline-start: 0;
+    border-inline-start: none;
+    padding-top: 1.5rem;
+    border-top: 1px dashed var(--border-color);
+  }
 }
 
 @media (max-width: 640px) {
   .settings-header { flex-direction: column; align-items: stretch; text-align: center; }
   .settings-save-btn { width: 100%; justify-content: center; }
+  .subscription-header-row { flex-direction: column; align-items: stretch; gap: 1rem; }
+  .action-buttons-group { flex-direction: column; }
+  .countdown-number { font-size: 2rem; }
   .form-row { grid-template-columns: 1fr; }
 }

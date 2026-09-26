@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MapPin, CheckCircle2, XCircle, Fingerprint, Info, Locate } from 'lucide-react';
 import { supabase } from '../supabaseClient';
-import { useEmployeeAuth } from '../context/EmployeeAuthContext';
+import { useEmployeeAuth, getOrCreateDeviceId } from '../context/EmployeeAuthContext';
 import { useLocale } from '../context/LocaleContext';
 import { toast } from 'sonner';
 
@@ -14,6 +14,19 @@ const MobilePunch = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
     const [punchSuccess, setPunchSuccess] = useState(null);
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const timeString = currentTime.toLocaleTimeString(language === 'ar' ? 'ar-EG' : 'en-US', {
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+    const dateString = currentTime.toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { 
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+    });
 
     const getLocation = useCallback(() => {
         setLoadingLocation(true);
@@ -56,12 +69,25 @@ const MobilePunch = () => {
 
         setIsSubmitting(true);
         try {
-            const { data, error } = await supabase.rpc('submit_gps_punch', {
+            const deviceId = getOrCreateDeviceId();
+            let { data, error } = await supabase.rpc('submit_gps_punch', {
                 p_employee_id: employee.id,
                 p_pin: employee.pin,
                 p_lat: location.lat,
-                p_lng: location.lng
+                p_lng: location.lng,
+                p_device_id: deviceId
             });
+
+            if (error && error.code === 'PGRST202') {
+                const fallback = await supabase.rpc('submit_gps_punch', {
+                    p_employee_id: employee.id,
+                    p_pin: employee.pin,
+                    p_lat: location.lat,
+                    p_lng: location.lng
+                });
+                data = fallback.data;
+                error = fallback.error;
+            }
 
             if (error) throw error;
 
@@ -173,21 +199,31 @@ const MobilePunch = () => {
                             )}
                         </div>
 
-                        {/* Interactive Ripple Button */}
-                        <div className="relative flex justify-center items-center h-56 w-full mb-8">
+                        {/* Live Clock & Interactive Ripple Button */}
+                        <div className="relative flex flex-col justify-center items-center h-72 w-full mb-6 mt-2">
+                            {/* Live Clock Display */}
+                            <div className="absolute top-0 flex flex-col items-center z-10">
+                                <div className="text-[2.5rem] font-black text-white tracking-widest font-mono drop-shadow-lg" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                                    {timeString}
+                                </div>
+                                <div className="text-slate-400 text-xs font-bold mt-0.5 tracking-wide uppercase">
+                                    {dateString}
+                                </div>
+                            </div>
+
                             {location && !isSubmitting && (
                                 <>
                                     <motion.div 
-                                        initial={{ scale: 0.8, opacity: 0.5 }}
-                                        animate={{ scale: 1.4, opacity: 0 }}
-                                        transition={{ repeat: Infinity, duration: 2.5, ease: 'easeOut' }}
-                                        className="absolute w-44 h-44 rounded-full border border-indigo-500/30"
+                                        initial={{ scale: 0.8, opacity: 0.6 }}
+                                        animate={{ scale: 1.5, opacity: 0 }}
+                                        transition={{ repeat: Infinity, duration: 2, ease: 'easeOut' }}
+                                        className="absolute top-[80px] w-48 h-48 rounded-full bg-emerald-500/10 border border-emerald-500/30"
                                     />
                                     <motion.div 
-                                        initial={{ scale: 0.8, opacity: 0.3 }}
-                                        animate={{ scale: 1.6, opacity: 0 }}
-                                        transition={{ repeat: Infinity, duration: 2.5, delay: 0.8, ease: 'easeOut' }}
-                                        className="absolute w-44 h-44 rounded-full border border-purple-500/20"
+                                        initial={{ scale: 0.8, opacity: 0.4 }}
+                                        animate={{ scale: 1.8, opacity: 0 }}
+                                        transition={{ repeat: Infinity, duration: 2, delay: 0.6, ease: 'easeOut' }}
+                                        className="absolute top-[80px] w-48 h-48 rounded-full border border-emerald-500/20"
                                     />
                                 </>
                             )}
@@ -195,13 +231,13 @@ const MobilePunch = () => {
                             <button
                                 onClick={handlePunch}
                                 disabled={!location || isSubmitting}
-                                className={`relative w-36 h-36 rounded-full flex flex-col items-center justify-center gap-1.5 shadow-2xl transition-all duration-300
+                                className={`relative top-[80px] w-44 h-44 rounded-full flex flex-col items-center justify-center gap-2 shadow-2xl transition-all duration-300 z-20
                                     ${!location 
-                                        ? 'bg-slate-900 text-slate-500 cursor-not-allowed border border-slate-800' 
-                                        : 'bg-gradient-to-tr from-indigo-600 to-purple-600 text-white hover:scale-105 active:scale-95 shadow-[0_0_40px_rgba(99,102,241,0.45)]'}`}
+                                        ? 'bg-slate-900 text-slate-500 cursor-not-allowed border-2 border-slate-800' 
+                                        : 'bg-gradient-to-br from-emerald-400 to-emerald-600 text-white hover:scale-105 active:scale-95 shadow-[0_10px_50px_rgba(16,185,129,0.5)] border-4 border-emerald-400/30'}`}
                             >
-                                <Fingerprint size={38} className={isSubmitting ? 'animate-pulse' : ''} />
-                                <span className="font-extrabold text-sm">{isSubmitting ? (t.sending || 'جاري...') : (t.empPunchNowBtn || 'بصم الآن')}</span>
+                                <Fingerprint size={52} className={isSubmitting ? 'animate-pulse text-emerald-100' : 'text-white'} strokeWidth={1.5} />
+                                <span className="font-black text-base uppercase tracking-wider">{isSubmitting ? (t.sending || 'جاري...') : (t.empPunchNowBtn || 'بصم الآن')}</span>
                             </button>
                         </div>
 

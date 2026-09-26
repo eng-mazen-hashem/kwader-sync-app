@@ -1,0 +1,514 @@
+[
+  {
+    "id": "2e25e2e6-4967-4da9-b4ac-aac00de45888",
+    "event": "Company Status",
+    "action": "status_changed",
+    "description": "Status changed: active → suspended",
+    "actor": "System",
+    "created_at": "2026-04-03 19:40:31.537298+00"
+  },
+  {
+    "id": "54e76417-07e6-4b53-b3f0-4f4bae75f484",
+    "event": "Company Status",
+    "action": "status_changed",
+    "description": "Status changed: suspended → active",
+    "actor": "System",
+    "created_at": "2026-04-03 19:50:48.895638+00"
+  },
+  {
+    "id": "ab82ed27-fcf2-4530-9d4b-fbfa4ad08190",
+    "event": "Company Status",
+    "action": "status_changed",
+    "description": "Status changed: active → suspended",
+    "actor": "System",
+    "created_at": "2026-04-03 19:51:38.036709+00"
+  },
+  {
+    "id": "dbefbfe0-b890-4d18-a090-b44695318305",
+    "event": "Company Status",
+    "action": "status_changed",
+    "description": "Status changed: suspended → active",
+    "actor": "System",
+    "created_at": "2026-04-03 19:52:08.554215+00"
+  },
+  {
+    "id": "8db8f4cf-0c4f-46a7-9973-04cd52b05eec",
+    "event": "Company Status",
+    "action": "status_changed",
+    "description": "Status changed: active → suspended",
+    "actor": "System",
+    "created_at": "2026-04-03 19:56:33.618724+00"
+  },
+  {
+    "id": "3c51c9fa-c6e2-4583-bd42-3c213a7dab39",
+    "event": "Company Status",
+    "action": "status_changed",
+    "description": "Status changed: suspended → active",
+    "actor": "System",
+    "created_at": "2026-04-03 19:58:42.131158+00"
+  },
+  {
+    "id": "e492d5dd-2b9f-43b8-8cc7-e5deb1ee101b",
+    "event": "Company Status",
+    "action": "status_changed",
+    "description": "Status changed: active → suspended",
+    "actor": "System",
+    "created_at": "2026-04-03 19:59:58.822133+00"
+  },
+  {
+    "id": "de0a316f-0e4d-4fcd-94c6-aa7bc4404c01",
+    "event": "Company Status",
+    "action": "status_changed",
+    "description": "Status changed: suspended → active",
+    "actor": "System",
+    "created_at": "2026-04-03 20:04:52.453712+00"
+  },
+  {
+    "id": "f77db6c7-3710-4eb7-b487-38d02f12cd24",
+    "event": "Company Status",
+    "action": "status_changed",
+    "description": "Status changed: active → suspended",
+    "actor": "System",
+    "created_at": "2026-04-03 20:05:01.630186+00"
+  },
+  {
+    "id": "fdd900b9-518d-4963-88b7-fbc6a4af1af5",
+    "event": "Company Status",
+    "action": "status_changed",
+    "description": "Status changed: suspended → active",
+    "actor": "System",
+    "created_at": "2026-04-03 20:09:59.197437+00"
+  },
+  {
+    "id": "f4c34aa2-0677-4db6-b69a-ed75cedcff84",
+    "event": "Company Status",
+    "action": "status_changed",
+    "description": "Status changed: active → suspended",
+    "actor": "System",
+    "created_at": "2026-04-03 20:21:52.922805+00"
+  },
+  {
+    "id": "bb4f953f-6824-4d90-83ba-a7b78c8ac138",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: المجد",
+    "actor": "System",
+    "created_at": "2026-04-03 21:11:17.922726+00"
+  },
+  {
+    "id": "c0947b22-b342-4fd2-ad16-ee110e507fca",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: تشش",
+    "actor": "System",
+    "created_at": "2026-04-04 22:28:17.516628+00"
+  },
+  {
+    "id": "a5513de9-4d36-419f-890e-7e8cca48ee95",
+    "event": "Company Status",
+    "action": "status_changed",
+    "description": "Status changed: suspended → active",
+    "actor": "System",
+    "created_at": "2026-04-04 23:09:30.673683+00"
+  },
+  {
+    "id": "a9f5cf3d-c3ca-4600-a321-c884cfe8ba13",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: السنباطي للعقارات",
+    "actor": "System",
+    "created_at": "2026-04-05 12:00:18.487098+00"
+  },
+  {
+    "id": "6941645a-79a8-4b83-8aff-679190d8e17e",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: Test Company",
+    "actor": "System",
+    "created_at": "2026-04-06 00:39:03.10334+00"
+  },
+  {
+    "id": "15526e11-ad8f-48fe-8d0c-79e11418182c",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: Lacazza",
+    "actor": "System",
+    "created_at": "2026-04-06 19:49:43.142841+00"
+  },
+  {
+    "id": "3a0e764c-ac4f-4bc3-adb7-d0d795666ee6",
+    "event": "Company Status",
+    "action": "status_changed",
+    "description": "Status changed: active → suspended",
+    "actor": "System",
+    "created_at": "2026-04-13 22:00:56.999615+00"
+  },
+  {
+    "id": "c76425dc-e65f-47fc-a666-887c3e4f4367",
+    "event": "Company Status",
+    "action": "status_changed",
+    "description": "Status changed: suspended → active",
+    "actor": "System",
+    "created_at": "2026-04-13 22:02:15.134537+00"
+  },
+  {
+    "id": "fdda884e-6ebb-433d-8788-924accd639fb",
+    "event": "Company Status",
+    "action": "status_changed",
+    "description": "Status changed: active → suspended",
+    "actor": "System",
+    "created_at": "2026-04-13 22:02:49.309726+00"
+  },
+  {
+    "id": "f80019f5-158d-42c4-9d2f-6feb23eb436d",
+    "event": "Company Status",
+    "action": "status_changed",
+    "description": "Status changed: suspended → active",
+    "actor": "System",
+    "created_at": "2026-04-13 22:02:55.555527+00"
+  },
+  {
+    "id": "bd00304b-ce3d-4d99-8ab1-cfe0a94b4f0f",
+    "event": "Company Status",
+    "action": "status_changed",
+    "description": "Status changed: active → suspended",
+    "actor": "System",
+    "created_at": "2026-04-13 22:14:14.556942+00"
+  },
+  {
+    "id": "8dcfc3fc-dc0c-42ae-a5db-e784c5dc1d4e",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: Alfanous Manager",
+    "actor": "System",
+    "created_at": "2026-04-20 14:20:51.79939+00"
+  },
+  {
+    "id": "1e11ea93-d657-4417-813d-10c0ed1561ee",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: بن لاكازا",
+    "actor": "System",
+    "created_at": "2026-04-24 15:08:28.462472+00"
+  },
+  {
+    "id": "da3f8204-55b0-4936-8163-fcbef5632397",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: مجدي الصعيدي",
+    "actor": "System",
+    "created_at": "2026-04-25 15:13:14.177557+00"
+  },
+  {
+    "id": "062d408c-cc3f-4dc8-9156-3760f31318b2",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: Demo",
+    "actor": "System",
+    "created_at": "2026-04-26 10:51:35.736779+00"
+  },
+  {
+    "id": "4ef72d2c-892f-4c99-96f4-43091b7b7840",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: alfanous",
+    "actor": "System",
+    "created_at": "2026-04-27 10:12:39.61774+00"
+  },
+  {
+    "id": "408b0e64-7e7e-48eb-993d-04dd3a0557a3",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: demo lacazza",
+    "actor": "System",
+    "created_at": "2026-05-01 15:27:41.678181+00"
+  },
+  {
+    "id": "9d8d3088-5513-487e-bf85-5988701cdfc6",
+    "event": "Company Status",
+    "action": "status_changed",
+    "description": "Status changed: suspended → active",
+    "actor": "System",
+    "created_at": "2026-05-02 20:40:32.217191+00"
+  },
+  {
+    "id": "a8790786-a6d3-4669-9727-9524128e5527",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: wwe",
+    "actor": "System",
+    "created_at": "2026-05-14 21:22:35.119673+00"
+  },
+  {
+    "id": "fb17647c-8987-42d9-b35a-a2b380f96525",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: محمد",
+    "actor": "System",
+    "created_at": "2026-05-14 21:25:36.615846+00"
+  },
+  {
+    "id": "9d6c1fb1-6509-4eef-bee5-c091fd70809d",
+    "event": "Support Ticket",
+    "action": "ticket_opened",
+    "description": "Ticket opened: مشكلة في مزامنة جهاز البصمة الفرع الرئيسي",
+    "actor": "System",
+    "created_at": "2026-05-19 21:03:03.155976+00"
+  },
+  {
+    "id": "6eac3197-6d18-4230-8439-60d6d0b5b11f",
+    "event": "Support Ticket",
+    "action": "ticket_opened",
+    "description": "Ticket opened: طلب إضافة ميزة احتساب المكافآت التلقائية",
+    "actor": "System",
+    "created_at": "2026-05-19 21:03:03.155976+00"
+  },
+  {
+    "id": "9c500ba0-ddd2-43f4-9f3e-f6f093b4878a",
+    "event": "Support Ticket",
+    "action": "ticket_opened",
+    "description": "Ticket opened: استفسار بخصوص ترقية الاشتراك وتفعيل الباقة الاحترافية",
+    "actor": "System",
+    "created_at": "2026-05-19 21:03:03.155976+00"
+  },
+  {
+    "id": "bda175bd-583c-48c2-8d0a-f8d2640472e7",
+    "event": "Support Ticket",
+    "action": "ticket_opened",
+    "description": "Ticket opened: خطأ في احتساب كشوف مرتبات شهر مايو 2026",
+    "actor": "System",
+    "created_at": "2026-05-19 21:03:03.155976+00"
+  },
+  {
+    "id": "d564004d-db8e-4622-a171-89791661a60b",
+    "event": "Support Ticket",
+    "action": "ticket_opened",
+    "description": "Ticket opened: Test Subject",
+    "actor": "System",
+    "created_at": "2026-05-19 21:55:05.053144+00"
+  },
+  {
+    "id": "803105bb-b724-4bcd-a0b0-ae25f3e47f78",
+    "event": "Support Ticket",
+    "action": "ticket_opened",
+    "description": "Ticket opened: dg",
+    "actor": "System",
+    "created_at": "2026-05-19 21:59:26.070499+00"
+  },
+  {
+    "id": "1b2c0ef3-dc03-40da-a02a-da02c24acb7b",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: اسواق الحياه",
+    "actor": "System",
+    "created_at": "2026-05-25 11:44:02.01071+00"
+  },
+  {
+    "id": "7456a5fa-bf63-48d8-bb5f-378dce37c579",
+    "event": "Support Ticket",
+    "action": "ticket_opened",
+    "description": "Ticket opened: البصمه متوقفه",
+    "actor": "System",
+    "created_at": "2026-05-25 13:42:21.516552+00"
+  },
+  {
+    "id": "6309b670-d0bb-4872-9c92-5c8e7b2bf8f8",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: تجربه2",
+    "actor": "System",
+    "created_at": "2026-05-28 19:17:12.867516+00"
+  },
+  {
+    "id": "610843f5-7b73-486a-90ef-ce751177cda1",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: تجربه22",
+    "actor": "System",
+    "created_at": "2026-05-28 19:29:11.048866+00"
+  },
+  {
+    "id": "80fa3a4c-f5fc-4584-975d-cc761dd1a339",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: تجربه22",
+    "actor": "System",
+    "created_at": "2026-05-28 19:44:55.103292+00"
+  },
+  {
+    "id": "b16b312c-3e83-488f-a253-9f9250e735c5",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: as",
+    "actor": "System",
+    "created_at": "2026-05-28 20:23:42.60721+00"
+  },
+  {
+    "id": "43a38bcc-df46-4ba1-9651-f7b976f96b51",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: Rand Baby",
+    "actor": "System",
+    "created_at": "2026-06-08 18:48:59.37866+00"
+  },
+  {
+    "id": "9583548f-871b-48e9-bff2-8e12953cb53d",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: demo2",
+    "actor": "System",
+    "created_at": "2026-06-11 22:23:49.983451+00"
+  },
+  {
+    "id": "d066927f-6384-4748-a83d-99c97a645ada",
+    "event": "Company Status",
+    "action": "status_changed",
+    "description": "Status changed: active → suspended",
+    "actor": "System",
+    "created_at": "2026-06-11 22:23:57.418167+00"
+  },
+  {
+    "id": "b03c8425-a66f-4739-b807-95826e096e00",
+    "event": "Company Status",
+    "action": "status_changed",
+    "description": "Status changed: suspended → active",
+    "actor": "System",
+    "created_at": "2026-06-11 22:23:59.178026+00"
+  },
+  {
+    "id": "dc27b2ff-34a4-4f68-8795-8e562de49372",
+    "event": "Company Status",
+    "action": "status_changed",
+    "description": "Status changed: active → suspended",
+    "actor": "System",
+    "created_at": "2026-06-11 22:36:05.254781+00"
+  },
+  {
+    "id": "2c0f8b7b-be88-4a5c-a47b-e248999fa0eb",
+    "event": "Company Status",
+    "action": "status_changed",
+    "description": "Status changed: suspended → active",
+    "actor": "System",
+    "created_at": "2026-06-11 22:36:45.514618+00"
+  },
+  {
+    "id": "45faf5da-c65a-4430-9ee8-6a363a1076d6",
+    "event": "System Broadcast",
+    "action": "broadcast_notification",
+    "description": "Broadcast sent to 13 companies: \"تغيير الدومين (تغيير الرابط)\"",
+    "actor": "Super Admin",
+    "created_at": "2026-06-12 21:43:45.743354+00"
+  },
+  {
+    "id": "57ff3784-07b5-403f-a5fb-39f994137697",
+    "event": "System Broadcast",
+    "action": "broadcast_notification",
+    "description": "Broadcast sent to 13 companies: \"تم عمل تحديث للدومين\"",
+    "actor": "Super Admin",
+    "created_at": "2026-06-15 22:15:41.361532+00"
+  },
+  {
+    "id": "568b6e40-1cac-4f71-ae0e-143f6071200e",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: democom",
+    "actor": "System",
+    "created_at": "2026-06-23 23:27:52.665705+00"
+  },
+  {
+    "id": "3b9a1833-e329-43f6-babd-de409da1a6c4",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: ocean",
+    "actor": "System",
+    "created_at": "2026-08-13 21:28:49.126198+00"
+  },
+  {
+    "id": "1116f28c-4c85-48c0-8e1e-0cb3b6878127",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: Abdoalrahman ",
+    "actor": "System",
+    "created_at": "2026-08-20 18:10:44.779988+00"
+  },
+  {
+    "id": "f5665197-fe1d-428e-a07d-c1ab696053db",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: شركة سكر للاثاث",
+    "actor": "System",
+    "created_at": "2026-09-03 11:16:02.41269+00"
+  },
+  {
+    "id": "32aed41d-a9ed-429e-90b2-ab884ebfba62",
+    "event": "New Company",
+    "action": "signup",
+    "description": "New company registered: Redline",
+    "actor": "System",
+    "created_at": "2026-09-04 15:32:00.391641+00"
+  },
+  {
+    "id": "2d5f0d37-69bb-4cb6-a42d-fb1bdec5b507",
+    "event": "Support Ticket",
+    "action": "ticket_opened",
+    "description": "Ticket opened: شكر خاص",
+    "actor": "System",
+    "created_at": "2026-09-07 15:51:29.371517+00"
+  },
+  {
+    "id": "fc292618-de4f-4cd0-a593-af62b4be2e74",
+    "event": "تعديل اشتراك",
+    "action": "update_subscription",
+    "description": "تم تحديث اشتراك \"شركة سكر للاثاث\" - باقة Pro بمبلغ 10,000 ج.م (سنوي)",
+    "actor": "eng.mazenhashem@gmail.com",
+    "created_at": "2026-09-07 20:36:09.036704+00"
+  },
+  {
+    "id": "2de2385d-999b-4568-99c9-51e57438cedd",
+    "event": "تعديل اشتراك",
+    "action": "update_subscription",
+    "description": "تم تحديث اشتراك \"Redline\" - باقة Free بمبلغ 2,000 ج.م (سنوي)",
+    "actor": "eng.mazenhashem@gmail.com",
+    "created_at": "2026-09-07 20:36:29.359411+00"
+  },
+  {
+    "id": "238bd9c1-df15-4844-9836-60cb37fffdea",
+    "event": "تعديل اشتراك",
+    "action": "update_subscription",
+    "description": "تم تحديث اشتراك \"demo2\" - باقة Pro بمبلغ 0 ج.م (شهري)",
+    "actor": "eng.mazenhashem@gmail.com",
+    "created_at": "2026-09-07 20:37:11.456951+00"
+  },
+  {
+    "id": "9f1c0dac-410b-4dd7-b2f2-fac150b87591",
+    "event": "تعديل اشتراك",
+    "action": "update_subscription",
+    "description": "تم تحديث اشتراك \"Redline\" - باقة Free بمبلغ 2,000 ج.م (سنوي)",
+    "actor": "eng.mazenhashem@gmail.com",
+    "created_at": "2026-09-07 23:01:38.186953+00"
+  },
+  {
+    "id": "dceb8d89-b3ac-4529-8954-898ade2d89a5",
+    "event": "تعديل اشتراك",
+    "action": "update_subscription",
+    "description": "تم تحديث اشتراك \"شركة سكر للاثاث\" - باقة Pro بمبلغ 10,000 ج.م (سنوي)",
+    "actor": "eng.mazenhashem@gmail.com",
+    "created_at": "2026-09-11 12:51:35.507046+00"
+  },
+  {
+    "id": "0619946d-37e5-4ccc-8133-8caef5fd4f8f",
+    "event": "قبول تجديد اشتراك",
+    "action": "approve_renewal",
+    "description": "تم قبول تجديد اشتراك \"بن لاكازا\" حتى 2026-10-12 بمبلغ 0 ج.م",
+    "actor": "eng.mazenhashem@gmail.com",
+    "created_at": "2026-09-12 10:47:16.840295+00"
+  },
+  {
+    "id": "f10b34f1-dd69-4d6a-8b9f-af2ac8affbde",
+    "event": "Support Ticket",
+    "action": "ticket_opened",
+    "description": "Ticket opened: مشكله فى الجهاز",
+    "actor": "System",
+    "created_at": "2026-09-14 22:34:41.592645+00"
+  }
+]

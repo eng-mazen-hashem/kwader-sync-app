@@ -25,6 +25,7 @@ export default function EmployeeFormModal({ isOpen, onClose, onSaved, editingEmp
         base_salary: z.coerce.number({ invalid_type_error: t.errInvalidValue || 'يجب إدخال رقم صالح' }).min(0, { message: t.errInvalidValue || 'يجب إدخال رقم صالح' }),
         joining_date: z.string().optional().or(z.literal('')),
         department_id: z.string().optional().or(z.literal('')),
+        annual_leave_balance: z.coerce.number().min(0, { message: 'الرصيد يجب أن يكون 0 أو أكثر' }).default(21),
         allow_gps_punch: z.boolean().default(false),
         exclude_from_weekly_advance: z.boolean().default(false)
     }), [t]);
@@ -43,6 +44,7 @@ export default function EmployeeFormModal({ isOpen, onClose, onSaved, editingEmp
             base_salary: '',
             joining_date: '',
             department_id: '',
+            annual_leave_balance: 21,
             allow_gps_punch: false,
             exclude_from_weekly_advance: false
         }
@@ -57,11 +59,12 @@ export default function EmployeeFormModal({ isOpen, onClose, onSaved, editingEmp
                 base_salary: editingEmployee.base_salary || 0,
                 joining_date: editingEmployee.joining_date || '',
                 department_id: editingEmployee.department_id || '',
+                annual_leave_balance: editingEmployee.annual_leave_balance !== undefined ? editingEmployee.annual_leave_balance : 21,
                 allow_gps_punch: editingEmployee.allow_gps_punch || false,
                 exclude_from_weekly_advance: editingEmployee.exclude_from_weekly_advance || false
             });
         } else if (isOpen) {
-            reset({ name: '', phone: '', device_pin: '', base_salary: '', joining_date: '', department_id: '', allow_gps_punch: false, exclude_from_weekly_advance: false });
+            reset({ name: '', phone: '', device_pin: '', base_salary: '', joining_date: '', department_id: '', annual_leave_balance: 21, allow_gps_punch: false, exclude_from_weekly_advance: false });
         }
     }, [isOpen, editingEmployee, reset]);
 
@@ -159,6 +162,24 @@ export default function EmployeeFormModal({ isOpen, onClose, onSaved, editingEmp
     const onSubmit = async (data) => {
         if (!company) return;
         try {
+            // Check plan quota limits when adding a new employee
+            if (!editingEmployee) {
+                const maxEmp = company.limits?.max_employees || company.max_employees || 25;
+                const { count: currentEmpCount, error: countErr } = await supabase
+                    .from('employees')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('company_id', company.id);
+
+                if (!countErr && currentEmpCount !== null && currentEmpCount >= maxEmp) {
+                    toast.error(
+                        language === 'ar'
+                            ? `لقد بلغت الحد الأقصى لسعة الموظفين في باقتك (${maxEmp} موظفاً). يرجى ترقية الباقة لزيادة السعة.`
+                            : `You have reached the maximum employee limit for your plan (${maxEmp} employees). Please upgrade your plan.`
+                    );
+                    return;
+                }
+            }
+
             const payload = {
                 name: data.name,
                 phone: data.phone || null,
@@ -166,6 +187,7 @@ export default function EmployeeFormModal({ isOpen, onClose, onSaved, editingEmp
                 base_salary: data.base_salary,
                 joining_date: data.joining_date || null,
                 department_id: data.department_id || null,
+                annual_leave_balance: data.annual_leave_balance,
                 allow_gps_punch: data.allow_gps_punch,
                 exclude_from_weekly_advance: data.exclude_from_weekly_advance,
             };
@@ -350,6 +372,24 @@ export default function EmployeeFormModal({ isOpen, onClose, onSaved, editingEmp
                                         </select>
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* Annual Leave Balance */}
+                            <div className="emp-form-group mt-2">
+                                <label className="emp-label">
+                                    <Calendar size={14} />
+                                    {language === 'ar' ? 'رصيد الإجازات السنوية (بالأيام)' : 'Annual Leave Balance (Days)'}
+                                </label>
+                                <div className="emp-input-wrapper">
+                                    <Calendar className="emp-input-icon" size={16} />
+                                    <input
+                                        className={`emp-input ${errors.annual_leave_balance ? 'error' : ''}`}
+                                        type="number"
+                                        min="0"
+                                        {...register('annual_leave_balance')}
+                                    />
+                                </div>
+                                {errors.annual_leave_balance && <span className="emp-error-text">{errors.annual_leave_balance.message}</span>}
                             </div>
 
                             {/* GPS Punch Toggle */}

@@ -7,9 +7,11 @@
 
 import React, {
     createContext, useContext, useState,
-    useEffect, useCallback, useRef
+    useEffect, useCallback, useRef, useMemo
 } from 'react';
 import { supabase } from '../supabaseClient';
+import { getCountryByCode, DEFAULT_COUNTRY } from '../utils/countries';
+import { getCompanyLimits } from '../constants/planLimits';
 
 const AuthContext = createContext({});
 
@@ -23,15 +25,50 @@ export const useAuth = () => {
 const INITIAL_STATE = {
     user: null,
     company: null,
+    userCompanies: [],
+    activeRole: 'org_admin',
     isSuperAdmin: false,
     isReseller: false,
-    resellerData: null,   // { id, name, status, ... }
-    activeRole: null,     // 'super_admin', 'reseller', 'org_admin', or 'hr'
-    userPermissions: null, // { can_manage_employees: true, ... }
-    companies: [],        // Array of { company, role, permissions }
+    resellerData: null,
     loading: true,
-    error: null,
     requiresPasswordUpdate: false,
+};
+
+export const mapCompanyWithCountry = (companyData) => {
+    if (!companyData) return null;
+    const rawSettings = companyData.settings || {};
+    const countryCode = rawSettings.country || (companyData.country && companyData.country !== '—' ? companyData.country : null);
+    const resolvedCountry = countryCode ? getCountryByCode(countryCode) : null;
+    const finalCountryCode = resolvedCountry?.code || countryCode || DEFAULT_COUNTRY?.code || 'SA';
+    const defaultTimezone = resolvedCountry?.timezone || DEFAULT_COUNTRY?.timezone || 'Asia/Riyadh';
+
+    const limits = getCompanyLimits({
+        ...companyData,
+        settings: rawSettings
+    });
+
+    const finalSettings = {
+        ...rawSettings,
+        country: finalCountryCode,
+        timezone: rawSettings.timezone || defaultTimezone,
+        limits: limits,
+    };
+
+    return {
+        ...companyData,
+        country: finalCountryCode,
+        settings: finalSettings,
+        limits: limits,
+        subscription_end_date: finalSettings.subscription_end_date || companyData.subscription_end_date,
+        subscription_expires_at: finalSettings.subscription_expires_at || companyData.subscription_expires_at,
+        subscription_status: companyData.status,
+        trial_ends_at: finalSettings.trial_end_date || finalSettings.subscription_end_date || companyData.subscription_expires_at,
+        max_employees: limits.max_employees,
+        max_devices: limits.max_devices,
+        ai_enabled: limits.ai_enabled,
+        full_name: companyData.name,
+        timezone: finalSettings.timezone || defaultTimezone
+    };
 };
 
 export function AuthProvider({ children }) {
@@ -84,17 +121,7 @@ export function AuthProvider({ children }) {
 
             if (ownerData && ownerData.length > 0) {
                 ownerData.forEach(ownerDataRow => {
-                    const mappedCompany = {
-                        ...ownerDataRow,
-                        subscription_end_date: ownerDataRow.settings?.subscription_end_date || ownerDataRow.subscription_end_date,
-                        subscription_expires_at: ownerDataRow.settings?.subscription_end_date || ownerDataRow.subscription_expires_at,
-                        subscription_status: ownerDataRow.status,
-                        trial_ends_at: ownerDataRow.settings?.subscription_end_date || ownerDataRow.settings?.trial_end_date || ownerDataRow.subscription_expires_at,
-                        max_employees: ownerDataRow.settings?.max_employees || 100,
-                        full_name: ownerDataRow.name,
-                        timezone: ownerDataRow.settings?.timezone || 'Asia/Riyadh'
-                    };
-                    allCompanies.push({ company: mappedCompany, role: 'org_admin', permissions: null });
+                    allCompanies.push({ company: mapCompanyWithCountry(ownerDataRow), role: 'org_admin', permissions: null });
                 });
             }
 
@@ -102,18 +129,8 @@ export function AuthProvider({ children }) {
                 subUserData.forEach(subUserRow => {
                     if (subUserRow.companies) {
                         const comp = Array.isArray(subUserRow.companies) ? subUserRow.companies[0] : subUserRow.companies;
-                        const mappedCompany = {
-                            ...comp,
-                            subscription_end_date: comp.settings?.subscription_end_date || comp.subscription_end_date,
-                            subscription_expires_at: comp.settings?.subscription_end_date || comp.subscription_expires_at,
-                            subscription_status: comp.status,
-                            trial_ends_at: comp.settings?.subscription_end_date || comp.settings?.trial_end_date || comp.subscription_expires_at,
-                            max_employees: comp.settings?.max_employees || 100,
-                            full_name: comp.name,
-                            timezone: comp.settings?.timezone || 'Asia/Riyadh'
-                        };
                         allCompanies.push({
-                            company: mappedCompany,
+                            company: mapCompanyWithCountry(comp),
                             role: subUserRow.role || 'hr',
                             permissions: subUserRow.permissions || {}
                         });
@@ -284,7 +301,23 @@ export function AuthProvider({ children }) {
             // Determine initial active role
             let activeRole = fetchedRole || 'org_admin';
             if (isSuperAdmin) {
-                activeRole = 'super_admin';
+                const impersonatedId = sessionStorage.getItem('impersonated_company_id');
+                if (impersonatedId) {
+                    const { data: impCompany } = await supabase
+                        .from('companies')
+                        .select('*')
+                        .eq('id', impersonatedId)
+                        .maybeSingle();
+                    if (impCompany) {
+                        company = mapCompanyWithCountry(impCompany);
+                        activeRole = 'org_admin';
+                    } else {
+                        sessionStorage.removeItem('impersonated_company_id');
+                        activeRole = 'super_admin';
+                    }
+                } else {
+                    activeRole = 'super_admin';
+                }
             } else if (isReseller) {
                 // If they have switched role previously and saved it, respect it.
                 // Otherwise, default to reseller if they don't have a client company, or org_admin if they do.
@@ -418,6 +451,7 @@ export function AuthProvider({ children }) {
     };
 
     const signOut = async () => {
+        sessionStorage.removeItem('impersonated_company_id');
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
     };
@@ -461,16 +495,7 @@ export function AuthProvider({ children }) {
             .select()
             .single();
         if (error) throw error;
-        const mappedCompany = {
-            ...data,
-            subscription_end_date: data.settings?.subscription_end_date || data.subscription_end_date,
-            subscription_expires_at: data.settings?.subscription_end_date || data.subscription_expires_at,
-            subscription_status: data.status,
-            trial_ends_at: data.settings?.subscription_end_date || data.settings?.trial_end_date || data.subscription_expires_at,
-            max_employees: data.settings?.max_employees || 100,
-            full_name: data.name,
-            timezone: data.settings?.timezone || 'Asia/Riyadh'
-        };
+        const mappedCompany = mapCompanyWithCountry(data);
         setAuthState(prev => ({ ...prev, company: mappedCompany }));
         return mappedCompany;
     };
@@ -478,6 +503,9 @@ export function AuthProvider({ children }) {
     const switchRole = (role) => {
         if (!['super_admin', 'reseller', 'org_admin', 'hr'].includes(role)) return;
         localStorage.setItem('active_role', role);
+        if (role === 'super_admin') {
+            sessionStorage.removeItem('impersonated_company_id');
+        }
         setAuthState(prev => ({
             ...prev,
             activeRole: role,
@@ -503,16 +531,28 @@ export function AuthProvider({ children }) {
 
     const impersonateCompany = useCallback((companyData) => {
         if (!authState.isSuperAdmin) return;
-        const mappedCompany = {
-            ...companyData,
-            subscription_end_date: companyData.settings?.subscription_end_date || companyData.subscription_end_date,
-            subscription_expires_at: companyData.settings?.subscription_end_date || companyData.subscription_expires_at,
-            subscription_status: companyData.status,
-            trial_ends_at: companyData.settings?.subscription_end_date || companyData.settings?.trial_end_date || companyData.subscription_expires_at,
-            max_employees: companyData.settings?.max_employees || 100,
-            full_name: companyData.name,
-            timezone: companyData.settings?.timezone || 'Asia/Riyadh'
-        };
+
+        const mappedCompany = mapCompanyWithCountry(companyData);
+
+        if (companyData.id) {
+            sessionStorage.setItem('impersonated_company_id', companyData.id);
+            // Fetch fresh & full company details from Supabase
+            supabase
+                .from('companies')
+                .select('*')
+                .eq('id', companyData.id)
+                .single()
+                .then(({ data: freshData, error }) => {
+                    if (!error && freshData) {
+                        setAuthState(prev => ({
+                            ...prev,
+                            company: mapCompanyWithCountry(freshData)
+                        }));
+                    }
+                })
+                .catch(err => console.warn('[impersonateCompany] Failed to fetch full company details:', err));
+        }
+
         setAuthState(prev => ({
             ...prev,
             company: mappedCompany,
@@ -528,7 +568,7 @@ export function AuthProvider({ children }) {
         return false;
     }, [authState.activeRole, authState.userPermissions]);
 
-    const value = {
+    const value = useMemo(() => ({
         ...authState,
         signIn,
         signUp,
@@ -544,7 +584,19 @@ export function AuthProvider({ children }) {
         hasPermission,
         // Derived helpers
         userRole: authState.activeRole || (authState.isSuperAdmin ? 'super_admin' : authState.isReseller ? 'reseller' : 'org_admin'),
-    };
+    }), [
+        authState,
+        signIn,
+        signUp,
+        signOut,
+        resetPassword,
+        updatePassword,
+        clearPasswordUpdate,
+        refreshAuth,
+        updateCompanySettings,
+        impersonateCompany,
+        hasPermission
+    ]);
 
     return (
         <AuthContext.Provider value={value}>

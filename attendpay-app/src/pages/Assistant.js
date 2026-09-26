@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { HiOutlineDocumentReport, HiOutlineChatAlt2 } from 'react-icons/hi';
+import { HiOutlineDocumentReport, HiOutlineChatAlt2, HiOutlineTrash } from 'react-icons/hi';
 import { useAuth } from '../context/AuthContext';
 import './Assistant.css';
 
@@ -23,12 +23,24 @@ const Assistant = () => {
     
     // State management via custom hooks
     const { company, data, reloadData } = useAssistantData();
-    const { messages, loading: aiLoading, input, setInput, sendMessage, setMessages } = useAssistantAI(company, data, reloadData);
-    const { executeAddEmployee, toggleSchedule, deleteSchedule, saveSchedule } = useAssistantTools(company, reloadData, setMessages);
+    const { messages, loading: aiLoading, input, setInput, sendMessage, setMessages, clearChat } = useAssistantAI(company, data, reloadData);
+    const { 
+        executeAddEmployee, 
+        executeUpdateEmployee,
+        executeCreateLeave,
+        executeUpdateLeaveStatus,
+        executeRecordLoan,
+        executeRecordAdjustment,
+        executeGeneratePayroll,
+        toggleSchedule, 
+        deleteSchedule, 
+        saveSchedule 
+    } = useAssistantTools(company, reloadData, setMessages);
 
     // UI state
     const [activeTab, setActiveTab] = useState('chat');
     const [deleteScheduleId, setDeleteScheduleId] = useState(null);
+    const [showClearConfirm, setShowClearConfirm] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
     const [showSched, setShowSched] = useState(false);
     const [editSched, setEditSched] = useState(null);
@@ -38,18 +50,60 @@ const Assistant = () => {
     const handleAction = React.useCallback(async (action) => {
         if (!action) return;
         
+        // Merge root fields and nested data fields so no parameters are dropped
+        const data = {
+            ...action,
+            ...(action.data || {})
+        };
+        delete data.data;
+
         switch (action.type) {
             case 'add_employee':
-                await executeAddEmployee(action.data);
+                await executeAddEmployee(data);
+                break;
+            case 'update_employee':
+                await executeUpdateEmployee(data);
+                break;
+            case 'create_leave':
+                await executeCreateLeave(data);
+                break;
+            case 'update_leave_status':
+            case 'approve_leave':
+            case 'reject_leave':
+                await executeUpdateLeaveStatus({
+                    ...data,
+                    status: (action.type === 'reject_leave' || data.status === 'rejected') ? 'rejected' : 'approved'
+                });
+                break;
+            case 'record_loan':
+                await executeRecordLoan(data);
+                break;
+            case 'record_adjustment':
+            case 'record_bonus':
+            case 'record_deduction':
+                await executeRecordAdjustment({
+                    ...data,
+                    type: (action.type === 'record_deduction' || data.type === 'deduction') ? 'deduction' : (data.type || 'bonus')
+                });
+                break;
+            case 'generate_payroll':
+                await executeGeneratePayroll(data);
                 break;
             case 'whatsapp':
                 // Handled in MessageItem's UI button
                 break;
             default:
-                // Unknown action types are silently ignored — no console.log in production (constitution §11)
                 break;
         }
-    }, [executeAddEmployee]);
+    }, [
+        executeAddEmployee, 
+        executeUpdateEmployee, 
+        executeCreateLeave, 
+        executeUpdateLeaveStatus, 
+        executeRecordLoan, 
+        executeRecordAdjustment,
+        executeGeneratePayroll
+    ]);
 
     // Derived settings
     const sendSettings = {
@@ -74,6 +128,110 @@ const Assistant = () => {
     ];
 
     if (!user) return null;
+
+    if (company && company.limits && company.limits.ai_enabled === false) {
+        return (
+            <div className="assistant-console-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', padding: '24px' }}>
+                <div style={{
+                    maxWidth: '560px',
+                    width: '100%',
+                    background: 'var(--bg-secondary, #1e293b)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '24px',
+                    padding: '40px 32px',
+                    textAlign: 'center',
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                    direction: 'rtl'
+                }}>
+                    <div style={{
+                        width: '64px',
+                        height: '64px',
+                        borderRadius: '20px',
+                        background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '0 auto 20px',
+                        boxShadow: '0 10px 25px rgba(99, 102, 241, 0.4)'
+                    }}>
+                        <HiOutlineChatAlt2 size={32} color="#ffffff" />
+                    </div>
+
+                    <div style={{
+                        display: 'inline-block',
+                        background: 'rgba(99, 102, 241, 0.15)',
+                        border: '1px solid rgba(99, 102, 241, 0.3)',
+                        color: '#a5b4fc',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        padding: '4px 14px',
+                        borderRadius: '50px',
+                        marginBottom: '16px'
+                    }}>
+                        ميزة متقدمة في الباقات الاحترافية
+                    </div>
+
+                    <h2 style={{ fontSize: '22px', fontWeight: '800', color: 'var(--text-primary, #ffffff)', marginBottom: '12px' }}>
+                        المساعد الإداري الذكي (وتين AI)
+                    </h2>
+
+                    <p style={{ fontSize: '14px', color: 'var(--text-muted, #94a3b8)', lineHeight: '1.7', marginBottom: '24px' }}>
+                        المساعد الذكي غير مفعل في باقتك الحالية (Starter). يمكنك الترقية إلى الباقة الاحترافية (Pro) أو باقة الشركات (Enterprise) للحصول على:
+                    </p>
+
+                    <div style={{
+                        textAlign: 'right',
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        borderRadius: '16px',
+                        padding: '16px 20px',
+                        marginBottom: '28px',
+                        fontSize: '13px',
+                        color: 'var(--text-secondary, #cbd5e1)',
+                        lineHeight: '2'
+                    }}>
+                        <div>✨ استعلامات وتحليلات ذكية باللغة الطبيعية عن الحضور والغياب والرواتب</div>
+                        <div>📊 توليد تقارير تنفيذية مجدولة وإرسالها آلياً</div>
+                        <div>⚡ تنفيذ أوامر إدارية وإضافة وتعديل بيانات الموظفين بالأوامر الصوتية والنصية</div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                        <a
+                            href="/subscribe"
+                            style={{
+                                padding: '12px 28px',
+                                background: '#6366f1',
+                                color: '#ffffff',
+                                borderRadius: '12px',
+                                textDecoration: 'none',
+                                fontWeight: 'bold',
+                                fontSize: '14px',
+                                boxShadow: '0 4px 15px rgba(99, 102, 241, 0.4)'
+                            }}
+                        >
+                            ترقية باقة الاشتراك الآن
+                        </a>
+                        <a
+                            href="https://wa.me/201091560500"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                                padding: '12px 20px',
+                                background: 'rgba(255, 255, 255, 0.08)',
+                                color: 'var(--text-primary, #ffffff)',
+                                border: '1px solid rgba(255, 255, 255, 0.15)',
+                                borderRadius: '12px',
+                                textDecoration: 'none',
+                                fontWeight: 'bold',
+                                fontSize: '14px'
+                            }}
+                        >
+                            طلب مساعدة من المبيعات
+                        </a>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="assistant-console-page">
@@ -125,6 +283,58 @@ const Assistant = () => {
                                 </button>
                             ))}
                         </div>
+
+                        {activeTab === 'chat' && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    background: 'rgba(16, 185, 129, 0.1)',
+                                    border: '1px solid rgba(16, 185, 129, 0.25)',
+                                    color: '#10b981',
+                                    fontSize: '11px',
+                                    fontWeight: '600',
+                                    padding: '4px 10px',
+                                    borderRadius: '20px'
+                                }}>
+                                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }}></span>
+                                    <span>سجل محفوظ (0 استهلاك كوتة)</span>
+                                </div>
+
+                                <button
+                                    onClick={() => setShowClearConfirm(true)}
+                                    title="بدء محادثة جديدة ومسح السجل"
+                                    style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        background: 'rgba(255, 255, 255, 0.05)',
+                                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                                        color: 'var(--text-secondary)',
+                                        fontSize: '12px',
+                                        fontWeight: '600',
+                                        padding: '6px 12px',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
+                                        e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                                        e.currentTarget.style.color = '#ef4444';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                                        e.currentTarget.style.color = 'var(--text-secondary)';
+                                    }}
+                                >
+                                    <HiOutlineTrash size={15} />
+                                    <span>محادثة جديدة</span>
+                                </button>
+                            </div>
+                        )}
                     </div>
                     
                     <div style={{ flex: 1, position: 'relative', overflow: 'hidden', padding: activeTab === 'chat' ? 0 : '1.5rem' }}>
@@ -228,6 +438,20 @@ const Assistant = () => {
                 message={t.deleteConfirmMsg}
                 confirmText={t.deleteBtn}
                 cancelText={t.cancelBtn}
+            />
+
+            <ConfirmModal
+                isOpen={showClearConfirm}
+                onClose={() => setShowClearConfirm(false)}
+                onConfirm={() => {
+                    clearChat();
+                    setShowClearConfirm(false);
+                }}
+                title="بدء محادثة جديدة"
+                message="هل تريد مسح سجل المحادثة المحفوظ وبدء جلسة جديدة؟ سيتم مسح الرسائل السابقة فقط."
+                confirmText="مسح وبدء جديد"
+                cancelText="إلغاء"
+                intent="danger"
             />
 
         </div>

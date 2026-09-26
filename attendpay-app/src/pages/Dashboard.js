@@ -8,6 +8,7 @@ import {
     HiOutlineArrowSmUp, HiOutlineLogin, HiOutlineLogout,
     HiOutlineExclamation, HiOutlineRefresh
 } from 'react-icons/hi';
+import useSWR from 'swr';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
@@ -20,12 +21,11 @@ function Dashboard() {
     const { t, currencySymbol } = useLocale();
 
     const [stats, setStats] = useState({
-        present: 0, absent: 0, totalEmployees: 0, totalPayroll: 0, overtimeHours: 0,
+        present: 0, absent: 0, currentlyInFacility: 0, totalEmployees: 0, totalPayroll: 0, overtimeHours: 0,
         pendingLeaves: 0, totalDept: 0
     });
     const [chartData, setChartData] = useState([]);
     const [recentActivity, setRecentActivity] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [aiTriggerConfig, setAiTriggerConfig] = useState(null);
 
     useEffect(() => {
@@ -67,21 +67,26 @@ function Dashboard() {
     }, [company]);
 
     const fetchDashboardData = useCallback(async () => {
-        if (!company) { setLoading(false); return; }
-        setLoading(true);
+        if (!company) return null;
 
         try {
-            const today = new Date().toISOString().split('T')[0];
+            const getLocalDate = (d = new Date()) => {
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+            const today = getLocalDate();
             const currentYear = new Date().getFullYear();
             const currentMonthNum = new Date().getMonth() + 1;
             const firstDayOfMonth = `${currentYear}-${String(currentMonthNum).padStart(2, '0')}-01`;
 
-            // Calculate dates for weekly chart
+            // Calculate dates for weekly chart (using local date)
             const last7DaysDates = [];
             for (let i = 6; i >= 0; i--) {
                 const d = new Date();
                 d.setDate(d.getDate() - i);
-                last7DaysDates.push(d.toISOString().split('T')[0]);
+                last7DaysDates.push(getLocalDate(d));
             }
             const minChartDate = last7DaysDates[0];
 
@@ -100,17 +105,44 @@ function Dashboard() {
                 supabase.from('employees').select('id').eq('company_id', company.id).eq('status', 'active'),
                 supabase.from('shifts').select('id, work_days').eq('company_id', company.id),
                 supabase.from('shift_employees').select('employee_id, shift_id').eq('company_id', company.id),
-                supabase.from('processed_attendance').select('status').eq('company_id', company.id).eq('date', today),
+                supabase.from('processed_attendance').select('status, check_in, check_out, employee_id').eq('company_id', company.id).eq('date', today),
                 supabase.from('payrolls').select('net_salary, overtime_hours').eq('company_id', company.id).gte('start_date', firstDayOfMonth),
                 supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('company_id', company.id).eq('status', 'pending'),
                 supabase.from('departments').select('id', { count: 'exact', head: true }).eq('company_id', company.id),
-                supabase.from('processed_attendance').select('status, date').eq('company_id', company.id).gte('date', minChartDate),
+                supabase.from('processed_attendance').select('status, date, check_in').eq('company_id', company.id).gte('date', minChartDate),
                 supabase.from('raw_attendance_logs').select('id, status, user_pin, timestamp').eq('company_id', company.id).order('timestamp', { ascending: false }).limit(6)
             ]);
 
+            // Fallback to raw logs if processed_attendance has no rows for today yet
+            let effectiveTodayAttendance = todayAttendance || [];
+            if (effectiveTodayAttendance.length === 0) {
+                const { data: rawTodayLogs } = await supabase
+                    .from('raw_attendance_logs')
+                    .select('user_pin, timestamp, status')
+                    .eq('company_id', company.id)
+                    .gte('timestamp', `${today}T00:00:00`)
+                    .lte('timestamp', `${today}T23:59:59`);
+                
+                if (rawTodayLogs && rawTodayLogs.length > 0) {
+                    const distinctPins = [...new Set(rawTodayLogs.map(l => l.user_pin))];
+                    effectiveTodayAttendance = distinctPins.map(() => ({
+                        check_in: '08:00:00',
+                        check_out: null,
+                        status: 'present'
+                    }));
+                }
+            }
+
             // 2. Process Stats
+            const ARABIC_DAYS = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            const ENGLISH_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const ENGLISH_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dayIdx = new Date().getDay();
+            const arToday = ARABIC_DAYS[dayIdx];
+            const enToday = ENGLISH_DAYS[dayIdx];
+            const enShort = ENGLISH_SHORT[dayIdx];
             const dayNames = [t.sunday, t.monday, t.tuesday, t.wednesday, t.thursday, t.friday, t.saturday];
-            const todayName = dayNames[new Date().getDay()];
+            const locToday = dayNames[dayIdx];
 
             const getShiftForEmp = (empId) => {
                 const row = shiftEmps?.find(se => se.employee_id === empId);
@@ -123,27 +155,31 @@ function Dashboard() {
             if (activeEmployees) {
                 for (const emp of activeEmployees) {
                     const shift = getShiftForEmp(emp.id);
-                    if (!shift || !shift.work_days || shift.work_days.includes(todayName)) {
+                    if (!shift || !shift.work_days || shift.work_days.length === 0 ||
+                        shift.work_days.some(d => d === arToday || d === enToday || d === enShort || d === locToday)) {
                         expectedTodayEmployees++;
                     }
                 }
             }
 
-            const presentCount = (todayAttendance || []).filter(a => ['present', 'late', 'early_leave'].includes(a.status)).length;
+            const isAttended = (a) => a.check_in != null || ['present', 'late', 'early_leave', 'manual', 'missing_checkout', 'missing_checkin'].includes(a.status);
+            const presentCount = (effectiveTodayAttendance || []).filter(isAttended).length;
+            const currentlyInFacilityCount = (effectiveTodayAttendance || []).filter(a => a.check_in != null && a.check_out == null).length;
             const absentCount = Math.max(0, expectedTodayEmployees - presentCount);
 
             const netSalarySum = (payrollDataState || []).reduce((s, p) => s + Number(p.net_salary), 0);
             const overtimeHoursSum = (payrollDataState || []).reduce((s, p) => s + Number(p.overtime_hours), 0);
 
-            setStats({
+            const newStats = {
                 present: presentCount,
+                currentlyInFacility: currentlyInFacilityCount,
                 absent: absentCount,
                 totalEmployees: totalEmployeesCount,
                 totalPayroll: netSalarySum,
                 overtimeHours: overtimeHoursSum,
                 pendingLeaves: pendingLeavesCount || 0,
                 totalDept: totalDeptCount || 0
-            });
+            };
 
             // 3. Process Weekly Chart
             const chartMapping = (weeklyAttendanceData || []).reduce((acc, curr) => {
@@ -155,17 +191,25 @@ function Dashboard() {
             const dayNamesList = [t.sunday, t.monday, t.tuesday, t.wednesday, t.thursday, t.friday, t.saturday];
             const processedChartData = last7DaysDates.map(dateStr => {
                 const statuses = chartMapping[dateStr] || [];
-                const d = new Date(dateStr);
+                const [y, m, d] = dateStr.split('-').map(Number);
+                const dateObj = new Date(y, m - 1, d);
+                const dayDow = dateObj.getDay();
+
+                const attendedCount = statuses.filter(s => ['present', 'early_leave', 'manual', 'missing_checkout', 'missing_checkin'].includes(s)).length;
+                const lateCount = statuses.filter(s => s === 'late').length;
+                const totalAttended = attendedCount + lateCount;
+                const dayAbsent = Math.max(0, expectedTodayEmployees - totalAttended);
+
                 return {
-                    day: dayNamesList[d.getDay()],
-                    present: statuses.filter(s => s === 'present').length,
-                    late: statuses.filter(s => s === 'late').length,
-                    absent: statuses.filter(s => s === 'absent').length,
+                    day: dayNamesList[dayDow],
+                    present: attendedCount,
+                    late: lateCount,
+                    absent: dayAbsent,
                 };
             });
-            setChartData(processedChartData);
 
             // 4. Process Recent Activity
+            let newRecentActivity = [];
             if (recentLogs && recentLogs.length > 0) {
                 const uniquePins = [...new Set(recentLogs.map(l => l.user_pin))];
                 const { data: employeesData } = await supabase
@@ -177,25 +221,64 @@ function Dashboard() {
                 const pinToName = {};
                 if (employeesData) employeesData.forEach(emp => { pinToName[emp.device_pin] = emp.name; });
 
-                setRecentActivity(recentLogs.map(log => ({
+                newRecentActivity = recentLogs.map(log => ({
                     id: log.id,
                     type: log.status === '0' ? 'check_in' : 'check_out',
                     employee_name: pinToName[log.user_pin] || log.user_pin,
                     time: new Date(log.timestamp).toLocaleTimeString(t.current_locale === 'ar' ? 'ar-SA' : 'en-US', { hour: '2-digit', minute: '2-digit' }),
                     message: log.status === '0' ? t.checkInLabel : t.checkOutLabel,
-                })));
-            } else {
-                setRecentActivity([]);
+                }));
             }
+
+            return {
+                stats: newStats,
+                chartData: processedChartData,
+                recentActivity: newRecentActivity
+            };
 
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
-        } finally {
-            setLoading(false);
+            return null;
         }
     }, [company, t]);
 
-    useEffect(() => { fetchDashboardData(); }, [fetchDashboardData]);
+    const { data: dashboardData, isLoading: loading, mutate } = useSWR(
+        company?.id ? ['dashboard', company.id, t.current_locale] : null,
+        fetchDashboardData,
+        { refreshInterval: 0, revalidateOnFocus: false }
+    );
+
+    // Optimized Real-time listener for the Dashboard
+    useEffect(() => {
+        if (!company?.id) return;
+        let debounceTimer;
+
+        // Listen to both processed_attendance (for status changes) and raw logs (for recent activity)
+        const channel = supabase.channel(`dashboard_realtime_${company.id}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'processed_attendance',
+                filter: `company_id=eq.${company.id}`
+            }, () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => mutate(), 30000);
+            })
+            .subscribe();
+
+        return () => {
+            clearTimeout(debounceTimer);
+            supabase.removeChannel(channel);
+        };
+    }, [company?.id, mutate]);
+
+    useEffect(() => {
+        if (dashboardData) {
+            setStats(dashboardData.stats);
+            setChartData(dashboardData.chartData);
+            setRecentActivity(dashboardData.recentActivity);
+        }
+    }, [dashboardData]);
 
     const getActivityIcon = (type) => {
         switch (type) {
@@ -295,7 +378,10 @@ function Dashboard() {
                     <div className="dash-stat-label">
                         {t.ofTotalEmployees.replace('{count}', stats.totalEmployees)}
                     </div>
-                    <span className="dash-stat-change positive"><HiOutlineArrowSmUp /> {t.activeStatus}</span>
+                    <div className="dash-stat-change positive" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
+                        <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981', boxShadow: '0 0 8px #10b981' }} />
+                        <span><strong>{stats.currentlyInFacility}</strong> {t.currentlyInFacility || 'متواجد حالياً بالمنشأة'}</span>
+                    </div>
                 </motion.div>
 
                 <motion.div variants={itemVariants} className="dash-stat-card">
@@ -372,7 +458,18 @@ function Dashboard() {
                         <h3 className="dash-card-title">{t.lastActivitiesHeader}</h3>
                     </div>
                     <div className="dash-activity-list">
-                        {recentActivity.length === 0 ? (
+                        {loading ? (
+                            Array.from({ length: 4 }).map((_, i) => (
+                                <div key={`skel-${i}`} className="dash-activity-item">
+                                    <div className="animate-pulse h-10 w-10 bg-slate-700/50 rounded-full flex-shrink-0"></div>
+                                    <div className="dash-activity-info w-full">
+                                        <div className="animate-pulse h-4 w-32 bg-slate-700/50 rounded mb-2"></div>
+                                        <div className="animate-pulse h-3 w-48 bg-slate-700/50 rounded"></div>
+                                    </div>
+                                    <div className="animate-pulse h-3 w-12 bg-slate-700/50 rounded flex-shrink-0 ml-auto"></div>
+                                </div>
+                            ))
+                        ) : recentActivity.length === 0 ? (
                             <p className="dash-empty">{t.noActivitiesFound}</p>
                         ) : (
                             recentActivity.map(activity => (

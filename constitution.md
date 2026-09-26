@@ -397,3 +397,24 @@ When this document is fed into an AI assistant or coding tool (such as Antigravi
 - No Explanations: Do not append structural descriptions, pleasantries, apologies, or conversational intros/outros. Jump directly into code generation.
 - Surgical Diff Updates Only: When modifying existing files, never regenerate the entire file structure. Output strictly the lines or specific sub-functions being adjusted with descriptive comments indicating the target line context.
 - Tenant Validation Rule: Prior to outputting any data selection or insertion query block, verify that the .eq('company_id', company.id) isolation boundary constraint is present.
+
+## 26. Master Audit & Concurrency Rules (v2.4)
+- **Context Performance (Anti-Waterfall):** Never export a raw object from a Context Provider. All Context `value` objects MUST be wrapped in `useMemo`, and any exposed functions MUST be wrapped in `useCallback` to prevent cascading re-renders across the component tree.
+- **UI/UX Loading States:** Avoid generic, disruptive spinners for data grids. Always use **CSS Skeleton Loaders** (`animate-pulse` with matching background colors) for table rows and heavy data components (e.g., `Payroll.js`, `Dashboard.js`).
+- **Pessimistic Locking (Queue/Node.js):** Never use Optimistic Locking (`.eq('status', 'pending')`) to claim distributed tasks under high load. Queue claiming MUST use the Supabase RPC function `claim_whatsapp_messages` which relies on Postgres's native `FOR UPDATE SKIP LOCKED`.
+- **Quota Protection (Exponential Backoff):** Never use fixed-interval, aggressive polling loops (e.g., `setTimeout(..., 3500)`). Fallback loops must use Exponential Backoff (e.g., `5s -> 15s -> 60s`) and reset only upon finding work to protect Supabase API read limits.
+- **Memory Leak Prevention (Baileys):** EventEmitters must be meticulously managed. Before gracefully closing or re-initializing the WhatsApp socket (`sock`), you MUST call `sock.ev.removeAllListeners()`.
+- **Graceful Sub-process Termination (Desktop):** Never aggressively kill (`.kill()`) the WhatsApp Node process without a grace period. Always send a graceful OS signal (`CTRL_BREAK_EVENT` or `SIGINT`) and `wait(timeout=5)`.
+- **Realtime Egress Protection:** All `.channel()` subscriptions must include strict Postgres-level filters (`filter: 'channel_id=eq.${channelId}'`) to eliminate junk broadcast traffic.
+
+## 27. Strict Quota & Egress Protection (Anti-DDoS)
+These rules are mandatory to prevent accidental database crashes, connection exhaustion (`CONNECT_TIMEOUT`), and exceeding Supabase Free Tier quotas (Egress & API limits):
+
+- **No Aggressive SWR Polling:** Never configure `useSWR` with continuous polling intervals (e.g., `refreshInterval: 60000`) for large datasets like Employees, Payroll, or Attendance. Continuous polling by multiple admin tabs downloads full table sets repeatedly, causing catastrophic Egress spikes (e.g., >1.5GB/day). Fetch on mount only, and use explicit manual refresh buttons.
+- **Zero Implicit Mutations on Read:** Never execute implicit `.update()` or `.insert()` operations inside a data-fetching loop (e.g., "healing" records inside `fetchAttendance`). This creates a deadly N+1 loop (e.g., 100 updates per minute per active client) that acts as a DDoS attack on PostgREST, crashing the database connection pool. Mutations must be strictly user-triggered or executed via Bulk RPC.
+- **Strict Column Selection:** Never use `.select('*')` on tables with heavy JSONB, base64 images, or large text fields unless rendering all of them. Specify exact columns (`.select('id, name, status')`) to minimize bandwidth (Egress).
+- **Log Ingestion Hygiene:** Do not log excessive debug or verbose information into Supabase tables (`raw_attendance_logs`, `whatsapp_logs`). Consolidate logs, only write critical failures or essential states to the database to preserve the Log Ingestion limits.
+- **Efficient Realtime Refresh (Event-Driven vs Polling):** If a page needs to reflect live database changes, **DO NOT USE POLLING**. Use Supabase Realtime (`supabase.channel`) with the following strict limits:
+  1. **Tenant Filtering:** You MUST filter by `company_id` (`filter: 'company_id=eq.' + company.id`) so the client only receives their own data.
+  2. **Page-Scoped:** Subscriptions must only be active when the specific page is open (clean up on unmount).
+  3. **Debounced Mutations:** When a Realtime event is received, DO NOT immediately trigger `mutate()` if events can arrive in bursts (e.g. hardware sync). Use a debouncer (e.g. `setTimeout`) to wait 2 seconds before refreshing the SWR cache.

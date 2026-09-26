@@ -58,9 +58,71 @@ export const COUNTRIES = [
 
 // -------------------------------------------------------------------------
 
-/** Get a country entry by its ISO 3166-1 alpha-2 code */
-export const getCountryByCode = (code) =>
-    COUNTRIES.find(c => c.code === code) ?? null;
+const COUNTRY_ALIASES = {
+    'sa': 'SA', 'ksa': 'SA', 'السعودية': 'SA', 'السعوديه': 'SA', 'المملكة العربية السعودية': 'SA', 'saudi': 'SA', 'saudi arabia': 'SA',
+    'eg': 'EG', 'egypt': 'EG', 'مصر': 'EG', 'جمهورية مصر العربية': 'EG',
+    'ae': 'AE', 'uae': 'AE', 'الامارات': 'AE', 'الإمارات': 'AE', 'الإمارات العربية المتحدة': 'AE', 'الامارات العربية المتحدة': 'AE', 'دبي': 'AE', 'ابوظبي': 'AE', 'united arab emirates': 'AE',
+    'kw': 'KW', 'kuwait': 'KW', 'الكويت': 'KW', 'دولة الكويت': 'KW',
+    'qa': 'QA', 'qatar': 'QA', 'قطر': 'QA', 'دولة قطر': 'QA',
+    'bh': 'BH', 'bahrain': 'BH', 'البحرين': 'BH', 'مملكة البحرين': 'BH',
+    'om': 'OM', 'oman': 'OM', 'عمان': 'OM', 'عُمان': 'OM', 'سلطنة عمان': 'OM', 'سلطنة عُمان': 'OM',
+    'jo': 'JO', 'jordan': 'JO', 'الاردن': 'JO', 'الأردن': 'JO', 'المملكة الأردنية الهاشمية': 'JO',
+    'lb': 'LB', 'lebanon': 'LB', 'لبنان': 'LB', 'الجمهورية اللبنانية': 'LB',
+    'sy': 'SY', 'syria': 'SY', 'سوريا': 'SY', 'الجمهورية العربية السورية': 'SY',
+    'iq': 'IQ', 'iraq': 'IQ', 'العراق': 'IQ', 'جمهورية العراق': 'IQ',
+    'ye': 'YE', 'yemen': 'YE', 'اليمن': 'YE', 'الجمهورية اليمنية': 'YE',
+    'ly': 'LY', 'libya': 'LY', 'ليبيا': 'LY', 'دولة ليبيا': 'LY',
+    'tn': 'TN', 'tunisia': 'TN', 'تونس': 'TN', 'الجمهورية التونسية': 'TN',
+    'dz': 'DZ', 'algeria': 'DZ', 'الجزائر': 'DZ', 'الجمهورية الجزائرية': 'DZ',
+    'ma': 'MA', 'morocco': 'MA', 'المغرب': 'MA', 'المملكة المغربية': 'MA',
+    'sd': 'SD', 'sudan': 'SD', 'السودان': 'SD', 'جمهورية السودان': 'SD',
+    'ps': 'PS', 'palestine': 'PS', 'فلسطين': 'PS', 'دولة فلسطين': 'PS',
+    'us': 'US', 'usa': 'US', 'united states': 'US', 'united states of america': 'US', 'امريكا': 'US', 'أمريكا': 'US', 'الولايات المتحدة': 'US', 'الولايات المتحدة الأمريكية': 'US',
+    'gb': 'GB', 'uk': 'GB', 'united kingdom': 'GB', 'بريطانيا': 'GB', 'المملكة المتحدة': 'GB', 'انجلترا': 'GB',
+    'eu': 'EU', 'europe': 'EU', 'اوروبا': 'EU', 'أوروبا': 'EU', 'منطقة اليورو': 'EU',
+    'tr': 'TR', 'turkey': 'TR', 'turkiye': 'TR', 'تركيا': 'TR',
+};
+
+/** Get a country entry by its ISO 3166-1 alpha-2 code, name, or currency */
+export const getCountryByCode = (code) => {
+    if (!code || typeof code !== 'string') return null;
+    const clean = code.trim().toLowerCase();
+
+    // 1. Direct match on code, nameAr, nameEn, or currency
+    const direct = COUNTRIES.find(c =>
+        c.code.toLowerCase() === clean ||
+        c.nameAr.toLowerCase() === clean ||
+        c.nameEn.toLowerCase() === clean ||
+        c.currency.toLowerCase() === clean
+    );
+    if (direct) return direct;
+
+    // 2. Direct alias match
+    const aliasCode = COUNTRY_ALIASES[clean];
+    if (aliasCode) {
+        return COUNTRIES.find(c => c.code === aliasCode) ?? null;
+    }
+
+    // 3. Normalized Arabic / English partial match
+    const norm = (s) => s
+        .replace(/[أإآ]/g, 'ا')
+        .replace(/ة/g, 'ه')
+        .replace(/ى/g, 'ي')
+        .replace(/[\u064B-\u065F]/g, '')
+        .toLowerCase()
+        .trim();
+    const cleanNorm = norm(clean);
+
+    return COUNTRIES.find(c => {
+        const normAr = norm(c.nameAr);
+        const normEn = c.nameEn.toLowerCase();
+        return normAr === cleanNorm ||
+               cleanNorm.includes(normAr) ||
+               normAr.includes(cleanNorm) ||
+               normEn.includes(clean) ||
+               clean.includes(normEn);
+    }) ?? null;
+};
 
 /** Default fallback when no country has been selected */
 export const DEFAULT_COUNTRY = COUNTRIES.find(c => c.code === 'SA');

@@ -1,0 +1,211 @@
+[
+  {
+    "key": "sync_agent_version",
+    "value": "v1.0.8",
+    "updated_at": "2026-06-05 17:28:05.412827+00"
+  },
+  {
+    "key": "whatsapp_node_release",
+    "value": {
+      "format": "zip",
+      "sha256": "8d016f7cbf36323ee5023231572c7abf783c2eba2098a9498a8388c925dad105",
+      "version": "2.2.1",
+      "file_size": 30185126,
+      "mandatory": false,
+      "released_at": "2026-09-14T22:34:10.364Z",
+      "download_url": "https://olcrtfeobetvddocbmns.supabase.co/storage/v1/object/public/releases/whatsapp-node-v2.2.1.zip"
+    },
+    "updated_at": "2026-09-14 22:34:10.365+00"
+  },
+  {
+    "key": "desktop_notifications",
+    "value": [],
+    "updated_at": "2026-06-25 21:24:01.072396+00"
+  },
+  {
+    "key": "desktop_version",
+    "value": "2.0.0",
+    "updated_at": "2026-06-25 21:24:01.072396+00"
+  },
+  {
+    "key": "desktop_download_url",
+    "value": "",
+    "updated_at": "2026-06-25 21:24:01.072396+00"
+  },
+  {
+    "key": "cloud_upsell_banner",
+    "value": {
+      "title": "ارقَ إلى الخطة السحابية",
+      "cta_url": "https://kwader-system.web.app",
+      "cta_text": "ترقية الآن",
+      "description": "مزامنة سحابية كاملة، تقارير متقدمة، وعدد غير محدود من الموظفين"
+    },
+    "updated_at": "2026-06-25 21:24:01.072396+00"
+  },
+  {
+    "key": "platform_name",
+    "value": "Kwader",
+    "updated_at": "2026-05-30 22:54:31.517261+00"
+  },
+  {
+    "key": "support_email",
+    "value": "kwader.application@gmail.com",
+    "updated_at": "2026-05-30 22:54:31.517261+00"
+  },
+  {
+    "key": "trial_days",
+    "value": 35,
+    "updated_at": "2026-05-30 22:54:31.517261+00"
+  },
+  {
+    "key": "sync_agent_download_url",
+    "value": "https://github.com/eng-mazen-hashem/kwader-sync-app/releases/download/Kwader/KWADER_Sync_Setup_v1.0.6.exe",
+    "updated_at": "2026-06-05 17:28:05.412827+00"
+  },
+  {
+    "key": "whatsapp_notifications_enabled",
+    "value": true,
+    "updated_at": "2026-06-06 19:26:04.959616+00"
+  },
+  {
+    "key": "whatsapp_recipient_phone",
+    "value": "201098869806",
+    "updated_at": "2026-06-06 19:26:04.959616+00"
+  },
+  {
+    "key": "contact_phone",
+    "value": "+201098869806",
+    "updated_at": "2026-06-25 18:49:05.570236+00"
+  },
+  {
+    "key": "contact_whatsapp",
+    "value": "201098869806",
+    "updated_at": "2026-06-25 18:49:05.570236+00"
+  },
+  {
+    "key": "contact_offices",
+    "value": [
+      {
+        "flag": "🇪🇬",
+        "cityAr": "القاهرة",
+        "cityEn": "Cairo",
+        "addressAr": "القرية الذكية، الجيزة، مصر",
+        "addressEn": "Smart Village, Giza, Egypt"
+      },
+      {
+        "city": "Damietta El-Gadeeda",
+        "flag": "🇪🇬",
+        "cityAr": "دمياط الجديده",
+        "cityEn": "Damietta El-Gadeeda",
+        "addressAr": "دمياط الجديده , بيزنس سكوير",
+        "addressEn": "Damietta El-Gadeeda City, Business Square"
+      }
+    ],
+    "updated_at": "2026-06-25 18:49:05.570236+00"
+  },
+  {
+    "key": "desktop_ads",
+    "value": [],
+    "updated_at": "2026-06-25 21:24:01.072396+00"
+  },
+  {
+    "key": "whatsapp_lock_608948b5-b13a-4411-853b-77e4aefa66f3",
+    "value": {
+      "node_id": "Demo-DESKTOP-S2B1RKS-608948b5",
+      "acquired_at": "2026-09-14T22:31:19.168503+00:00",
+      "health_score": 100,
+      "last_heartbeat": "2026-09-15T10:44:59.781748+00:00",
+      "previous_leader": "Demo-DESKTOP-S2B1RKS-608948b5"
+    },
+    "updated_at": "2026-09-15 10:44:59.781748+00"
+  },
+  {
+    "key": "whatsapp_allow_multi_channel",
+    "value": false,
+    "updated_at": "2026-09-15 10:45:54.866+00"
+  },
+  {
+    "key": "pricing_monthly",
+    "value": [
+      690,
+      1690,
+      3290
+    ],
+    "updated_at": "2026-05-30 22:54:31.517261+00"
+  },
+  {
+    "key": "pricing_yearly",
+    "value": [
+      550,
+      1350,
+      2650
+    ],
+    "updated_at": "2026-05-30 22:54:31.517261+00"
+  },
+  {
+    "key": "pricing_plans_details",
+    "value": [
+      {
+        "name": "Starter",
+        "badge": null,
+        "color": "border-emerald-200",
+        "features": [
+          "حتى 25 موظفاً (1 فرع / 1 جهاز بصمة ZK)",
+          "ربط ومزامنة أجهزة ZKTeco تلقائياً بدون IP ثابت",
+          "تطبيق الموظفين بالموبايل (حضور GPS وبصمة ورصيد)",
+          "إدارة الإجازات والأذونات ومسير رواتب أساسي",
+          "دعم فني سريع عبر المنصة والواتساب"
+        ],
+        "headerColor": "bg-emerald-600"
+      },
+      {
+        "name": "Pro",
+        "badge": "الأكثر طلباً",
+        "color": "border-blue-300",
+        "features": [
+          "حتى 60 موظفاً (حتى 3 فروع / 3 أجهزة ZK)",
+          "تطبيق موظفين متكامل (قسائم رواتب + سلف + طلبات)",
+          "المساعد الذكي (وتين AI) للتحليلات الإدارية الفورية",
+          "بوابة إشعارات الواتساب الآلية التفاعلية للشركة",
+          "محرك الرواتب والضرائب والتأمينات المصرية (قانون 148)",
+          "دعم فني ذو أولوية فائقة عبر الواتساب"
+        ],
+        "headerColor": "bg-blue-600"
+      },
+      {
+        "name": "Enterprise",
+        "badge": "المؤسسات الكبرى",
+        "color": "border-violet-300",
+        "features": [
+          "حتى 150 موظفاً (فروع وأجهزة غير محدودة)",
+          "كل مميزات باقة Pro بلا أي قي��د أو حدود",
+          "بوابة واتساب مخصصة برقم الشركة (QR مستقل)",
+          "ذكاء اصطناعي غير محدود وأتمتة التقارير التنفيذية",
+          "محرك قواعد الورديات المعقد والجزاءات التراكمية",
+          "مدير حساب مخصص وعقود خاصة وتدريب شامل"
+        ],
+        "headerColor": "bg-violet-600"
+      }
+    ],
+    "updated_at": "2026-06-04 22:51:31.100779+00"
+  },
+  {
+    "key": "whatsapp_lock",
+    "value": {
+      "node_id": "Demo-DESKTOP-S2B1RKS",
+      "acquired_at": "2026-09-15T13:03:44.421Z",
+      "health_score": 100,
+      "last_heartbeat": "2026-09-15T13:03:44.421Z"
+    },
+    "updated_at": "2026-09-15 13:03:44.421+00"
+  },
+  {
+    "key": "gemini_ai_config",
+    "value": {
+      "model": "gemini-3.6-flash",
+      "api_key": "REMOVED_FOR_SECURITY",
+      "provider": "google_ai_studio"
+    },
+    "updated_at": "2026-09-08 23:09:41.997801+00"
+  }
+]

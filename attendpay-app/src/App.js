@@ -20,10 +20,12 @@ import Settings from './pages/Settings';
 import Shifts from './pages/Shifts';
 import RuleBuilder from './pages/RuleBuilder';
 import Assistant from './pages/Assistant';
+import AiSalesCenter from './pages/AiSalesCenter';
 import Leaves from './pages/Leaves';
 import Departments from './pages/Departments';
 import Loans from './pages/Loans';
 import SalarySlip from './pages/SalarySlip';
+import BulkSalarySlip from './pages/BulkSalarySlip';
 import TeamManagement from './pages/TeamManagement';
 import EmployeeLayout from './components/EmployeeLayout';
 import MobileLogin from './pages/MobileLogin';
@@ -37,6 +39,9 @@ import LandingPage from './landing/LandingPage';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import ResellerDashboard from './pages/ResellerDashboard';
 import EmployeeProfile from './pages/EmployeeProfile';
+import KwaderRecruiterDashboard from './pages/KwaderRecruiterDashboard';
+import KwaderSkillPassport from './pages/KwaderSkillPassport';
+import PassportOnboarding from './pages/PassportOnboarding';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import AboutUs from './pages/AboutUs';
@@ -254,13 +259,17 @@ function RoleProtectedRoute({ children, requiredRole }) {
 }
 
 function RequirePermission({ children, permission }) {
-  const { hasPermission, activeRole } = useAuth();
+  const { hasPermission, activeRole, isSuperAdmin } = useAuth();
   
+  if (permission === 'super_admin_only' && !isSuperAdmin) {
+    return <UnauthorizedPage />;
+  }
+
   if (permission === 'admin_only' && activeRole !== 'org_admin' && activeRole !== 'super_admin') {
     return <UnauthorizedPage />;
   }
   
-  if (permission !== 'admin_only' && !hasPermission(permission)) {
+  if (permission !== 'admin_only' && permission !== 'super_admin_only' && !hasPermission(permission)) {
     return <UnauthorizedPage />;
   }
   
@@ -289,6 +298,10 @@ function AppLayout() {
     '/payroll': { title: t.titlePayroll, subtitle: t.subtitlePayroll },
     '/shifts': { title: t.titleShifts, subtitle: t.subtitleShifts },
     '/assistant': { title: t.titleAssistant, subtitle: t.subtitleAssistant },
+    '/ai-sales-center': { 
+      title: language === 'ar' ? 'مركز الذكاء الاصطناعي للمبيعات والخدمة' : 'AI Sales & Support Hub', 
+      subtitle: language === 'ar' ? 'إدارة قنوات الواتساب والمحادثات الحية وتأهيل العملاء' : 'WhatsApp live chats, lead qualification & AI settings' 
+    },
     '/rules': { title: t.titleRules, subtitle: t.subtitleRules },
     '/devices': { title: t.titleDevices, subtitle: t.subtitleDevices },
     '/settings': { title: t.titleSettings, subtitle: t.subtitleSettings },
@@ -406,13 +419,15 @@ function AppLayout() {
             <Route path="/shifts" element={<RequirePermission permission="manage_attendance"><Shifts /></RequirePermission>} />
             <Route path="/rules" element={<RequirePermission permission="manage_settings"><RuleBuilder /></RequirePermission>} />
             <Route path="/assistant" element={<Assistant />} />
+            <Route path="/ai-sales-center" element={<RequirePermission permission="super_admin_only"><AiSalesCenter /></RequirePermission>} />
             <Route path="/devices" element={<RequirePermission permission="manage_settings"><Devices /></RequirePermission>} />
             <Route path="/settings" element={<RequirePermission permission="manage_settings"><Settings /></RequirePermission>} />
             <Route path="/leaves" element={<RequirePermission permission="manage_attendance"><Leaves /></RequirePermission>} />
             <Route path="/structure" element={<RequirePermission permission="manage_settings"><Departments /></RequirePermission>} />
             <Route path="/team" element={<RequirePermission permission="admin_only"><TeamManagement /></RequirePermission>} />
-            <Route path="/salary-slip/:id" element={<RequirePermission permission="manage_payroll"><SalarySlip /></RequirePermission>} />
+            <Route path="/recruiter-dashboard" element={<RequirePermission permission="admin_only"><KwaderRecruiterDashboard /></RequirePermission>} />
             <Route path="/subscribe" element={<PaymentPage />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
       </div>
@@ -434,8 +449,8 @@ function App() {
         <AuthProvider>
           <EmployeeAuthProvider>
             <LocaleProvider>
-            <PwaInstaller />
             <Router>
+              <PwaInstaller />
               <Routes>
                 {/* Employee Portal Routes */}
                 <Route path="/me/login" element={<MobileLogin />} />
@@ -444,6 +459,7 @@ function App() {
                   <Route path="punch" element={<MobilePunch />} />
                   <Route path="requests" element={<MobileRequests />} />
                   <Route path="profile" element={<MobileProfile />} />
+                  <Route path="skill-passport" element={<KwaderSkillPassport />} />
                 </Route>
 
                 {/* Main Admin Routes */}
@@ -453,6 +469,9 @@ function App() {
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/invite" element={<AcceptInvite />} />
               <Route path="/accept-invite" element={<AcceptInvite />} />
+              <Route path="/demo-recruiter" element={<KwaderRecruiterDashboard />} />
+              <Route path="/demo-passport" element={<KwaderSkillPassport />} />
+              <Route path="/passport-onboarding" element={<PassportOnboarding />} />
               <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/pay/:id" element={<PaymentPage />} />
@@ -478,6 +497,19 @@ function App() {
                     <ResellerDashboard />
                   </RoleProtectedRoute>
                 }
+              />
+              {/* Salary slip — standalone print page (no sidebar/topbar) */}
+              <Route
+                path="/salary-slip/bulk"
+                element={
+                  <ProtectedRoute>
+                    <BulkSalarySlip />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/salary-slip/:id"
+                element={<SalarySlip />}
               />
               <Route
                 path="/*"
@@ -505,11 +537,32 @@ function RootRoute() {
     if (activeRole === 'reseller') return <Navigate to="/reseller" replace />;
     return <Navigate to="/dashboard" replace />;
   }
-  
-  // If an employee session exists in local storage, redirect to employee portal
-  const hasEmployeeSession = localStorage.getItem('attendpay_employee_session');
-  if (hasEmployeeSession) {
-    return <Navigate to="/me" replace />;
+
+  // Device detection: identify if running on a mobile device
+  const isMobile = /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
+    (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase()
+  );
+
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+  // Mobile-specific routing:
+  if (isMobile) {
+    // If an employee session exists in local storage on mobile, redirect to employee portal
+    const hasEmployeeSession = localStorage.getItem('attendpay_employee_session');
+    if (hasEmployeeSession) {
+      return <Navigate to="/me" replace />;
+    }
+
+    // Redirect standalone mobile PWA users to employee login
+    if (isStandalone) {
+      return <Navigate to="/me/login" replace />;
+    }
+  } else {
+    // Desktop-specific routing:
+    // If running as an installed desktop PWA and unauthenticated, send to login
+    if (isStandalone) {
+      return <Navigate to="/login" replace />;
+    }
   }
   
   return <LandingPage />;
@@ -521,7 +574,7 @@ function LoginRoute() {
   if (user) {
     if (activeRole === 'super_admin') return <Navigate to="/super-admin" replace />;
     if (activeRole === 'reseller') return <Navigate to="/reseller" replace />;
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
   return <Login />;
 }

@@ -129,3 +129,128 @@
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+/* WhatsApp OTP Styles */
+.emp-otp-icon-wrapper {
+    width: 68px;
+    height: 68px;
+    background: linear-gradient(135deg, rgba(37, 211, 102, 0.2), rgba(16, 185, 129, 0.25));
+    border: 1px solid rgba(37, 211, 102, 0.4);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #25D366;
+    box-shadow: 0 0 24px rgba(37, 211, 102, 0.25);
+}
+
+.emp-otp-phone-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(37, 211, 102, 0.1);
+    border: 1px solid rgba(37, 211, 102, 0.25);
+    color: #25D366;
+    padding: 0.35rem 0.85rem;
+    border-radius: 20px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    margin: 0.5rem auto 0;
+    direction: ltr;
+}
+
+.emp-otp-input {
+    width: 100%;
+    background: rgba(15, 15, 22, 0.85);
+    border: 2px solid rgba(99, 102, 241, 0.35);
+    border-radius: 14px;
+    padding: 0.9rem;
+    color: #ffffff;
+    font-family: monospace, inherit;
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: 12px;
+    text-align: center;
+    transition: all 0.25s ease;
+    direction: ltr;
+}
+
+.emp-otp-input:focus {
+    outline: none;
+    border-color: #25D366;
+    box-shadow: 0 0 0 4px rgba(37, 211, 102, 0.2);
+    background: rgba(15, 15, 22, 0.95);
+}
+
+.emp-otp-timer-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.82rem;
+    color: #94a3b8;
+    padding: 0 4px;
+}
+
+.emp-resend-btn {
+    background: none;
+    border: none;
+    color: #818cf8;
+    font-weight: 600;
+    font-size: 0.82rem;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+    font-family: inherit;
+    transition: color 0.2s;
+}
+
+.emp-resend-btn:hover:not(:disabled) {
+    color: #25D366;
+}
+
+.emp-resend-btn:disabled {
+    color: #64748b;
+    cursor: not-allowed;
+    text-decoration: none;
+}
+
+.emp-back-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #94a3b8;
+    padding: 0.75rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    font-family: inherit;
+    width: 100%;
+    margin-top: 0.5rem;
+}
+
+.emp-back-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.emp-security-badge {
+    margin-top: 1.5rem;
+    padding: 0.75rem;
+    border-radius: 12px;
+    background: rgba(99, 102, 241, 0.08);
+    border: 1px dashed rgba(99, 102, 241, 0.25);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    text-align: right;
+    font-size: 0.76rem;
+    color: #a5b4fc;
+    line-height: 1.4;
+}
+

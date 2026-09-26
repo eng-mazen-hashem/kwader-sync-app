@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import useSWR from 'swr';
 import {
     Calendar, Users, UserX, Clock, Plus, ChevronLeft,
     ChevronRight, Fingerprint, X, Search,
     Wifi, ShieldCheck, PenLine, AlertCircle,
-    FileDown, BarChart3, LogIn, LogOut
+    FileDown, BarChart3, LogIn, LogOut, History, CheckCircle2, Edit3, Lock, LockOpen, AlertTriangle
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../supabaseClient';
@@ -102,7 +103,7 @@ function ObsidianTooltip({ record, t }) {
 /* ═══════════════════════════════════════════════════════════════════════════
    TIMELINE ROW (each attendance record)
 ══════════════════════════════════════════════════════════════════════════════ */
-function TimelineRow({ record, index, t, labels, onRefresh }) {
+function TimelineRow({ record, index, t, labels, onRefresh, onEdit }) {
     const [hovered, setHovered] = useState(false);
     const [resolving, setResolving] = useState(false);
     const cfg = getCfg(record.status);
@@ -206,6 +207,16 @@ function TimelineRow({ record, index, t, labels, onRefresh }) {
                                         {record.work_hours}h
                                     </span>
                                 )}
+                                {record.overtime_hours > 0 && (
+                                    <span className="att-meta-hours" style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', borderColor: 'rgba(99, 102, 241, 0.3)' }} title={t.sh_overtime_badge || 'إضافي'}>
+                                        ⚡ +{record.overtime_hours}h
+                                    </span>
+                                )}
+                                {record.is_early_snapped && (
+                                    <span className="att-meta-hours" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', borderColor: 'rgba(16, 185, 129, 0.3)' }} title={t.sh_early_arrival_badge || 'حضور مبكر مضبوط'}>
+                                        ⏱️ {t.sh_early_arrival_badge || 'مبكر مضبوط'}
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -219,11 +230,29 @@ function TimelineRow({ record, index, t, labels, onRefresh }) {
                             />
                             {labels[record.status] || record.status}
                         </div>
+                        {record.check_in && !record.check_out && (
+                            <div className="att-manual-badge" style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.25)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 6px #10b981' }} />
+                                {t.statusInFacility || 'متواجد بالمنشأة'}
+                            </div>
+                        )}
                         {isManual && (
                             <div className="att-manual-badge">
                                 <PenLine size={11} />
                                 {t.statusManual ?? 'Manual'}
                             </div>
+                        )}
+                        {/* Edit punch button */}
+                        {record.id && onEdit && (
+                            <button
+                                className="att-btn-edit-punch"
+                                title="تعديل بصمة الحضور"
+                                onClick={(e) => { e.stopPropagation(); onEdit(record); }}
+                                disabled={resolving}
+                            >
+                                <Edit3 size={12} />
+                                تعديل
+                            </button>
                         )}
                         {!isAbsent && (
                             <button
@@ -294,8 +323,13 @@ function TimelineRow({ record, index, t, labels, onRefresh }) {
                 )}
 
                 {/* Missing checkout banner / Status Reason */}
-                {record.status_reason ? (
-                    <div className={`att-reason-banner ${record.status === 'missing_checkout' ? 'att-reason-warning' : 'att-reason-info'}`} style={{
+                {record.status === 'missing_checkout' && !record.is_in_facility ? (
+                    <div className="att-missing-checkout-banner">
+                        <AlertCircle size={14} />
+                        <span>{record.status_reason || t.missingCheckoutBanner}</span>
+                    </div>
+                ) : record.status_reason && !['present', 'late'].includes(record.status) && !record.is_in_facility ? (
+                    <div className="att-reason-banner att-reason-info" style={{
                         marginTop: '0.5rem',
                         padding: '0.6rem 0.8rem',
                         borderRadius: '0.5rem',
@@ -303,21 +337,14 @@ function TimelineRow({ record, index, t, labels, onRefresh }) {
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.5rem',
-                        background: record.status === 'missing_checkout' ? 'rgba(239, 68, 68, 0.08)' : 'rgba(99, 102, 241, 0.08)',
-                        border: record.status === 'missing_checkout' ? '1px solid rgba(239, 68, 68, 0.15)' : '1px solid rgba(99, 102, 241, 0.15)',
-                        color: record.status === 'missing_checkout' ? '#f87171' : '#818cf8'
+                        background: 'rgba(99, 102, 241, 0.08)',
+                        border: '1px solid rgba(99, 102, 241, 0.15)',
+                        color: '#818cf8'
                     }}>
                         <AlertCircle size={14} style={{ flexShrink: 0 }} />
                         <span>{record.status_reason}</span>
                     </div>
-                ) : (
-                    record.status === 'missing_checkout' && (
-                        <div className="att-missing-checkout-banner">
-                            <AlertCircle size={14} />
-                            <span>{t.missingCheckoutBanner}</span>
-                        </div>
-                    )
-                )}
+                ) : null}
 
                 {/* Biometric-manual conflict warning banner */}
                 {record.is_conflicted && (
@@ -484,6 +511,51 @@ function ManualFingerprintModal({ isOpen, onClose, onSaved, employees, company, 
 
     if (!isOpen) return null;
 
+    /**
+     * Converts a local date+time string to a proper UTC ISO timestamp
+     * using the company's configured timezone.
+     *
+     * Problem: `${date}T${time}:00` is timezone-naive — Supabase treats it as
+     * UTC, but the user means Cairo local time (UTC+3). This causes device
+     * punches (stored correctly as UTC) and manual punches to be misaligned by
+     * 3 hours, breaking the trigger's check-in/check-out pairing logic.
+     *
+     * Fix: determine the exact UTC offset of the company's timezone for the
+     * given date (handles DST correctly via Intl), then subtract it so the
+     * stored value is true UTC.
+     */
+    const buildUTCTimestamp = (dateStr, timeStr, timezone) => {
+        try {
+            // 1. Build a Date treating the input as UTC (a "fake UTC" proxy)
+            const fakeUTC = new Date(`${dateStr}T${timeStr}:00Z`);
+
+            // 2. Format that fake-UTC moment in the target timezone to see
+            //    what hour it appears as locally (revealing the offset)
+            const formatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: timezone,
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                hour12: false,
+            });
+            const parts = formatter.formatToParts(fakeUTC);
+            const get = (type) => parts.find(p => p.type === type)?.value ?? '00';
+            const tzLocalStr = `${get('year')}-${get('month')}-${get('day')}T${get('hour').padStart(2,'0')}:${get('minute')}:${get('second')}Z`;
+            const tzLocalDate = new Date(tzLocalStr);
+
+            // 3. The difference between local and fake-UTC = the timezone offset
+            //    e.g. Africa/Cairo (UTC+3): fakeUTC=08:00Z, tzLocalDate=11:00Z → offset = +3h
+            const offsetMs = tzLocalDate.getTime() - fakeUTC.getTime();
+
+            // 4. Subtract the offset to get the actual UTC equivalent
+            //    08:00 Cairo − 3h = 05:00 UTC ✓
+            const actualUTC = new Date(fakeUTC.getTime() - offsetMs);
+            return actualUTC.toISOString();
+        } catch {
+            // Fallback: append Cairo offset manually (+03:00) if Intl fails
+            return `${dateStr}T${timeStr}:00+03:00`;
+        }
+    };
+
     const handleSave = async () => {
         if (!form.employee_id) { setError(t.errorChooseEmployee); return; }
         if (!form.time)        { setError(t.errorChooseTime); return; }
@@ -491,7 +563,10 @@ function ManualFingerprintModal({ isOpen, onClose, onSaved, employees, company, 
         setSaving(true);
         setError('');
         try {
-            const timestamp = `${selectedDate}T${form.time}:00`;
+            // Build a true UTC timestamp from the company's local time
+            const companyTimezone = company?.settings?.timezone || 'Africa/Cairo';
+            const timestamp = buildUTCTimestamp(selectedDate, form.time, companyTimezone);
+
             await supabase.from('raw_attendance_logs').insert({
                 company_id: company.id,
                 user_pin  : employees.find(e => e.id === form.employee_id)?.device_pin || 'MANUAL',
@@ -622,7 +697,7 @@ function AttendanceReportModal({ isOpen, onClose, employees, company }) {
         try {
             const { data: shiftData } = await supabase
                 .from('shift_employees')
-                .select('shifts(start_time, end_time, shift_type, target_hours, deduct_half_on_missing, has_break, break_duration)')
+                .select('shifts(start_time, end_time, shift_type, target_hours, deduct_half_on_missing, has_break, break_duration, early_arrival_grace_minutes, overtime_start_after_minutes, overtime_rate, overtime_rate_start_hours)')
                 .eq('employee_id', empId)
                 .limit(1);
 
@@ -659,7 +734,8 @@ function AttendanceReportModal({ isOpen, onClose, employees, company }) {
 
             const processedRows = (data || []).map(r => {
                 const isMissing = r.status === 'missing_checkout' || r.status === 'missing_checkin' || (!r.check_in && r.check_out) || (r.check_in && !r.check_out);
-                if (isMissing && empShift?.deduct_half_on_missing) {
+                const isPast = r.date < new Date().toISOString().split('T')[0];
+                if (isMissing && isPast && empShift?.deduct_half_on_missing) {
                     return {
                         ...r,
                         work_hours: halfShiftHours
@@ -724,7 +800,7 @@ function AttendanceReportModal({ isOpen, onClose, employees, company }) {
     };
 
     const summary = {
-        present: rows.filter(r => ['present', 'manual'].includes(r.status)).length,
+        present: rows.filter(r => ['present', 'manual', 'late', 'early_leave', 'missing_checkout'].includes(r.status) || r.check_in != null).length,
         missingPunch: rows.filter(r => ['missing_checkout', 'missing_checkin'].includes(r.status)).length,
         late:    rows.filter(r => r.status === 'late').length,
         absent:  rows.filter(r => r.status === 'absent').length,
@@ -901,6 +977,539 @@ function AttendanceReportModal({ isOpen, onClose, employees, company }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   EDIT PUNCH MODAL — professional inline punch correction with mandatory reason
+══════════════════════════════════════════════════════════════════════════════ */
+function EditPunchModal({ isOpen, onClose, onSaved, record, company, user }) {
+    const [form, setForm] = useState({ check_in: '', check_out: '', reason: '' });
+    const [saving, setSaving] = useState(false);
+    const [error,  setError]  = useState('');
+
+    useEffect(() => {
+        if (isOpen && record) {
+            setForm({
+                check_in : (record.check_in  || '').substring(0, 5),
+                check_out: (record.check_out || '').substring(0, 5),
+                reason   : '',
+            });
+            setError('');
+        }
+    }, [isOpen, record]);
+
+    if (!isOpen || !record) return null;
+
+    const empName  = record.employee_name || '—';
+    const dateStr  = record.date || '—';
+
+    const handleSave = async () => {
+        if (!form.reason.trim()) { setError('يجب إدخال سبب التعديل'); return; }
+        if (!form.check_in)     { setError('وقت الحضور مطلوب'); return; }
+
+        setSaving(true);
+        setError('');
+        try {
+            // ── 1. snapshot القيم القديمة للـ log ────────────────
+            const before = {
+                check_in : record.check_in,
+                check_out: record.check_out,
+                status   : record.status,
+            };
+
+            // ── 2. حساب ساعات العمل الجديدة ─────────────────────
+            let newWorkHours = 0;
+            if (form.check_in && form.check_out) {
+                const [ih, im] = form.check_in.split(':').map(Number);
+                const [oh, om] = form.check_out.split(':').map(Number);
+                let diffMin = (oh * 60 + om) - (ih * 60 + im);
+                if (diffMin < 0) diffMin += 1440;
+                newWorkHours = Math.round((diffMin / 60) * 100) / 100;
+            }
+
+            // ── 3. تحديث processed_attendance ────────────────────
+            const { error: upErr } = await supabase
+                .from('processed_attendance')
+                .update({
+                    check_in    : form.check_in  || null,
+                    check_out   : form.check_out || null,
+                    work_hours  : newWorkHours,
+                    status_reason: `[تعديل يدوي] ${form.reason.trim()}`,
+                })
+                .eq('id', record.id);
+            if (upErr) throw upErr;
+
+            // ── 4. كتابة سجل التدقيق في admin_activity ───────────
+            const afterStr  = `دخول: ${form.check_in || '—'} / خروج: ${form.check_out || '—'}`;
+            const beforeStr = `دخول: ${before.check_in?.substring(0,5) || '—'} / خروج: ${before.check_out?.substring(0,5) || '—'}`;
+            await supabase.from('admin_activity').insert({
+                event      : 'ATTENDANCE',
+                action     : 'EDIT_PUNCH',
+                description: `[تعديل بصمة] ${empName} | ${dateStr} | قبل: ${beforeStr} | بعد: ${afterStr} | السبب: ${form.reason.trim()} | شركة: ${company.id}`,
+                actor      : user?.email || 'unknown',
+            });
+
+            toast.success(`✅ تم تعديل بصمة ${empName} بنجاح`, { duration: 4000 });
+            onSaved();
+            onClose();
+        } catch (err) {
+            console.error('[EditPunchModal]', err);
+            setError('حدث خطأ أثناء الحفظ، حاول مرة أخرى');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="att-modal epm-modal" onClick={e => e.stopPropagation()}>
+
+                {/* ── Header ── */}
+                <div className="att-modal-header">
+                    <div className="att-modal-icon" style={{ background: 'rgba(99,102,241,0.15)', borderColor: 'rgba(99,102,241,0.3)', color: '#818cf8' }}>
+                        <Edit3 size={20} />
+                    </div>
+                    <div>
+                        <h3 className="att-modal-title">تعديل بصمة الحضور</h3>
+                        <p className="att-modal-sub">تعديل مباشر لسجل موظف مع توثيق كامل</p>
+                    </div>
+                    <button className="att-modal-close" onClick={onClose}><X size={18} /></button>
+                </div>
+
+                {/* ── Employee Info Banner ── */}
+                <div className="epm-emp-banner">
+                    <div className="epm-emp-avatar" style={{ background: `var(--accent-primary)` }}>
+                        {empName.charAt(0)}
+                    </div>
+                    <div>
+                        <div className="epm-emp-name">{empName}</div>
+                        <div className="epm-emp-date">📅 {dateStr}</div>
+                    </div>
+                    <div className="epm-before-badge">
+                        <span className="epm-before-label">قبل التعديل</span>
+                        <span className="epm-before-val">
+                            {record.check_in?.substring(0,5) || '—'} → {record.check_out?.substring(0,5) || '—'}
+                        </span>
+                    </div>
+                </div>
+
+                <div className="att-modal-body">
+                    {/* ── Time fields ── */}
+                    <div className="epm-time-row">
+                        <div className="att-field">
+                            <label className="att-field-label">
+                                <LogIn size={13} style={{ display:'inline', marginLeft:'4px' }} />
+                                وقت الحضور
+                            </label>
+                            <input className="att-field-input" type="time"
+                                value={form.check_in}
+                                onChange={e => setForm(p => ({ ...p, check_in: e.target.value }))} />
+                        </div>
+                        <div className="epm-arrow">→</div>
+                        <div className="att-field">
+                            <label className="att-field-label">
+                                <LogOut size={13} style={{ display:'inline', marginLeft:'4px' }} />
+                                وقت الانصراف
+                            </label>
+                            <input className="att-field-input" type="time"
+                                value={form.check_out}
+                                onChange={e => setForm(p => ({ ...p, check_out: e.target.value }))} />
+                        </div>
+                    </div>
+
+                    {/* ── Work hours preview ── */}
+                    {form.check_in && form.check_out && (() => {
+                        const [ih, im] = form.check_in.split(':').map(Number);
+                        const [oh, om] = form.check_out.split(':').map(Number);
+                        let d = (oh * 60 + om) - (ih * 60 + im);
+                        if (d < 0) d += 1440;
+                        const hrs = Math.floor(d / 60), mins = d % 60;
+                        return (
+                            <div className="epm-preview-bar">
+                                <CheckCircle2 size={14} style={{ color: '#34d399' }} />
+                                <span>ساعات العمل الجديدة: <strong>{hrs}h {mins > 0 ? `${mins}m` : ''}</strong></span>
+                            </div>
+                        );
+                    })()}
+
+                    {/* ── Reason ── */}
+                    <div className="att-field">
+                        <label className="att-field-label" style={{ color: '#f59e0b' }}>
+                            ✏️ سبب التعديل <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <textarea
+                            className="att-field-input epm-textarea"
+                            placeholder="مثال: خطأ في جهاز البصمة — الموظف كان حاضراً من الساعة 8..."
+                            value={form.reason}
+                            rows={3}
+                            onChange={e => setForm(p => ({ ...p, reason: e.target.value }))}
+                        />
+                        <span className="epm-char-count">{form.reason.length} / 300</span>
+                    </div>
+
+                    {/* ── Audit notice ── */}
+                    <div className="epm-audit-notice">
+                        <ShieldCheck size={13} />
+                        سيتم توثيق هذا التعديل تلقائياً بإسمك وتاريخ التعديل لمتابعة الإدارة.
+                    </div>
+
+                    {error && <div className="att-error-bar"><AlertCircle size={14} /> {error}</div>}
+                </div>
+
+                <div className="att-modal-footer">
+                    <button className="att-modal-btn-primary" onClick={handleSave} disabled={saving || !form.reason.trim()}>
+                        {saving ? '⏳ جاري الحفظ...' : '💾 حفظ التعديل'}
+                    </button>
+                    <button className="att-modal-btn-secondary" onClick={onClose}>إلغاء</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   AUDIT LOG MODAL — shows all punch edits (who, what, when)
+══════════════════════════════════════════════════════════════════════════════ */
+function AuditLogModal({ isOpen, onClose, company }) {
+    const [logs,    setLogs]    = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [page,    setPage]    = useState(0);
+    const PAGE_SIZE = 15;
+
+    useEffect(() => {
+        if (!isOpen || !company?.id) return;
+        setPage(0);
+        fetchLogs(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, company?.id]);
+
+    const fetchLogs = async (pg = 0) => {
+        setLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('admin_activity')
+                .select('id, action, description, actor, created_at')
+                .eq('action', 'EDIT_PUNCH')
+                .ilike('description', `%شركة: ${company.id}%`)
+                .order('created_at', { ascending: false })
+                .range(pg * PAGE_SIZE, (pg + 1) * PAGE_SIZE - 1);
+            if (error) throw error;
+            // تحليل الوصف المخزّن كنص إلى حقول منفصلة
+            const parsed = (data || []).map(row => {
+                const d = row.description || '';
+                const get = (key, nextKey) => {
+                    const start = d.indexOf(`${key}: `);
+                    if (start === -1) return '—';
+                    const from = start + key.length + 2;
+                    const end  = nextKey ? d.indexOf(` | ${nextKey}:`, from) : d.lastIndexOf(' | ');
+                    return end === -1 ? d.slice(from) : d.slice(from, end);
+                };
+                return {
+                    ...row,
+                    emp_name: d.includes('] ') ? d.split('] ')[1]?.split(' | ')[0] : '—',
+                    date    : get('تاريخ', 'قبل') === '—' ? get('\u062a\u0627\u0631\u064a\u062e', 'قبل') : get('تاريخ', 'قبل'),
+                    before  : get('قبل', 'بعد'),
+                    after   : get('بعد', 'السبب'),
+                    reason  : get('السبب', 'شركة'),
+                };
+            });
+            setLogs(parsed);
+        } catch (err) {
+            console.error('[AuditLogModal]', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (!isOpen) return null;
+
+    const fmtDT = (iso) => {
+        if (!iso) return '—';
+        const d = new Date(iso);
+        return d.toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' });
+    };
+
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="att-report-modal alm-modal" onClick={e => e.stopPropagation()}>
+
+                {/* Header */}
+                <div className="att-modal-header">
+                    <div className="att-modal-icon" style={{ background: 'rgba(52,211,153,0.15)', borderColor: 'rgba(52,211,153,0.3)', color: '#34d399' }}>
+                        <History size={20} />
+                    </div>
+                    <div>
+                        <h3 className="att-modal-title">سجل تعديلات البصمات</h3>
+                        <p className="att-modal-sub">كل التعديلات اليدوية موثقة بالمسؤول والسبب والتاريخ</p>
+                    </div>
+                    <button className="att-modal-close" onClick={onClose}><X size={18} /></button>
+                </div>
+
+                <div className="att-modal-body alm-body">
+                    {loading ? (
+                        <div className="alm-loading">⏳ جاري تحميل السجل...</div>
+                    ) : logs.length === 0 ? (
+                        <div className="alm-empty">
+                            <History size={40} style={{ opacity: 0.2 }} />
+                            <p>لا توجد تعديلات مسجلة بعد</p>
+                        </div>
+                    ) : (
+                        <div className="alm-list">
+                            {logs.map((log, i) => {
+                                const d = log.details || {};
+                                return (
+                                    <div key={log.id || i} className="alm-entry">
+                                        {/* Left: timeline dot */}
+                                        <div className="alm-dot" />
+
+                                        {/* Content */}
+                                        <div className="alm-content">
+                                            <div className="alm-top-row">
+                                                <span className="alm-emp-name">{log.emp_name || '—'}</span>
+                                                <span className="alm-date-badge">📅 {log.date || '—'}</span>
+                                                <span className="alm-ts">{fmtDT(log.created_at)}</span>
+                                            </div>
+
+                                            {/* Before → After */}
+                                            <div className="alm-change-row">
+                                                <div className="alm-before">
+                                                    <span className="alm-change-label">قبل</span>
+                                                    <code>{log.before || '—'}</code>
+                                                </div>
+                                                <span className="alm-arrow">⟶</span>
+                                                <div className="alm-after">
+                                                    <span className="alm-change-label">بعد</span>
+                                                    <code>{log.after || '—'}</code>
+                                                </div>
+                                            </div>
+
+                                            {/* Reason + Actor */}
+                                            <div className="alm-meta-row">
+                                                <span className="alm-reason">💬 {log.reason || '—'}</span>
+                                                <span className="alm-actor">👤 {log.actor || '—'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+
+                {/* Pagination */}
+                {!loading && (
+                    <div className="att-modal-footer" style={{ justifyContent: 'space-between' }}>
+                        <button className="att-modal-btn-secondary"
+                            disabled={page === 0}
+                            onClick={() => { const p = page - 1; setPage(p); fetchLogs(p); }}>
+                            ◀ السابق
+                        </button>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>صفحة {page + 1}</span>
+                        <button className="att-modal-btn-secondary"
+                            disabled={logs.length < PAGE_SIZE}
+                            onClick={() => { const p = page + 1; setPage(p); fetchLogs(p); }}>
+                            التالي ▶
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PAYROLL LOCK MODAL — Smart shift freeze before payroll processing
+══════════════════════════════════════════════════════════════════════════════ */
+function PayrollLockModal({ isOpen, onClose, company, user, onLocked }) {
+    const today = new Date().toISOString().split('T')[0];
+    const alreadyLocked = company?.settings?.payroll_locked_until || null;
+
+    const [lockDate,  setLockDate]  = useState(today);
+    const [preview,   setPreview]   = useState(null);  // { count, employees[] }
+    const [loading,   setLoading]   = useState(false);
+    const [locking,   setLocking]   = useState(false);
+    const [error,     setError]     = useState('');
+    const [done,      setDone]      = useState(null);  // result after lock
+
+    // معاينة السجلات التي ستُغلق
+    useEffect(() => {
+        if (!isOpen || !company?.id) return;
+        setDone(null);
+        setError('');
+        loadPreview(lockDate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen]);
+
+    const loadPreview = async (date) => {
+        setLoading(true);
+        setPreview(null);
+        setError('');
+        try {
+            const { data, error: err } = await supabase
+                .from('processed_attendance')
+                .select('id, date, check_in, employee_id, employees(name, shift_employees(shifts(name, end_time)))')
+                .eq('company_id', company.id)
+                .lte('date', date)
+                .not('check_in', 'is', null)
+                .is('check_out', null)
+                .not('status', 'in', '("absent","leave")');
+            if (err) throw err;
+            setPreview({ count: (data || []).length, rows: data || [] });
+        } catch (e) {
+            setError('حدث خطأ أثناء تحميل المعاينة');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleLock = async () => {
+        if (!window.confirm(`تأكيد تقفيل الحضور حتى ${lockDate}؟نسيتاثبت ساعات العمل بناءً على نهاية كل شيفت.`)) return;
+        setLocking(true);
+        setError('');
+        try {
+            const { data, error: fnErr } = await supabase.rpc('lock_payroll_period', {
+                p_company_id : company.id,
+                p_lock_until : lockDate,
+                p_actor_email: user?.email || 'unknown',
+            });
+            if (fnErr) throw fnErr;
+            if (data?.success === false) {
+                setError(data.error || 'حدث خطأ');
+                return;
+            }
+            setDone(data);
+            onLocked?.();
+        } catch (e) {
+            console.error('[PayrollLock]', e);
+            setError(e.message || 'حدث خطأ أثناء التقفيل');
+        } finally {
+            setLocking(false);
+        }
+    };
+
+    if (!isOpen) return null;
+
+    const fmtDate = (d) => d ? new Date(d + 'T12:00:00').toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="att-modal plm-modal" onClick={e => e.stopPropagation()}>
+
+                {/* Header */}
+                <div className="att-modal-header">
+                    <div className="att-modal-icon plm-icon">
+                        <Lock size={20} />
+                    </div>
+                    <div>
+                        <h3 className="att-modal-title">تقفيل الحضور لتصفية الرواتب</h3>
+                        <p className="att-modal-sub">يغلق جميع الشيفتات المفتوحة بنهاية وقت كل شيفت تلقائياً</p>
+                    </div>
+                    <button className="att-modal-close" onClick={onClose}><X size={18} /></button>
+                </div>
+
+                {done ? (
+                    /* ── شاشة النجاح ── */
+                    <div className="plm-success-screen">
+                        <div className="plm-success-icon"><CheckCircle2 size={48} /></div>
+                        <h4>تم التقفيل بنجاح</h4>
+                        <p>تم إغلاق <strong>{done.records_updated}</strong> سجل حتى <strong>{fmtDate(done.locked_until)}</strong></p>
+                        <p className="plm-success-sub">كل الشيفتات المفتوحة أُغلقت تلقائياً بوقت نهاية كل شيفت وحُسبت ساعات عملهم تلقائياً.</p>
+                        <button className="att-modal-btn-primary" onClick={onClose}>إغلاق</button>
+                    </div>
+                ) : (
+                    <>
+                        <div className="att-modal-body">
+
+                            {/* ── شارة التقفيل الحالي ── */}
+                            {alreadyLocked && (
+                                <div className="plm-current-lock">
+                                    <Lock size={13} />
+                                    <span>التقفيل الحالي: <strong>{fmtDate(alreadyLocked)}</strong></span>
+                                </div>
+                            )}
+
+                            {/* ── اختيار تاريخ التقفيل ── */}
+                            <div className="att-field">
+                                <label className="att-field-label" style={{ color: '#f59e0b' }}>
+                                    📅 تاريخ التقفيل (آخر يوم مشمول)
+                                </label>
+                                <input
+                                    className="att-field-input"
+                                    type="date"
+                                    value={lockDate}
+                                    max={today}
+                                    onChange={e => {
+                                        setLockDate(e.target.value);
+                                        loadPreview(e.target.value);
+                                    }}
+                                />
+                            </div>
+
+                            {/* ── معاينة ── */}
+                            {loading ? (
+                                <div className="plm-preview-loading">⏳ جاري تحليل السجلات…</div>
+                            ) : preview ? (
+                                <div className="plm-preview-box">
+                                    <div className="plm-preview-header">
+                                        <span className="plm-preview-count">{preview.count}</span>
+                                        <span>سجل مفتوح سيُغلق تلقائياً بوقت نهاية كل شيفت</span>
+                                    </div>
+                                    {preview.rows.length > 0 && (
+                                        <div className="plm-preview-list">
+                                            {preview.rows.slice(0, 8).map((r, i) => {
+                                                const shift = r.employees?.shift_employees?.[0]?.shifts;
+                                                return (
+                                                    <div key={i} className="plm-preview-row">
+                                                        <span className="plm-preview-name">{r.employees?.name || '—'}</span>
+                                                        <span className="plm-preview-date">{r.date}</span>
+                                                        <span className="plm-preview-shift">
+                                                            دخول: {r.check_in?.substring(0,5)} → إغلاق: <strong>{shift?.end_time?.substring(0,5) || '17:30'}</strong>
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+                                            {preview.rows.length > 8 && (
+                                                <div className="plm-preview-more">+ {preview.rows.length - 8} سجل آخر...</div>
+                                            )}
+                                        </div>
+                                    )}
+                                    {preview.count === 0 && (
+                                        <div className="plm-preview-empty">
+                                            <CheckCircle2 size={18} style={{ color: '#34d399' }} />
+                                            <span>لا توجد سجلات مفتوحة حتى هذا التاريخ</span>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : null}
+
+                            {/* ── تحذير ── */}
+                            <div className="plm-warning-bar">
+                                <AlertTriangle size={14} />
+                                <span>بعد التقفيل، ستحتاج لتعديل يدوي لإعادة فتح أي سجل مما قبل تاريخ التقفيل.</span>
+                            </div>
+
+                            {error && <div className="att-error-bar"><AlertCircle size={14} /> {error}</div>}
+                        </div>
+
+                        <div className="att-modal-footer">
+                            <button
+                                className="att-modal-btn-primary plm-lock-btn"
+                                onClick={handleLock}
+                                disabled={locking || loading || (preview?.count === 0)}
+                            >
+                                {locking ? (
+                                    <>⏳ جاري التقفيل…</>
+                                ) : (
+                                    <><Lock size={14} /> تقفيل {preview?.count > 0 ? `(${preview.count} سجل)` : ''}</>
+                                )}
+                            </button>
+                            <button className="att-modal-btn-secondary" onClick={onClose}>إلغاء</button>
+                        </div>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    MAIN ATTENDANCE PAGE
 ══════════════════════════════════════════════════════════════════════════════ */
 function Attendance() {
@@ -915,10 +1524,19 @@ function Attendance() {
     const [dataSource,   setDataSource]   = useState('processed');
     const [showManualModal, setShowManualModal]   = useState(false);
     const [showReportModal, setShowReportModal]   = useState(false);
+    const [showEditModal,   setShowEditModal]     = useState(false);
+    const [showAuditModal,  setShowAuditModal]    = useState(false);
+    const [showLockModal,   setShowLockModal]     = useState(false);
+    const [editRecord,      setEditRecord]        = useState(null);
+
+    const handleOpenEdit = useCallback((record) => {
+        setEditRecord(record);
+        setShowEditModal(true);
+    }, []);
     const [dbShifts,     setDbShifts]     = useState([]);
     const [dbShiftMappings, setDbShiftMappings] = useState([]);
     const [page,         setPage]         = useState(0);
-    const [pageSize]                      = useState(50);
+    const [pageSize]                      = useState(250);
     const [totalCount,   setTotalCount]   = useState(0);
 
 // -------------------------------------------------------------------------
@@ -932,11 +1550,11 @@ function Attendance() {
         early_leave     : t.statusEarlyLeave,
         leave           : t.statusLeave,
         manual          : t.statusManual,
-        missing_checkout: 'بصمة انصراف مفقودة',
+        missing_checkout: 'بصمات ناقصة / معلقة',
     }), [t]);
 
 // -------------------------------------------------------------------------
-    useEffect(() => { setPage(0); }, [selectedDate]);
+    useEffect(() => { setPage(0); }, [selectedDate, searchTerm, statusFilter]);
 
 // -------------------------------------------------------------------------
     useEffect(() => {
@@ -948,11 +1566,10 @@ function Attendance() {
 
 // -------------------------------------------------------------------------
     const fetchAttendance = useCallback(async () => {
-        if (!company) { setLoading(false); return; }
-        setLoading(true);
+        if (!company) return { data: [], count: 0, source: 'processed' };
 
         try {
-            const { data: dbshifts } = await supabase.from('shifts').select('id, name, start_time, end_time, shift_type, target_hours, has_break, break_duration, break_policy, grace_minutes, deduct_half_on_missing').eq('company_id', company.id);
+            const { data: dbshifts } = await supabase.from('shifts').select('id, name, start_time, end_time, shift_type, target_hours, has_break, break_duration, break_policy, grace_minutes, deduct_half_on_missing, early_arrival_grace_minutes, overtime_start_after_minutes, overtime_rate, overtime_rate_start_hours').eq('company_id', company.id);
             const shiftIds = (dbshifts || []).map(s => s.id);
             const { data: dbsm }     = shiftIds.length > 0
                 ? await supabase.from('shift_employees').select('employee_id, shift_id').in('shift_id', shiftIds)
@@ -977,23 +1594,27 @@ function Attendance() {
                 .range(from, to);
 
             if (!pErr && processed && processed.length > 0) {
-                setDataSource('processed');
                 const healedAttendance = [];
                 for (const a of processed) {
                     const shift   = getShiftForEmp(a.employee_id);
-                    const metrics = calculateRecordMetrics(a.check_in, a.check_out, shift, company.settings || {});
-                    const rec     = { ...a, employee_name: a.employees?.name || `بصمة #${a.employee_id}`, ...metrics };
+                    const metrics = calculateRecordMetrics(a.check_in, a.check_out, shift, company.settings || {}, a.date || selectedDate);
+                    
+                    // PRO FIX: We only merge metrics for UI display.
+                    // We DO NOT implicitly fire N+1 'update' requests to Supabase here.
+                    // Healing should be done via a backend trigger or a deliberate bulk RPC.
+                    const rec = { 
+                        ...a, 
+                        employee_name: a.employees?.name || `بصمة #${a.employee_id}`,
+                        // Only override UI values if they make sense, but don't mutate DB in a fetch loop
+                        late_minutes: metrics.late_minutes,
+                        early_leave_minutes: metrics.early_leave_minutes,
+                        work_hours: metrics.work_hours,
+                        status: a.override_status || metrics.status 
+                    };
 
-                    if (a.late_minutes !== rec.late_minutes || a.status !== rec.status ||
-                        a.work_hours !== rec.work_hours || a.early_leave_minutes !== rec.early_leave_minutes) {
-                        supabase.from('processed_attendance').update(metrics).eq('id', a.id).then();
-                    }
                     healedAttendance.push(rec);
                 }
-                setAttendance(healedAttendance);
-                setTotalCount(count || 0);
-                setLoading(false);
-                return;
+                return { data: healedAttendance, count: count || 0, source: 'processed' };
             }
 
             // Fallback: raw_attendance_logs
@@ -1023,7 +1644,7 @@ function Attendance() {
                     const checkIn  = new Date(logs[0].timestamp).toTimeString().substring(0, 5);
                     const checkOut = logs.length > 1 ? new Date(logs[logs.length - 1].timestamp).toTimeString().substring(0, 5) : null;
                     const shift    = getShiftForEmp(emp?.id);
-                    const metrics  = calculateRecordMetrics(checkIn, checkOut, shift, company.settings || {});
+                    const metrics  = calculateRecordMetrics(checkIn, checkOut, shift, company.settings || {}, selectedDate);
                     return {
                         id: logs[0].id,
                         employee_id  : emp?.id,
@@ -1033,29 +1654,76 @@ function Attendance() {
                     };
                 });
 
-                setDataSource('raw');
-                setTotalCount(records.length);
-                setAttendance(records.slice(page * pageSize, (page + 1) * pageSize));
+                return {
+                    data: records.slice(page * pageSize, (page + 1) * pageSize),
+                    count: records.length,
+                    source: 'raw'
+                };
             } else {
-                setDataSource('processed');
-                setAttendance([]);
-                setTotalCount(0);
+                return { data: [], count: 0, source: 'processed' };
             }
         } catch (error) {
             console.error('[fetchAttendance]', error);
             toast.error(t.errorFetchingAttendance || 'حدث خطأ أثناء جلب بينات الحضور');
-        } finally {
-            setLoading(false);
+            return { data: [], count: 0, source: 'processed' };
         }
     }, [company, selectedDate, page, pageSize, t]);
 
-    useEffect(() => { fetchAttendance(); }, [fetchAttendance]);
+    const { data: attData, isLoading: isSWRLoading, mutate: refreshAttendance } = useSWR(
+        company?.id ? ['attendance', company.id, selectedDate, page, pageSize, t.current_locale] : null,
+        fetchAttendance,
+        { refreshInterval: 0, revalidateOnFocus: false }
+    );
+
+    // Optimized Real-time listener: Only active when this page is open, filtered by company, and debounced.
+    useEffect(() => {
+        if (!company?.id) return;
+        let debounceTimer;
+
+        const channel = supabase.channel(`attendance_realtime_${company.id}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'processed_attendance',
+                filter: `company_id=eq.${company.id}`
+            }, (payload) => {
+                // If the change doesn't match the currently viewed date, ignore it.
+                if (payload.new && payload.new.date !== selectedDate) return;
+                
+                // Debounce: Wait 30 seconds before refreshing to bundle bulk hardware syncs and SAVE QUOTA
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    refreshAttendance();
+                }, 30000);
+            })
+            .subscribe();
+
+        return () => {
+            clearTimeout(debounceTimer);
+            supabase.removeChannel(channel);
+        };
+    }, [company?.id, selectedDate, refreshAttendance]);
+
+    useEffect(() => {
+        if (isSWRLoading) setLoading(true);
+        else setLoading(false);
+    }, [isSWRLoading]);
+
+    useEffect(() => {
+        if (attData) {
+            setAttendance(attData.data);
+            setTotalCount(attData.count);
+            setDataSource(attData.source);
+        }
+    }, [attData]);
 
 // -------------------------------------------------------------------------
     const stats = useMemo(() => {
-        const pres = attendance.filter(a => ['present', 'late', 'early_leave', 'manual'].includes(a.status)).length;
-        const abs  = attendance.filter(a => a.status === 'absent').length;
-        const late = attendance.filter(a => a.status === 'late').length;
+        const isAttended = (a) => a.check_in != null || ['present', 'late', 'early_leave', 'manual', 'missing_checkout', 'missing_checkin'].includes(a.status);
+        const pres = attendance.filter(isAttended).length;
+        const inFacility = attendance.filter(a => a.check_in != null && a.check_out == null).length;
+        const abs  = attendance.filter(a => a.status === 'absent' && !a.check_in).length;
+        const late = attendance.filter(a => a.status === 'late' || a.late_minutes > 0).length;
         const lateR = attendance.filter(a => a.late_minutes > 0);
         const avgL = lateR.length > 0
             ? Math.round(lateR.reduce((s, a) => s + a.late_minutes, 0) / lateR.length)
@@ -1063,7 +1731,7 @@ function Attendance() {
         const totalW = attendance
             .reduce((s, a) => s + (Number(a.work_hours) || 0), 0)
             .toFixed(1);
-        return { pres, abs, late, avgL, totalW };
+        return { pres, inFacility, abs, late, avgL, totalW };
     }, [attendance]);
 
 // -------------------------------------------------------------------------
@@ -1076,7 +1744,11 @@ function Attendance() {
 // -------------------------------------------------------------------------
     const filteredAttendance = useMemo(() => {
         return attendance
-            .filter(a => statusFilter === 'all' || a.status === statusFilter)
+            .filter(a => {
+                if (statusFilter === 'all') return true;
+                if (statusFilter === 'missing_checkout') return a.status === 'missing_checkout' || a.status === 'missing_checkin';
+                return a.status === statusFilter;
+            })
             .filter(a => !searchTerm || (a.employee_name ?? '').toLowerCase().includes(searchTerm.toLowerCase()));
     }, [attendance, statusFilter, searchTerm]);
 
@@ -1094,6 +1766,22 @@ function Attendance() {
                     <p className="att-subtitle">{t.attendancePageSubtitle}</p>
                 </div>
                 <div className="att-header-actions">
+                    {/* ── زر تقفيل الرواتب ── */}
+                    <button
+                        className="att-btn-report plm-lock-trigger"
+                        onClick={() => setShowLockModal(true)}
+                        title={company?.settings?.payroll_locked_until ? `مقفل حتى ${company.settings.payroll_locked_until}` : 'تقفيل الحضور قبل تشغيل الرواتب'}
+                    >
+                        {company?.settings?.payroll_locked_until ? <Lock size={16} /> : <LockOpen size={16} />}
+                        {company?.settings?.payroll_locked_until
+                            ? `مقفل حتى ${company.settings.payroll_locked_until}`
+                            : 'تقفيل الرواتب'
+                        }
+                    </button>
+                    <button className="att-btn-report" style={{ borderColor: 'rgba(52,211,153,0.3)', color: '#34d399' }} onClick={() => setShowAuditModal(true)}>
+                        <History size={16} />
+                        سجل التعديلات
+                    </button>
                     <button className="att-btn-report" onClick={() => setShowReportModal(true)}>
                         <BarChart3 size={16} />
                         {t.detailedReportBtn}
@@ -1109,7 +1797,7 @@ function Attendance() {
             <div className="att-stats-row">
                 {[
                     { icon: <Clock size={20} />,   iconCls: 'att-si-indigo', label: t.statAvgLateLabel ?? 'Total Work Hours',  value: `${stats.totalW}h`, sub: 'today' },
-                    { icon: <Users size={20} />,   iconCls: 'att-si-green',  label: t.statPresentLabel ?? 'Present',           value: stats.pres, sub: `${stats.late} late` },
+                    { icon: <Users size={20} />,   iconCls: 'att-si-green',  label: t.statPresentLabel ?? 'Present',           value: stats.pres, sub: `🟢 ${stats.inFacility} ${t.statusInFacility || 'متواجد بالمنشأة'}` },
                     { icon: <UserX size={20} />,   iconCls: 'att-si-red',    label: t.statAbsentLabel ?? 'Absent',             value: stats.abs, sub: 'unexcused' },
                     { icon: <Clock size={20} />,   iconCls: 'att-si-amber',  label: t.statAvgLateLabel ?? 'Avg Late',          value: `${stats.avgL}m`, sub: t.minuteLabel ?? 'minutes' },
                 ].map((s, i) => (
@@ -1169,7 +1857,7 @@ function Attendance() {
 
                 {/* Status filter pills */}
                 <div className="att-status-pills">
-                    {['all', 'present', 'late', 'absent', 'early_leave'].map(s => (
+                    {['all', 'present', 'late', 'early_leave', 'missing_checkout', 'absent'].map(s => (
                         <button
                             key={s}
                             className={`att-pill-btn ${statusFilter === s ? `active att-pill-${s}` : ''}`}
@@ -1213,7 +1901,8 @@ function Attendance() {
                             index={index}
                             t={t}
                             labels={labels}
-                            onRefresh={fetchAttendance}
+                            onRefresh={refreshAttendance}
+                            onEdit={handleOpenEdit}
                         />
                     ))
                 )}
@@ -1269,7 +1958,7 @@ function Attendance() {
             <ManualFingerprintModal
                 isOpen={showManualModal}
                 onClose={() => setShowManualModal(false)}
-                onSaved={fetchAttendance}
+                onSaved={refreshAttendance}
                 employees={employees}
                 company={company}
                 user={user}
@@ -1278,6 +1967,28 @@ function Attendance() {
                 shiftMappings={dbShiftMappings}
             />
 
+            <EditPunchModal
+                isOpen={showEditModal}
+                onClose={() => { setShowEditModal(false); setEditRecord(null); }}
+                onSaved={refreshAttendance}
+                record={editRecord}
+                company={company}
+                user={user}
+            />
+
+            <AuditLogModal
+                isOpen={showAuditModal}
+                onClose={() => setShowAuditModal(false)}
+                company={company}
+            />
+
+            <PayrollLockModal
+                isOpen={showLockModal}
+                onClose={() => setShowLockModal(false)}
+                company={company}
+                user={user}
+                onLocked={refreshAttendance}
+            />
 
             <AttendanceReportModal
                 isOpen={showReportModal}

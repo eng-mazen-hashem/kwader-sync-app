@@ -17,10 +17,12 @@
     "react-dom": "^19.2.4",
     "react-hook-form": "^7.72.1",
     "react-icons": "^5.6.0",
+    "react-qr-code": "^2.2.0",
     "react-router-dom": "^7.13.1",
     "react-scripts": "5.0.1",
     "recharts": "^3.8.0",
     "sonner": "^2.0.7",
+    "swr": "^2.5.1",
     "web-vitals": "^2.1.4",
     "xlsx": "^0.18.5",
     "zod": "^4.3.6"
@@ -29,7 +31,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "reset-password": "node reset_user_password.js"
   },
   "eslintConfig": {
     "extends": [

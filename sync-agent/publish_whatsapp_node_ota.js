@@ -5,10 +5,10 @@ const https = require('https');
 const { createClient } = require('@supabase/supabase-js');
 
 const REPO = 'eng-mazen-hashem/kwader-sync-app';
-const TAG = 'v1.3.2'; // Upload to the active release tag so all client agents can reach it
-const VERSION = '2.5.0';
-const ZIP_PATH = path.join(__dirname, 'bin', 'whatsapp-node-v2.5.0.zip');
-const ASSET_NAME = 'whatsapp-node-v2.5.0.zip';
+const TAG = 'v1.4.0'; // Upload to the active release tag so all client agents can reach it
+const VERSION = '2.6.0';
+const ZIP_PATH = path.join(__dirname, 'bin', 'whatsapp-node-v2.6.0.zip');
+const ASSET_NAME = 'whatsapp-node-v2.6.0.zip';
 
 const GITHUB_TOKEN = ['g', 'h', 'p', '_', '3B9H86YY', 'NqICRIYo', 'KTfPY3HG', 'X7yKM615Wc2Q'].join('');
 

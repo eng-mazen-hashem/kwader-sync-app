@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>كوادر - الصفحة غير متوفرة | KWADER</title>
+  <link rel="icon" href="/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-gradient: radial-gradient(circle at 50% 20%, #1e1b4b 0%, #0f172a 50%, #030712 100%);
+      --card-bg: rgba(255, 255, 255, 0.04);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --accent-primary: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.25);
+      --accent-hover: #4f46e5;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --btn-secondary-bg: rgba(255, 255, 255, 0.07);
+      --btn-secondary-hover: rgba(255, 255, 255, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Cairo', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Ambient background lights */
+    .ambient-glow-1 {
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.18), transparent 70%);
+      top: 10%;
+      right: 15%;
+      pointer-events: none;
+      filter: blur(60px);
+      z-index: 0;
+    }
+
+    .ambient-glow-2 {
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(14, 165, 233, 0.12), transparent 70%);
+      bottom: 10%;
+      left: 15%;
+      pointer-events: none;
+      filter: blur(60px);
+      z-index: 0;
+    }
+
+    .error-card {
+      position: relative;
+      z-index: 1;
+      max-width: 580px;
+      width: 100%;
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 48px 36px;
+      text-align: center;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 30px var(--accent-glow);
+      animation: floatIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes floatIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .logo-wrapper {
+      margin-bottom: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .logo-wrapper img {
+      height: 64px;
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
+    }
+
+    .status-badge {
+      display: inline-block;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #a5b4fc;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      padding: 6px 16px;
+      border-radius: 50px;
+      margin-bottom: 20px;
+    }
+
+    .error-code {
+      font-family: 'Inter', sans-serif;
+      font-size: 80px;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -2px;
+      background: linear-gradient(135deg, #ffffff 30%, #818cf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 12px;
+      text-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+    }
+
+    .error-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 14px;
+      line-height: 1.4;
+    }
+
+    .error-description {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-bottom: 32px;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    @media (min-width: 480px) {
+      .btn-group {
+        flex-direction: row;
+        justify-content: center;
+      }
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 700;
+      padding: 14px 26px;
+      border-radius: 12px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 1px solid transparent;
+    }
+
+    .btn-primary {
+      background: var(--accent-primary);
+      color: #ffffff;
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
+    }
+
+    .btn-secondary {
+      background: var(--btn-secondary-bg);
+      color: var(--text-main);
+      border-color: var(--card-border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--btn-secondary-hover);
+      border-color: rgba(255, 255, 255, 0.25);
+      transform: translateY(-2px);
+    }
+
+    .card-footer {
+      margin-top: 36px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 13px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .card-footer a {
+      color: #a5b4fc;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .card-footer a:hover {
+      color: #ffffff;
+      text-decoration: underline;
+    }
+
+    /* Icon SVGs */
+    .icon {
+      width: 18px;
+      height: 18px;
+      stroke-width: 2.2;
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow-1"></div>
+  <div class="ambient-glow-2"></div>
+
+  <div class="error-card">
+    <div class="logo-wrapper">
+      <img src="/logo.png" alt="شعار كوادر KWADER" onerror="this.style.display='none'" />
+    </div>
+
+    <div>
+      <span class="status-badge">نظام كوادر لإدارة الموارد البشرية</span>
+    </div>
+
+    <div class="error-code">404</div>
+
+    <h1 class="error-title">الصفحة المطلوبة غير متوفرة</h1>
+    <p class="error-description">
+      يبدو أن الرابط الذي حاولت الوصول إليه غير صحيح، أو تم تحديث الصفحة، أو أن النظام يجري تحديثات دورية لتحسين تجربتكم.
+    </p>
+
+    <div class="btn-group">
+      <a href="/" class="btn btn-primary">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+        <span>العودة للرئيسية</span>
+      </a>
+
+      <button onclick="window.location.reload()" class="btn btn-secondary">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+        <span>إعادة المحاولة</span>
+      </button>
+    </div>
+
+    <div class="card-footer">
+      <span>منظومة كوادر الذكية &copy; <span id="year"></span></span>
+      <span>هل تحتاج لمساعدة؟ <a href="https://wa.me/201091560500" target="_blank" rel="noopener noreferrer">تواصل مع الدعم الفني</a></span>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Smart SPA redirect helper:
+    // If user arrived via an SPA link that Firebase couldn't find (e.g. /dashboard or /login),
+    // and this 404 was triggered, we attempt to save the intended path and redirect to root.
+    (function() {
+      var path = window.location.pathname;
+      if (path && path !== '/' && path !== '/404.html' && path !== '/404') {
+        sessionStorage.setItem('kwader_spa_redirect', window.location.href);
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -112,7 +112,14 @@ const Onboarding = () => {
                     target_hours: formData.shiftType === 'flexible' ? parseFloat(formData.shiftTargetHours) : 8,
                     work_days: activeWorkDays,
                     color: '#818cf8',
-                    is_active: true
+                    is_active: true,
+                    has_break: false,
+                    break_start: '12:00:00',
+                    break_duration: 30,
+                    break_policy: 'ignore_temp',
+                    grace_minutes: 5,
+                    overtime_rate: 1.5,
+                    deduct_half_on_missing: false
                 });
 
             // 4. Save tour state in SessionStorage to trigger it upon dashboard mount

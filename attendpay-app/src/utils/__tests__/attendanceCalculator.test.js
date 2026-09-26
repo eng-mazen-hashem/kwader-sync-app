@@ -30,7 +30,7 @@ describe('Attendance Calculator Utilities', () => {
 
         it('should return absent status if checkIn is missing', () => {
             const result = calculateRecordMetrics(null, null, defaultShift, defaultCompanySettings);
-            expect(result).toEqual({
+            expect(result).toMatchObject({
                 status: 'absent',
                 late_minutes: 0,
                 early_leave_minutes: 0,
@@ -121,6 +121,88 @@ describe('Attendance Calculator Utilities', () => {
             const result = calculateRecordMetrics('08:00', null, defaultShift, defaultCompanySettings);
             expect(result.status).toBe('missing_checkout');
             expect(result.work_hours).toBe(0);
+        });
+
+        it('should snap early check-in to shift start when within early_arrival_grace_minutes', () => {
+            const earlyGraceShift = {
+                start_time: '08:00',
+                end_time: '16:00',
+                early_arrival_grace_minutes: 30,
+                has_break: false
+            };
+            // Arrived at 07:45 (15 mins early <= 30 mins grace).
+            // Should snap to 08:00 and calculate exactly 8 hours of work (not 8.25h).
+            const result = calculateRecordMetrics('07:45', '16:00', earlyGraceShift, defaultCompanySettings);
+            expect(result.is_early_snapped).toBe(true);
+            expect(result.effective_check_in).toBe('08:00');
+            expect(result.work_hours).toBe(8);
+            expect(result.late_minutes).toBe(0);
+        });
+
+        it('should not snap early check-in when it exceeds early_arrival_grace_minutes', () => {
+            const earlyGraceShift = {
+                start_time: '08:00',
+                end_time: '16:00',
+                early_arrival_grace_minutes: 30,
+                has_break: false
+            };
+            // Arrived at 07:15 (45 mins early > 30 mins grace).
+            const result = calculateRecordMetrics('07:15', '16:00', earlyGraceShift, defaultCompanySettings);
+            expect(result.is_early_snapped).toBe(false);
+            expect(result.effective_check_in).toBe('07:15');
+            expect(result.work_hours).toBe(8.75);
+        });
+
+        it('should not credit overtime if extra time is below overtime_start_after_minutes threshold', () => {
+            const otShift = {
+                start_time: '08:00',
+                end_time: '16:00',
+                overtime_start_after_minutes: 30,
+                has_break: false
+            };
+            // Checked out at 16:15 (15 mins past shift < 30 mins threshold).
+            // Work hours should remain standard 8 hours and overtime should be 0.
+            const result = calculateRecordMetrics('08:00', '16:15', otShift, defaultCompanySettings);
+            expect(result.overtime_minutes).toBe(0);
+            expect(result.overtime_hours).toBe(0);
+            expect(result.work_hours).toBe(8);
+        });
+
+        it('should credit overtime when extra time reaches or exceeds overtime_start_after_minutes', () => {
+            const otShift = {
+                start_time: '08:00',
+                end_time: '16:00',
+                overtime_start_after_minutes: 30,
+                overtime_rate: 1.5,
+                overtime_rate_start_hours: 0,
+                has_break: false
+            };
+            // Checked out at 18:00 (2 hours overtime).
+            const result = calculateRecordMetrics('08:00', '18:00', otShift, defaultCompanySettings);
+            expect(result.overtime_minutes).toBe(120);
+            expect(result.overtime_hours).toBe(2);
+            // 2 hours * 1.5x = 3.0 weighted hours
+            expect(result.overtime_weighted_hours).toBe(3);
+            expect(result.work_hours).toBe(10);
+        });
+
+        it('should apply tiered overtime 1.5x starting from specified overtime_rate_start_hours', () => {
+            const tieredOtShift = {
+                start_time: '08:00',
+                end_time: '16:00',
+                overtime_start_after_minutes: 15,
+                overtime_rate: 1.5,
+                overtime_rate_start_hours: 1, // First 1 hour is 1.0x, beyond 1 hour is 1.5x
+                has_break: false
+            };
+            // Worked 3 hours overtime (16:00 to 19:00).
+            // Tier 1: 1 hr * 1.0x = 1.0
+            // Tier 2: 2 hrs * 1.5x = 3.0
+            // Total weighted = 4.0
+            const result = calculateRecordMetrics('08:00', '19:00', tieredOtShift, defaultCompanySettings);
+            expect(result.overtime_hours).toBe(3);
+            expect(result.overtime_weighted_hours).toBe(4);
+            expect(result.work_hours).toBe(11);
         });
     });
 });

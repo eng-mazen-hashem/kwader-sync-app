@@ -18,34 +18,44 @@ import {
 import { ResellersView } from "../components/admin/ResellersView";
 import { NotificationsCenterView } from "../components/admin/NotificationsCenterView";
 import { PaymentRequestsView } from "../components/admin/PaymentRequestsView";
+import { WhatsAppGatewayView } from "../components/admin/WhatsAppGatewayView";
+import AiSalesCenter from "./AiSalesCenter";
 import { supabase } from "../supabaseClient";
 import { motion, AnimatePresence } from "motion/react";
 import { useAuth } from "../context/AuthContext";
 import { useLocale } from "../context/LocaleContext";
+import { getCompanyLimits, calculateUsagePercentage } from "../constants/planLimits";
 
 const PLAN_PRICING = {
-  Free: 0,
-  Pro: 79,
-  Enterprise: 199,
+  Starter: 690,
+  Pro: 1690,
+  Enterprise: 3290,
+  Free: 690,
 };
 
 const PLAN_COLORS = {
-  Free: "var(--obs-on-surface-variant)",
+  Starter: "var(--obs-emerald, #10b981)",
   Pro: "var(--obs-primary)",
   Enterprise: "var(--obs-secondary)",
+  Free: "var(--obs-emerald, #10b981)",
 };
 
 const DEFAULT_STATS = {
   totalUsers: 0,
   activeSubscriptions: 0,
+  activePaidSubscriptions: 0,
   mrr: 0,
+  arr: 0,
+  totalCollected: 0,
+  arpu: 0,
   openTickets: 0,
 };
 
 const DEFAULT_PLAN_STATS = {
-  Free: { users: 0, revenue: 0 },
+  Starter: { users: 0, revenue: 0 },
   Pro: { users: 0, revenue: 0 },
   Enterprise: { users: 0, revenue: 0 },
+  Free: { users: 0, revenue: 0 },
 };
 
 const DEFAULT_TICKET_STATS = {
@@ -263,10 +273,16 @@ export default function SuperAdminDashboard() {
 
       let query = supabase
         .from("companies")
-        .select("id, name, plan, status, created_at, settings, owner_id", { count: "exact" });
+        .select("id, name, plan, status, created_at, settings, owner_id, subscription_amount, subscription_expires_at, subscription_end_date", { count: "exact" });
 
       if (search) query = query.ilike("name", `%${search}%`);
-      if (plan && plan !== "All") query = query.eq("plan", plan);
+      if (plan && plan !== "All") {
+        if (plan === "Starter") {
+          query = query.in("plan", ["Starter", "Free"]);
+        } else {
+          query = query.eq("plan", plan);
+        }
+      }
       if (status && status !== "all") {
         if (status === "expiring") {
           const cutoff = new Date();
@@ -318,6 +334,30 @@ export default function SuperAdminDashboard() {
         }
       }
 
+      // Fetch live counts of employees and devices for each company
+      let employeeCountsMap = {};
+      let deviceCountsMap = {};
+      if (companyIds.length > 0) {
+        try {
+          const [empRes, devRes] = await Promise.all([
+            supabase.from('employees').select('company_id').in('company_id', companyIds),
+            supabase.from('devices').select('company_id').in('company_id', companyIds)
+          ]);
+          if (empRes.data) {
+            empRes.data.forEach(e => {
+              employeeCountsMap[e.company_id] = (employeeCountsMap[e.company_id] || 0) + 1;
+            });
+          }
+          if (devRes.data) {
+            devRes.data.forEach(d => {
+              deviceCountsMap[d.company_id] = (deviceCountsMap[d.company_id] || 0) + 1;
+            });
+          }
+        } catch (countsErr) {
+          console.warn("Could not load employee/device counts for companies:", countsErr);
+        }
+      }
+
       const formattedUsers = (data || []).map((company) => {
         const authUser = authMap[company.owner_id] || {};
         
@@ -336,6 +376,11 @@ export default function SuperAdminDashboard() {
           };
         });
 
+        const limits = getCompanyLimits(company);
+        const empCount = employeeCountsMap[company.id] || 0;
+        const devCount = deviceCountsMap[company.id] || 0;
+        const usagePct = calculateUsagePercentage(empCount, limits.max_employees);
+
         return {
           id: company.id,
           name: company.name || "Unnamed",
@@ -347,15 +392,34 @@ export default function SuperAdminDashboard() {
             "—",
           initials: makeInitials(company.name),
           avatarColor: "var(--obs-primary)",
-          plan: company.plan || "Free",
+          plan: (company.plan === "Free" ? "Starter" : (company.plan || "Starter")),
           registeredAt: formatDate(company.created_at),
-          resourceUsage: 0,
+          resourceUsage: usagePct,
+          limits: limits,
+          usageStats: {
+            employeesCount: empCount,
+            maxEmployees: limits.max_employees,
+            devicesCount: devCount,
+            maxDevices: limits.max_devices,
+            aiEnabled: limits.ai_enabled,
+            maxAiQueries: limits.max_ai_queries,
+            whatsappEnabled: limits.whatsapp_enabled,
+            whatsappMonthlyLimit: limits.whatsapp_monthly_limit,
+          },
           status: (company.status || "active").toString().trim().toLowerCase(),
           company: company.name || "—",
           country: company.settings?.country || "—",
+          settings: company.settings || {},
+          rawCompany: company,
           lastActive: authUser.last_sign_in_at ? formatDateTime(authUser.last_sign_in_at) : t.saNeverLogin,
-          subscription_amount: company.subscription_amount || 0,
-          subscription_expires_at: company.subscription_expires_at || company.settings?.trial_end_date || null,
+          subscription_amount: Number(
+            company.subscription_amount !== undefined && company.subscription_amount !== null
+              ? company.subscription_amount
+              : (company.settings?.subscription_amount ?? 0)
+          ) || 0,
+          subscription_expires_at: company.subscription_expires_at || company.settings?.subscription_expires_at || company.settings?.trial_end_date || null,
+          subscription_end_date: company.subscription_end_date || company.settings?.subscription_end_date || null,
+          billing_cycle: company.settings?.billing_cycle || (company.plan === 'Enterprise' ? 'yearly' : 'monthly'),
           teamMembers: teamMembers,
         };
       });
@@ -429,7 +493,7 @@ export default function SuperAdminDashboard() {
 
     const { data, error: queryError } = await supabase
       .from("companies")
-      .select("created_at, plan")
+      .select("created_at, plan, subscription_amount, settings")
       .gte("created_at", startDate.toISOString());
 
     if (queryError) throw queryError;
@@ -452,26 +516,31 @@ export default function SuperAdminDashboard() {
       const date = new Date(row.created_at);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
       if (!monthlyBuckets[key]) return;
-      monthlyBuckets[key].push(row.plan || "Free");
+      const amt = Number(row.subscription_amount ?? row.settings?.subscription_amount ?? 0);
+      const isYearly = row.settings?.billing_cycle === 'yearly' || row.settings?.billing_cycle === 'annual';
+      const monthlyAmt = isYearly ? Math.round(amt / 12) : amt;
+      const rawPlan = row.plan || "Starter";
+      const normalizedPlan = rawPlan.toLowerCase() === "free" ? "Starter" : rawPlan;
+      monthlyBuckets[key].push({
+        plan: normalizedPlan,
+        monthlyRevenue: monthlyAmt
+      });
     });
 
-    const cumulative = { Free: 0, Pro: 0, Enterprise: 0 };
+    let cumulativeUsers = 0;
+    let cumulativeRevenue = 0;
     const results = [];
 
     monthLabels.forEach(({ key, label }) => {
-      const plans = monthlyBuckets[key] || [];
-      plans.forEach((plan) => {
-        if (cumulative[plan] !== undefined) cumulative[plan] += 1;
-        else cumulative.Free += 1;
-      });
-
-      const totalUsers = cumulative.Free + cumulative.Pro + cumulative.Enterprise;
-      const revenue = cumulative.Pro * PLAN_PRICING.Pro + cumulative.Enterprise * PLAN_PRICING.Enterprise;
+      const items = monthlyBuckets[key] || [];
+      cumulativeUsers += items.length;
+      const bucketRevenue = items.reduce((acc, it) => acc + (it.monthlyRevenue || 0), 0);
+      cumulativeRevenue += bucketRevenue;
 
       results.push({
         month: label,
-        users: totalUsers,
-        revenue,
+        users: cumulativeUsers,
+        revenue: Math.round(cumulativeRevenue),
       });
     });
 
@@ -537,51 +606,111 @@ export default function SuperAdminDashboard() {
       await getValidatedSession();
 
       const [
-        totalUsersRes,
-        freeRes,
-        proRes,
-        enterpriseRes,
+        companiesRes,
         openTicketsRes,
         growthData,
         ticketStats,
         expiringCount,
         pendingRenewalsRes,
+        approvedPaymentsRes,
       ] = await Promise.all([
-        supabase.from("companies").select("id", { count: "exact", head: true }),
-        supabase.from("companies").select("id", { count: "exact", head: true }).eq("plan", "Free"),
-        supabase.from("companies").select("id", { count: "exact", head: true }).eq("plan", "Pro"),
-        supabase.from("companies").select("id", { count: "exact", head: true }).eq("plan", "Enterprise"),
+        supabase.from("companies").select("id, plan, status, subscription_amount, settings, created_at"),
         supabase.from("support_tickets").select("id", { count: "exact", head: true }).eq("status", "Open"),
         fetchGrowthData(),
         fetchTicketStats(),
         fetchExpiringCount(),
         supabase.from("renewal_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("payment_requests").select("amount").eq("status", "approved"),
       ]);
 
-      const companyError = totalUsersRes.error || freeRes.error || proRes.error || enterpriseRes.error;
-      if (companyError) throw companyError;
+      if (companiesRes.error) throw companiesRes.error;
 
       if (openTicketsRes.error && !isMissingTableError(openTicketsRes.error)) {
         throw openTicketsRes.error;
       }
 
-      const totalUsers = totalUsersRes.count ?? 0;
-      const freeCount = freeRes.count ?? 0;
-      const proCount = proRes.count ?? 0;
-      const enterpriseCount = enterpriseRes.count ?? 0;
-      const activeSubscriptions = proCount + enterpriseCount;
-      const mrr = proCount * PLAN_PRICING.Pro + enterpriseCount * PLAN_PRICING.Enterprise;
+      const allCompanies = companiesRes.data || [];
+      const totalUsers = allCompanies.length;
+
+      let starterCount = 0;
+      let proCount = 0;
+      let enterpriseCount = 0;
+      let starterRevenue = 0;
+      let proRevenue = 0;
+      let enterpriseRevenue = 0;
+      let totalMRR = 0;
+      let totalARR = 0;
+      let activePaidSubscriptions = 0;
+
+      allCompanies.forEach((comp) => {
+        const rawPlan = comp.plan || "Starter";
+        const isStarter = rawPlan.toLowerCase().includes("starter") || rawPlan.toLowerCase().includes("free");
+        const isPro = rawPlan.toLowerCase().includes("pro") || rawPlan.toLowerCase().includes("growth");
+        const isEnterprise = rawPlan.toLowerCase().includes("enterprise");
+        const plan = isEnterprise ? "Enterprise" : isPro ? "Pro" : "Starter";
+
+        const isActive = (comp.status || "active").toLowerCase() !== "suspended";
+        const amt = Number(comp.subscription_amount ?? comp.settings?.subscription_amount ?? 0);
+        const cycle = comp.settings?.billing_cycle || (plan === 'Enterprise' ? 'yearly' : 'monthly');
+
+        let monthlyValue = 0;
+        let yearlyValue = 0;
+
+        if (cycle === 'yearly' || cycle === 'annual') {
+          yearlyValue = amt;
+          monthlyValue = Math.round((amt / 12) * 100) / 100;
+        } else {
+          monthlyValue = amt;
+          yearlyValue = amt * 12;
+        }
+
+        if (amt > 0 && isActive) {
+          activePaidSubscriptions += 1;
+        }
+
+        if (isEnterprise) {
+          enterpriseCount += 1;
+          if (isActive && amt > 0) {
+            enterpriseRevenue += monthlyValue;
+            totalMRR += monthlyValue;
+            totalARR += yearlyValue;
+          }
+        } else if (isPro) {
+          proCount += 1;
+          if (isActive && amt > 0) {
+            proRevenue += monthlyValue;
+            totalMRR += monthlyValue;
+            totalARR += yearlyValue;
+          }
+        } else {
+          starterCount += 1;
+          if (isActive && amt > 0) {
+            starterRevenue += monthlyValue;
+            totalMRR += monthlyValue;
+            totalARR += yearlyValue;
+          }
+        }
+      });
+
+      // Total collected cash from approved payment receipts
+      const totalCollectedCash = (approvedPaymentsRes?.data || []).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+
+      // Average Revenue Per Paying User
+      const arpu = activePaidSubscriptions > 0 ? Math.round(totalMRR / activePaidSubscriptions) : 0;
+
+      const activeSubscriptions = allCompanies.filter(c => (c.status || "active").toLowerCase() !== "suspended").length;
       const openTickets = isMissingTableError(openTicketsRes.error) ? 0 : openTicketsRes.count ?? 0;
       const pendingRenewalsCount = pendingRenewalsRes.error ? 0 : pendingRenewalsRes.count ?? 0;
 
       const planStats = {
-        Free: { users: freeCount, revenue: 0 },
-        Pro: { users: proCount, revenue: proCount * PLAN_PRICING.Pro },
-        Enterprise: { users: enterpriseCount, revenue: enterpriseCount * PLAN_PRICING.Enterprise },
+        Starter: { users: starterCount, revenue: Math.round(starterRevenue) },
+        Pro: { users: proCount, revenue: Math.round(proRevenue) },
+        Enterprise: { users: enterpriseCount, revenue: Math.round(enterpriseRevenue) },
+        Free: { users: starterCount, revenue: Math.round(starterRevenue) },
       };
 
       const planDistribution = [
-        { plan: "Free", count: freeCount, color: PLAN_COLORS.Free },
+        { plan: "Starter", count: starterCount, color: PLAN_COLORS.Starter },
         { plan: "Pro", count: proCount, color: PLAN_COLORS.Pro },
         { plan: "Enterprise", count: enterpriseCount, color: PLAN_COLORS.Enterprise },
       ];
@@ -593,7 +722,11 @@ export default function SuperAdminDashboard() {
         stats: {
           totalUsers,
           activeSubscriptions,
-          mrr,
+          activePaidSubscriptions,
+          mrr: Math.round(totalMRR),
+          arr: Math.round(totalARR),
+          totalCollected: totalCollectedCash,
+          arpu,
           openTickets,
         },
         planStats,
@@ -918,25 +1051,35 @@ export default function SuperAdminDashboard() {
   useEffect(() => { fetchPayments(); }, [fetchPayments]);
   useEffect(() => { fetchPaymentConfig(); }, [fetchPaymentConfig]);
 
-  const approveRenewalRequest = async (requestId, companyId, nextEndDate, nextPlan) => {
+  const approveRenewalRequest = async (requestId, companyId, nextEndDate, nextPlan, amount, billingCycle) => {
     try {
-      // 1. Fetch current settings to avoid overwriting
+      // 1. Fetch current settings and amount to avoid overwriting
       const { data: currentCompany } = await supabase
         .from("companies")
-        .select("settings")
+        .select("name, settings, subscription_amount")
         .eq("id", companyId)
         .single();
       const currentSettings = currentCompany?.settings || {};
 
-      // 2. Update company's plan, settings (for dates), status in DB
+      const renewalAmount = amount !== undefined && amount !== null && amount !== ""
+        ? (parseFloat(amount) || 0)
+        : Number(currentCompany?.subscription_amount ?? currentSettings?.subscription_amount ?? 0);
+
+      const cycle = billingCycle || currentSettings?.billing_cycle || (nextPlan === 'Enterprise' ? 'yearly' : 'monthly');
+      const expiryIso = nextEndDate ? new Date(nextEndDate).toISOString() : null;
+
+      // 2. Update company's plan, amount, settings (for dates), status in DB
       const { error: companyError } = await supabase
         .from("companies")
         .update({
           plan: nextPlan || "Pro",
+          subscription_amount: renewalAmount,
           subscription_end_date: nextEndDate,
-          subscription_expires_at: nextEndDate ? new Date(nextEndDate).toISOString() : null,
+          subscription_expires_at: expiryIso,
           settings: { 
             ...currentSettings, 
+            subscription_amount: renewalAmount,
+            billing_cycle: cycle,
             subscription_end_date: nextEndDate, 
             trial_end_date: nextEndDate,
             subscription_expires_at: nextEndDate
@@ -947,7 +1090,7 @@ export default function SuperAdminDashboard() {
 
       if (companyError) throw companyError;
 
-      // 2. Update request status to 'approved'
+      // 3. Update request status to 'approved'
       const { error: requestError } = await supabase
         .from("renewal_requests")
         .update({ status: "approved" })
@@ -955,9 +1098,21 @@ export default function SuperAdminDashboard() {
 
       if (requestError) throw requestError;
 
-      toast.success("تم قبول طلب التجديد وتحديث باقة الشركة بنجاح! ✅");
+      // Log activity
+      try {
+        await supabase.from("admin_activity").insert({
+          event: "قبول تجديد اشتراك",
+          action: "approve_renewal",
+          description: `تم قبول تجديد اشتراك "${currentCompany?.name || 'الشركة'}" حتى ${nextEndDate} بمبلغ ${renewalAmount.toLocaleString()} ج.م`,
+          actor: user?.email || "Super Admin",
+        });
+      } catch (logErr) {
+        console.warn("Could not log admin activity:", logErr);
+      }
+
+      toast.success("تم قبول طلب التجديد وتحديث باقة ومبلغ الشركة بنجاح! ✅");
       
-      // 3. Refresh dashboard stats and lists
+      // 4. Refresh dashboard stats and lists
       fetchRenewalsPage({ silent: true });
       fetchOverviewData({ silent: true });
       fetchUsersPage({ silent: true });
@@ -1168,7 +1323,7 @@ export default function SuperAdminDashboard() {
           if (payload.eventType === "INSERT") {
             const company = payload.new;
             toast.success(t.saNewCompanyToast.replace('{name}', company.name), {
-              description: t.saNewCompanyToastDesc.replace('{plan}', company.plan || 'Free'),
+              description: t.saNewCompanyToastDesc.replace('{plan}', company.plan === 'Free' ? 'Starter' : (company.plan || 'Starter')),
               duration: 6000,
               action: {
                 label: t.saManageCompanies,
@@ -1324,50 +1479,76 @@ export default function SuperAdminDashboard() {
       // 1. Fetch current settings to avoid overwriting
       const { data: currentCompany } = await supabase
         .from("companies")
-        .select("settings")
+        .select("name, settings, subscription_amount")
         .eq("id", companyId)
         .single();
       const currentSettings = currentCompany?.settings || {};
+
+      const amountNum = parseFloat(updates.amount) || 0;
+      const billingCycle = updates.billingCycle || currentSettings.billing_cycle || (updates.plan === 'Enterprise' ? 'yearly' : 'monthly');
+      const expiryIso = updates.expiryDate ? new Date(updates.expiryDate).toISOString() : null;
+
+      const newLimits = updates.limits ? {
+        ...(currentSettings.limits || {}),
+        ...updates.limits
+      } : currentSettings.limits;
 
       const { error: updateError } = await supabase
         .from("companies")
         .update({
           plan: updates.plan,
-          subscription_amount: updates.amount,
-          subscription_expires_at: updates.expiryDate ? new Date(updates.expiryDate).toISOString() : null,
+          subscription_amount: amountNum,
+          subscription_expires_at: expiryIso,
           subscription_end_date: updates.expiryDate,
           settings: { 
             ...currentSettings, 
-            subscription_amount: updates.amount,
+            subscription_amount: amountNum,
+            billing_cycle: billingCycle,
             subscription_expires_at: updates.expiryDate,
             subscription_end_date: updates.expiryDate,
-            trial_end_date: updates.expiryDate
+            trial_end_date: updates.expiryDate,
+            limits: newLimits,
+            max_employees: newLimits?.max_employees || currentSettings.max_employees,
+            max_devices: newLimits?.max_devices || currentSettings.max_devices,
           }
         })
         .eq("id", companyId);
 
       if (updateError) throw updateError;
 
+      // Log activity
+      try {
+        await supabase.from("admin_activity").insert({
+          event: "تعديل اشتراك",
+          action: "update_subscription",
+          description: `تم تحديث اشتراك "${currentCompany?.name || 'الشركة'}" - باقة ${updates.plan} بمبلغ ${amountNum.toLocaleString()} ج.م (${billingCycle === 'yearly' ? 'سنوي' : 'شهري'})`,
+          actor: user?.email || "Super Admin",
+        });
+      } catch (logErr) {
+        console.warn("Could not log admin activity:", logErr);
+      }
+
       setDashboardData((prev) => ({
         ...prev,
         users: prev.users.map((u) => (u.id === companyId ? {
           ...u,
           plan: updates.plan,
-          subscription_amount: updates.amount,
-          subscription_expires_at: updates.expiryDate,
+          subscription_amount: amountNum,
+          subscription_expires_at: expiryIso,
           subscription_end_date: updates.expiryDate,
+          billing_cycle: billingCycle,
         } : u)),
       }));
 
       fetchUsersPage({ silent: true });
       fetchOverviewData({ silent: true });
-      toast.success(t.saSubscriptionUpdated);
+      toast.success(t.saSubscriptionUpdated || "تم حفظ وتثبيت بيانات الاشتراك بنجاح");
     } catch (err) {
       handleError("Failed to update company subscription", err);
-      toast.error(t.saSubscriptionUpdateFailed);
+      toast.error(t.saSubscriptionUpdateFailed || "فشل في تحديث بيانات الاشتراك");
       throw err;
     }
-  }, [fetchOverviewData, fetchUsersPage, getValidatedSession, handleError, t]);
+  }, [fetchOverviewData, fetchUsersPage, getValidatedSession, handleError, t, user]);
 
   // Danger deletion state — drives the confirmation modal in JSX (constitution §9: no window.confirm)
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
@@ -1623,6 +1804,12 @@ export default function SuperAdminDashboard() {
                       onApprove={approveRenewalRequest}
                       onReject={rejectRenewalRequest}
                     />
+                  )}
+                  {activeView === "whatsapp_gateway" && (
+                    <WhatsAppGatewayView />
+                  )}
+                  {activeView === "ai_agent" && (
+                    <AiSalesCenter />
                   )}
                   {activeView === "diagnostics" && (
                     <DevicesDiagnosticsView />

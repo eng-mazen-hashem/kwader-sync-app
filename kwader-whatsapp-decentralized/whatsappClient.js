@@ -40,7 +40,14 @@ async function initWhatsAppClient(options) {
     console.log(`[WhatsAppClient] Using Baileys version ${version.join('.')} (Latest: ${isLatest})`);
 
     // Hydrate state from Cloud Auth State (zero local file locks)
-    const { state, saveCreds } = await useCloudAuthState(supabase, channelId, encryptionKey);
+    const { useMultiFileAuthState } = require('@whiskeysockets/baileys');
+    const { pullSessionFromGithub, pushSessionToGithub } = require('./githubSync');
+
+    // Pull session from GitHub before starting
+    pullSessionFromGithub();
+
+    // Use local folder auth state
+    const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
 
     let isConnectedState = false;
     let shouldReconnect = true;
@@ -117,6 +124,14 @@ async function initWhatsAppClient(options) {
                 .eq('id', channelId);
 
             if (onConnected) onConnected(sock);
+            
+            // Push to github once connected
+            pushSessionToGithub();
+
+            // Push to github periodically every 30 minutes to capture Signal pre-keys
+            setInterval(() => {
+                if (isConnectedState) pushSessionToGithub();
+            }, 30 * 60 * 1000);
         }
 
         // Handle Connection Closed
@@ -128,13 +143,8 @@ async function initWhatsAppClient(options) {
             console.log(`[WhatsAppClient] ⚠️ Connection closed. Status code: ${statusCode} (Logged Out: ${isLoggedOut})`);
 
             if (isLoggedOut) {
-                console.warn('[WhatsAppClient] Device was logged out. Clearing cloud session keys...');
-                // Delete all session keys for this channel
-                await supabase
-                    .from('whatsapp_session_keys')
-                    .delete()
-                    .eq('channel_id', channelId);
-
+                console.warn('[WhatsAppClient] Device was logged out.');
+                
                 await supabase
                     .from('whatsapp_channels')
                     .update({
@@ -164,7 +174,7 @@ async function initWhatsAppClient(options) {
     // 3. Handle Incoming Messages
     sock.ev.on('messages.upsert', async (m) => {
         if (onMessage) {
-            onMessage(m);
+            onMessage(m, sock);
         }
     });
 
@@ -173,6 +183,7 @@ async function initWhatsAppClient(options) {
         disconnect: () => {
             shouldReconnect = false;
             try {
+                sock.ev.removeAllListeners();
                 sock.end();
             } catch (e) {
                 // ignore

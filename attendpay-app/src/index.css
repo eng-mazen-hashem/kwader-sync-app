@@ -1301,3 +1301,49 @@ th.privacy-blur {
     width: 100% !important;
   }
 }
+
+/* =========================================================================
+   Mobile Layout & Space Utilization Optimizations (For Remaining Pages)
+   ========================================================================= */
+@media (max-width: 768px) {
+  /* 1. Add bottom padding to prevent bottom nav cut-off */
+  .att-page, .shifts-container, .rb-page, .devices-luxe-container, 
+  .settings-luxe-container, .leaves-page, .dept-page, .loans-page, 
+  .salary-slip-page {
+    padding-bottom: 115px !important;
+  }
+
+  /* 2. Hide redundant subtitles to save header space */
+  .att-subtitle, .sh-page-subtitle, .rb-subtitle, .devices-subtitle, 
+  .settings-subtitle, .pay-header-subtitle {
+    display: none !important;
+  }
+
+  /* 3. Convert any stat rows / KPI cards to 2-column grid instead of 1-column */
+  .att-stats-row, .shift-stats-row, .rb-stats-row, .devices-header-stats, 
+  .ep-stats-row, .dept-stats, .loans-stats {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+  }
+
+  /* 4. Compact Header actions */
+  .att-header-actions, .sh-header-actions, .rb-header-actions, 
+  .slip-actions {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .att-btn-primary, .sh-btn-primary, .rb-btn-primary {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Keep 2 columns on very small devices for stats */
+  .att-stats-row, .shift-stats-row, .rb-stats-row, .devices-header-stats, 
+  .ep-stats-row, .dept-stats, .loans-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}

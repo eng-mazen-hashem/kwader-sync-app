@@ -1,14 +1,15 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Phone, ShieldCheck, HelpCircle } from 'lucide-react';
+import { Phone, ShieldCheck, HelpCircle, LogOut, Globe, ChevronRight } from 'lucide-react';
 import { useEmployeeAuth } from '../context/EmployeeAuthContext';
 import { useLocale } from '../context/LocaleContext';
 
 const MobileProfile = () => {
-    const { employee } = useEmployeeAuth();
-    const { t, language } = useLocale();
+    const { employee, logout } = useEmployeeAuth();
+    const { t, language, setLanguage } = useLocale();
 
     const isRtl = language === 'ar';
+    const toggleLanguage = () => setLanguage(isRtl ? 'en' : 'ar');
 
     return (
         <motion.div 
@@ -76,9 +77,31 @@ const MobileProfile = () => {
                 </div>
             </div>
 
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-3 mt-4">
+                <button 
+                    onClick={toggleLanguage}
+                    className="flex flex-col items-center justify-center gap-2 bg-slate-900/60 p-4 rounded-3xl border border-slate-800/60 shadow-lg active:scale-95 transition-all"
+                >
+                    <div className="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                        <Globe size={20} />
+                    </div>
+                    <span className="text-xs font-bold text-slate-300">{isRtl ? 'English' : 'العربية'}</span>
+                </button>
+                <button 
+                    onClick={logout}
+                    className="flex flex-col items-center justify-center gap-2 bg-slate-900/60 p-4 rounded-3xl border border-slate-800/60 shadow-lg active:scale-95 transition-all"
+                >
+                    <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-400">
+                        <LogOut size={20} />
+                    </div>
+                    <span className="text-xs font-bold text-red-400">{t.signOut || 'تسجيل الخروج'}</span>
+                </button>
+            </div>
+
             {/* Version Information Block */}
-            <div className="text-center text-[10px] text-slate-600 font-bold mt-12 flex flex-col gap-1">
-                <p>AttendPay Employee Portal v1.2</p>
+            <div className="text-center text-[10px] text-slate-600 font-bold mt-12 mb-6 flex flex-col gap-1">
+                <p>AttendPay Employee Portal v2.0 Luxe</p>
                 <p className="opacity-65">&copy; 2026 Kwader. All rights reserved.</p>
             </div>
         </motion.div>

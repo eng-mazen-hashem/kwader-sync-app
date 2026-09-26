@@ -131,6 +131,14 @@ export function Navbar({ onLoginClick }) {
             </div>
 
             <button
+              onClick={() => window.location.href = '/passport-onboarding'}
+              className="text-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50/50 transition-colors px-4 py-2 rounded-xl border border-indigo-100 flex items-center gap-1.5"
+              style={{ fontWeight: 600 }}
+            >
+              <span className="flex h-1.5 w-1.5 rounded-full bg-[#FDB813]" />
+              {t.nav.workerPortal}
+            </button>
+            <button
               onClick={onLoginClick}
               className="text-sm text-gray-700 hover:text-indigo-600 transition-colors px-4 py-2"
               style={{ fontWeight: 500 }}
@@ -215,6 +223,14 @@ export function Navbar({ onLoginClick }) {
                 </button>
               ))}
               <div className="pt-3 pb-1 flex flex-col gap-2">
+                <button
+                  onClick={() => window.location.href = '/passport-onboarding'}
+                  className="w-full text-sm text-indigo-600 py-2.5 rounded-xl border border-indigo-100 hover:bg-indigo-50/50 flex items-center justify-center gap-2"
+                  style={{ fontWeight: 600 }}
+                >
+                  <span className="flex h-1.5 w-1.5 rounded-full bg-[#FDB813]" />
+                  {t.nav.workerPortal}
+                </button>
                 <button
                   onClick={onLoginClick}
                   className="w-full text-sm text-gray-700 py-2.5 rounded-xl border border-gray-200 hover:border-indigo-300 hover:text-indigo-600 transition-colors"

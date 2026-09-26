@@ -36,6 +36,8 @@ const ChatWindow = ({ messages, loading, input, setInput, sendMessage, onAction 
         setInput(target.value);
     };
 
+    const hasHistorical = messages.some(m => m.isHistorical && m.id !== 'welcome_1');
+
     return (
         <div style={{
             flex: 1,
@@ -54,9 +56,60 @@ const ChatWindow = ({ messages, loading, input, setInput, sendMessage, onAction 
                 flexDirection: 'column',
                 gap: 5
             }}>
-                {messages.map(msg => (
-                    <MessageItem key={msg.id} msg={msg} onAction={onAction} />
-                ))}
+                {hasHistorical && (
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginBottom: 16,
+                        gap: 8
+                    }}>
+                        <span style={{
+                            fontSize: '0.74rem',
+                            color: '#a5b4fc',
+                            background: 'rgba(99, 102, 241, 0.1)',
+                            padding: '5px 14px',
+                            borderRadius: 20,
+                            border: '1px solid rgba(99, 102, 241, 0.25)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6
+                        }}>
+                            <span>📌</span>
+                            <span>الرسائل السابقة محفوظة للمراجعة (لا تستهلك من رصيد الذكاء الاصطناعي)</span>
+                        </span>
+                    </div>
+                )}
+                {messages.map((msg, index) => {
+                    const isFirstCurrentSession = !msg.isHistorical && (index > 0 && messages[index - 1]?.isHistorical);
+                    return (
+                        <React.Fragment key={msg.id || index}>
+                            {isFirstCurrentSession && (
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    margin: '16px 0',
+                                    gap: 12
+                                }}>
+                                    <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.08)' }} />
+                                    <span style={{
+                                        fontSize: '0.72rem',
+                                        color: 'var(--text-muted)',
+                                        background: 'rgba(255, 255, 255, 0.04)',
+                                        padding: '3px 12px',
+                                        borderRadius: 12,
+                                        border: '1px solid rgba(255, 255, 255, 0.08)'
+                                    }}>
+                                        ── الجلسة الحالية ──
+                                    </span>
+                                    <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.08)' }} />
+                                </div>
+                            )}
+                            <MessageItem msg={msg} onAction={onAction} />
+                        </React.Fragment>
+                    );
+                })}
                 <div ref={chatEndRef} />
             </div>
 

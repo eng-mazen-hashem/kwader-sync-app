@@ -1,6 +1,6 @@
 import {
   Users, CreditCard, DollarSign, LifeBuoy, TrendingUp,
-  ArrowUpRight, Activity, Globe,
+  ArrowUpRight, Activity, Globe, Wallet, Calendar, Sparkles
 } from "lucide-react";
 import { motion } from "motion/react";
 import {
@@ -10,7 +10,11 @@ import {
 const DEFAULT_STATS = {
   totalUsers: 0,
   activeSubscriptions: 0,
+  activePaidSubscriptions: 0,
   mrr: 0,
+  arr: 0,
+  totalCollected: 0,
+  arpu: 0,
   openTickets: 0,
 };
 
@@ -73,35 +77,40 @@ export function OverviewView({
 
   const displayStats = stats || DEFAULT_STATS;
   const usersList = users || [];
+
   const statsCards = [
     {
-      label: "Total Users",
+      label: "إجمالي المنشآت والعملاء",
       value: displayStats.totalUsers.toLocaleString(),
-      delta: "+12%",
+      delta: `${displayStats.activeSubscriptions} نشط حالياً`,
       icon: Users,
+      iconBg: "bg-blue-50 text-blue-600",
     },
     {
-      label: "Active Subscriptions",
-      value: displayStats.activeSubscriptions.toLocaleString(),
-      delta: "+5%",
+      label: "الاشتراكات المدفوعة",
+      value: (displayStats.activePaidSubscriptions ?? displayStats.activeSubscriptions).toLocaleString(),
+      delta: `${displayStats.totalUsers > 0 ? Math.round(((displayStats.activePaidSubscriptions ?? displayStats.activeSubscriptions) / displayStats.totalUsers) * 100) : 0}% من العملاء`,
       icon: CreditCard,
+      iconBg: "bg-indigo-50 text-indigo-600",
     },
     {
-      label: "Monthly Revenue",
-      value: `${displayStats.mrr.toLocaleString()} ج.م`,
-      delta: "+18%",
+      label: "الدخل الشهري المتكرر (MRR)",
+      value: `${(displayStats.mrr || 0).toLocaleString()} ج.م`,
+      delta: `متوسط العميل: ${(displayStats.arpu || 0).toLocaleString()} ج.م`,
       icon: DollarSign,
+      iconBg: "bg-emerald-50 text-emerald-600",
     },
     {
-      label: "Open Tickets",
-      value: displayStats.openTickets.toString(),
-      delta: "-2%",
-      icon: LifeBuoy,
+      label: "الدخل السنوي المتوقع (ARR)",
+      value: `${(displayStats.arr || ((displayStats.mrr || 0) * 12)).toLocaleString()} ج.م`,
+      delta: `محصل نقدي: ${(displayStats.totalCollected || 0).toLocaleString()} ج.م`,
+      icon: Wallet,
+      iconBg: "bg-purple-50 text-purple-600",
     },
   ];
 
   const derivedPlanDist = [
-    { plan: "Free", count: usersList.filter((u) => u.plan === "Free").length, color: "#64748b" },
+    { plan: "Starter", count: usersList.filter((u) => u.plan === "Starter" || u.plan === "Free").length, color: "#10b981" },
     { plan: "Pro", count: usersList.filter((u) => u.plan === "Pro").length, color: "#2563eb" },
     { plan: "Enterprise", count: usersList.filter((u) => u.plan === "Enterprise").length, color: "#7c3aed" },
   ];
@@ -115,27 +124,63 @@ export function OverviewView({
     <div className="space-y-6" style={{ textAlign: "right" }}>
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-        {statsCards.map((s, i) => {
+        {statsCards.map((s) => {
           const Icon = s.icon;
-          const isPositive = s.delta.startsWith("+");
           return (
             <div
               key={s.label}
-              className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm"
+              className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden"
             >
               <div className="flex items-center justify-between mb-4">
-                <span className="text-gray-500 tracking-tight" style={{ fontSize: "0.85rem", fontWeight: 600 }}>{s.label}</span>
-                <Icon className="w-4 h-4 text-gray-400" />
+                <span className="text-gray-500 tracking-tight text-xs font-bold">{s.label}</span>
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${s.iconBg}`}>
+                  <Icon className="w-4.5 h-4.5" />
+                </div>
               </div>
-              <div className="flex items-baseline gap-3">
-                <div className="text-gray-900 tracking-tight" style={{ fontWeight: 700, fontSize: "1.75rem", lineHeight: 1 }}>{s.value}</div>
-                <span className={`flex items-center gap-1 ${isPositive ? 'text-emerald-600' : 'text-gray-500'}`} style={{ fontSize: "0.75rem", fontWeight: 600 }}>
+              <div className="space-y-1.5">
+                <div className="text-gray-900 tracking-tight font-extrabold text-2xl" style={{ direction: 'ltr', textAlign: 'right' }}>
+                  {s.value}
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
                   {s.delta}
-                </span>
+                </div>
               </div>
             </div>
           );
         })}
+      </div>
+
+      {/* Executive Financial Summary Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-5 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-amber-300">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="font-bold text-sm text-white">الملخص المالي وحساب الأرباح</h4>
+            <p className="text-xs text-slate-300 mt-0.5">محسوب بدقة بناءً على المبالغ الحقيقية المسجلة في اشتراكات عملائك وتجديداتهم</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full md:w-auto">
+          <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-center">
+            <div className="text-[10px] text-slate-400 font-bold uppercase">الدخل الشهري (MRR)</div>
+            <div className="text-emerald-400 font-black text-sm mt-0.5">{(displayStats.mrr || 0).toLocaleString()} ج.م</div>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-center">
+            <div className="text-[10px] text-slate-400 font-bold uppercase">الدخل السنوي (ARR)</div>
+            <div className="text-amber-300 font-black text-sm mt-0.5">{(displayStats.arr || ((displayStats.mrr || 0) * 12)).toLocaleString()} ج.م</div>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-center">
+            <div className="text-[10px] text-slate-400 font-bold uppercase">متوسط العميل (ARPU)</div>
+            <div className="text-sky-300 font-black text-sm mt-0.5">{(displayStats.arpu || 0).toLocaleString()} ج.م</div>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-center">
+            <div className="text-[10px] text-slate-400 font-bold uppercase">المدفوعات المحصلة</div>
+            <div className="text-indigo-300 font-black text-sm mt-0.5">{(displayStats.totalCollected || 0).toLocaleString()} ج.م</div>
+          </div>
+        </div>
       </div>
 
       {/* Charts Row */}

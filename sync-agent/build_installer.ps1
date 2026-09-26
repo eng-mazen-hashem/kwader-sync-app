@@ -6,7 +6,7 @@ $pyinstaller = Join-Path $venv 'Scripts\pyinstaller.exe'
 $makensis = "C:\Program Files (x86)\NSIS\makensis.exe"
 
 Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host " Building KWADER Sync Agent v1.3.2 Installer" -ForegroundColor Cyan
+Write-Host " Building KWADER Sync Agent v1.4.0 Installer" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 
 # 1. Check Python Venv
@@ -29,6 +29,7 @@ Write-Host "[1/4] Cleaned app.py UTF-8 encoding (No BOM)." -ForegroundColor Gree
 
 # Stop running instance if any
 cmd /c "taskkill /F /IM \"KWADER Sync.exe\" /T 2>NUL"
+cmd /c "taskkill /F /IM whatsapp-node.exe /T 2>NUL"
 
 # 4. Clean previous dist and build directories
 if (Test-Path "$root\dist\KWADER Sync") {
@@ -39,9 +40,9 @@ if (Test-Path "$root\build\KWADER Sync") {
     Remove-Item -Recurse -Force "$root\build\KWADER Sync" -ErrorAction SilentlyContinue
 }
 
-# 4b. Ensure WhatsApp Node is patched to GUI subsystem
+# 4b. Ensure WhatsApp Node is patched to GUI subsystem (no console/black window)
 if (Test-Path "$root\patch_pe_subsystem.py") {
-    Write-Host "Ensuring whatsapp-node.exe GUI subsystem..." -ForegroundColor Yellow
+    Write-Host "Ensuring whatsapp-node.exe GUI subsystem (no black window)..." -ForegroundColor Yellow
     python "$root\patch_pe_subsystem.py"
 }
 
@@ -57,13 +58,22 @@ if (-not (Test-Path "$root\dist\KWADER Sync\KWADER Sync.exe")) {
 }
 Write-Host "PyInstaller packaging completed successfully." -ForegroundColor Green
 
+# 5b. Guarantee latest verified whatsapp-node.exe is in dist/KWADER Sync/_internal/bin
+$distBin = "$root\dist\KWADER Sync\_internal\bin"
+$srcBin  = "$root\bin"
+if (-not (Test-Path $distBin)) { New-Item -ItemType Directory -Force -Path $distBin | Out-Null }
+Write-Host "Copying verified whatsapp-node.exe to dist..." -ForegroundColor Yellow
+Copy-Item -Force "$srcBin\whatsapp-node.exe"          "$distBin\whatsapp-node.exe"
+Copy-Item -Force "$srcBin\whatsapp-node.version.json" "$distBin\whatsapp-node.version.json"
+Write-Host "whatsapp-node.exe copied to dist successfully." -ForegroundColor Green
+
 # 6. Compile NSIS Installer
 Write-Host "[4/4] Generating Windows installer with NSIS..." -ForegroundColor Cyan
 Push-Location "$root\installer"
 & $makensis kwader_sync.nsi
 Pop-Location
 
-$versionedSetup = "$root\installer\KWADER_Sync_Setup_v1.3.2.exe"
+$versionedSetup = "$root\installer\KWADER_Sync_Setup_v1.4.2.exe"
 $genericSetup = "$root\installer\KWADER Sync Setup.exe"
 
 if (Test-Path $versionedSetup) {

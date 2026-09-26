@@ -121,7 +121,7 @@ export function Hero({ onStartTrial }) {
             </p>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-10">
+            <div className="flex flex-col sm:flex-row gap-3 mb-6">
               <button
                 onClick={onStartTrial}
                 className="group inline-flex items-center justify-center gap-2 text-white px-8 py-4 rounded-2xl transition-all duration-300 hover:-translate-y-1"
@@ -142,6 +142,20 @@ export function Hero({ onStartTrial }) {
               >
                 {h.cta2}
               </button>
+            </div>
+
+            {/* Worker CTA Link */}
+            <div className="mb-10 text-sm flex items-center gap-1.5 flex-wrap">
+              <span className="text-gray-500 font-medium">
+                {language === 'ar' ? 'هل أنت فرد أو باحث عن عمل؟' : 'Are you an individual or job seeker?'}
+              </span>
+              <a 
+                href="/passport-onboarding"
+                className="text-indigo-600 hover:text-indigo-700 font-bold inline-flex items-center gap-1 hover:underline transition-colors"
+              >
+                {language === 'ar' ? 'أنشئ جواز مهاراتك مجاناً' : 'Create your Skill Passport for free'}
+                <ArrowRight className={`w-3.5 h-3.5 ${isRTL ? 'rotate-180' : ''}`} />
+              </a>
             </div>
 
             {/* Trust Signals */}

@@ -94,45 +94,10 @@ class LeaseManager {
     }
 
     setupRealtimeSubscription() {
-        try {
-            const channelTopic = `wa_channel_${this.channelId}_${this.nodeId}`;
-            this.realtimeSubscription = this.supabase
-                .channel(channelTopic)
-                .on(
-                    'postgres_changes',
-                    {
-                        event: 'UPDATE',
-                        schema: 'public',
-                        table: 'whatsapp_channels',
-                        filter: `id=eq.${this.channelId}`
-                    },
-                    async (payload) => {
-                        if (this.isShuttingDown) return;
-                        const newRecord = payload.new;
-
-                        // If lease was released or expired, try acquiring immediately
-                        if (this.role === 'standby') {
-                            const now = new Date();
-                            const expiresAt = newRecord.lease_expires_at ? new Date(newRecord.lease_expires_at) : null;
-                            const isVacant = !newRecord.active_leader_id || (expiresAt && expiresAt < now);
-
-                            if (isVacant) {
-                                console.log('[LeaseManager] ⚡ Realtime detected vacant lease! Competing for leadership...');
-                                await this.attemptAcquireLease();
-                            }
-                        } else if (this.role === 'leader') {
-                            // Split-brain check: did another leader get assigned with a higher epoch?
-                            if (newRecord.active_leader_id !== this.nodeId || newRecord.current_epoch > this.currentEpoch) {
-                                console.warn('[LeaseManager] 🚨 Split-Brain Preemption detected via Realtime! Stepping down immediately...');
-                                await this.stepDown('realtime_preemption');
-                            }
-                        }
-                    }
-                )
-                .subscribe();
-        } catch (err) {
-            console.error('[LeaseManager] Error setting up Realtime subscription:', err.message);
-        }
+        // PRO FIX: Realtime disabled for whatsapp_channels to save massive quota bleed.
+        // Heartbeats update the channel every 5s, which was broadcasting 160,000 WebSocket events per day.
+        // The election poll timer (every 6-10s) is completely sufficient for failover without destroying quota.
+        console.log('[LeaseManager] Realtime preemption disabled to save 100% of Supabase quota. Relying on polling.');
     }
 
     scheduleNextElectionCheck() {

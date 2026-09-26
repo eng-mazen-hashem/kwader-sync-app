@@ -67,7 +67,7 @@ const TrialBanner = () => {
                     details: {
                         requested_by: user?.email || 'unknown',
                         company_name: company.name,
-                        current_plan: company.plan || 'Free'
+                        current_plan: (company.plan === 'Free' ? 'Starter' : (company.plan || 'Starter'))
                     }
                 });
 
@@ -100,10 +100,11 @@ const TrialBanner = () => {
 
             if (targetPhone) {
                 const cleanPhone = targetPhone.replace(/[^0-9]/g, '');
+                const currentPlanText = company?.plan === 'Free' ? 'Starter' : (company?.plan || 'Starter');
                 const message = `🔔 *طلب تجديد اشتراك جديد*\n\n` +
                                 `🏢 *الشركة:* ${company.name}\n` +
                                 `📧 *البريد الإلكتروني:* ${user?.email || 'غير معروف'}\n` +
-                                `📦 *الباقة الحالية:* ${company.plan || 'Free'}\n` +
+                                `📦 *الباقة الحالية:* ${currentPlanText}\n` +
                                 `📅 *تاريخ الطلب:* ${new Date().toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' })}`;
 
                 try {

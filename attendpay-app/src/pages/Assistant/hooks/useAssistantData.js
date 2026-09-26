@@ -36,7 +36,7 @@ export const useAssistantData = () => {
                 setCompany(mappedComp);
 
                 // Load related data in parallel — explicit columns only, with limits (constitution §17)
-                const [empsRes, attRes, payRes, schedRes, deptsRes, shiftsRes] = await Promise.all([
+                const [empsRes, attRes, payRes, schedRes, deptsRes, shiftsRes, leavesRes, loansRes] = await Promise.all([
                     supabase
                         .from('employees')
                         .select('id, name, phone, base_salary, position, status, joining_date, department_id, departments(name), shifts(name)')
@@ -72,23 +72,41 @@ export const useAssistantData = () => {
                     supabase
                         .from('shifts')
                         .select('id, name, start_time, end_time')
+                        .eq('company_id', comp.id),
+
+                    supabase
+                        .from('leave_requests')
+                        .select('id, employee_id, status, leave_type, start_date, end_date, reason')
                         .eq('company_id', comp.id)
+                        .order('created_at', { ascending: false })
+                        .limit(100),
+
+                    supabase
+                        .from('employee_loans')
+                        .select('id, employee_id, total_amount, monthly_installment, remaining_amount, status, notes')
+                        .eq('company_id', comp.id)
+                        .order('created_at', { ascending: false })
+                        .limit(100)
                 ]);
 
                 // Surface errors to console without crashing the AI assistant
-                if (deptsRes.error)  console.warn('[useAssistantData] departments:', deptsRes.error.message);
-                if (shiftsRes.error) console.warn('[useAssistantData] shifts:', shiftsRes.error.message);
-                if (empsRes.error)   console.warn('[useAssistantData] employees:', empsRes.error.message);
-                if (attRes.error)    console.warn('[useAssistantData] attendance:', attRes.error.message);
-                if (payRes.error)    console.warn('[useAssistantData] payrolls:', payRes.error.message);
+                if (deptsRes?.error)  console.warn('[useAssistantData] departments:', deptsRes.error.message);
+                if (shiftsRes?.error) console.warn('[useAssistantData] shifts:', shiftsRes.error.message);
+                if (empsRes?.error)   console.warn('[useAssistantData] employees:', empsRes.error.message);
+                if (attRes?.error)    console.warn('[useAssistantData] attendance:', attRes.error.message);
+                if (payRes?.error)    console.warn('[useAssistantData] payrolls:', payRes.error.message);
+                if (leavesRes?.error) console.warn('[useAssistantData] leaves:', leavesRes.error.message);
+                if (loansRes?.error)  console.warn('[useAssistantData] loans:', loansRes.error.message);
 
                 setData({
-                    employees:   empsRes.data || [],
-                    attendance:  attRes.data || [],
-                    payrolls:    payRes.data || [],
-                    schedules:   (schedRes.data || []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)),
-                    departments: deptsRes.data || [],
-                    shifts:      shiftsRes.data || []
+                    employees:      empsRes.data || [],
+                    attendance:     attRes.data || [],
+                    payrolls:       payRes.data || [],
+                    schedules:      (schedRes.data || []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)),
+                    departments:    deptsRes.data || [],
+                    shifts:         shiftsRes.data || [],
+                    leave_requests: leavesRes.data || [],
+                    employee_loans: loansRes.data || []
                 });
             }
         } catch (error) {

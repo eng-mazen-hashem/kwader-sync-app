@@ -156,7 +156,7 @@ function AddClientModal({ resellerId, onClose, onSuccess, t }) {
 
 /* ── ManageSubscriptionModal ──────────────────────────────────── */
 function ManageSubscriptionModal({ company, onClose, onSuccess, t, language }) {
-  const [plan, setPlan] = useState(company.plan || 'Free');
+  const [plan, setPlan] = useState(company.plan === 'Free' ? 'Starter' : (company.plan || 'Starter'));
   const [amount, setAmount] = useState(company.subscription_amount || 0);
   const [expiryDate, setExpiryDate] = useState(
     company.subscription_expires_at
@@ -206,9 +206,9 @@ function ManageSubscriptionModal({ company, onClose, onSuccess, t, language }) {
             <label>{language === 'ar' ? 'باقة الاشتراك' : 'Subscription Plan'}</label>
             <select value={plan} onChange={e => setPlan(e.target.value)}
               style={{ direction: language === 'ar' ? 'rtl' : 'ltr' }}>
-              <option value="Free">Free (مجانية)</option>
-              <option value="Pro">Pro (الاحترافية)</option>
-              <option value="Enterprise">Enterprise (المؤسسات)</option>
+              <option value="Starter">{language === 'ar' ? 'Starter (الأساسية)' : 'Starter'}</option>
+              <option value="Pro">{language === 'ar' ? 'Pro (الاحترافية)' : 'Pro'}</option>
+              <option value="Enterprise">{language === 'ar' ? 'Enterprise (المؤسسات)' : 'Enterprise'}</option>
             </select>
           </div>
           <div className="rs-form-row">
@@ -776,8 +776,8 @@ export default function ResellerDashboard() {
                                 <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold w-fit ${
                                   comp.plan === 'Pro' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
                                   : comp.plan === 'Enterprise' ? 'bg-violet-500/10 text-violet-400 border border-violet-500/20'
-                                  : 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
-                                }`}>{comp.plan || 'Free'}</span>
+                                  : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                }`}>{comp.plan === 'Free' ? 'Starter' : (comp.plan || 'Starter')}</span>
                                 {comp.subscription_expires_at && (
                                   <span className="text-[10px] text-slate-400 font-semibold">
                                     {language === 'ar' ? 'تنتهي: ' : 'Exp: '}

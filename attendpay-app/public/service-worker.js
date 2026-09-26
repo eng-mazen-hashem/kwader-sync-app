@@ -1,5 +1,5 @@
 // KWADER PWA Service Worker
-const CACHE_NAME = 'kwader-pwa-cache-v3';
+const CACHE_NAME = 'kwader-pwa-cache-v4';
 const urlsToCache = [
   '/',
   '/index.html',

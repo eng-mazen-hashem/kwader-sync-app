@@ -21,6 +21,7 @@ const Login = () => {
 // -------------------------------------------------------------------------
     const [isLogin, setIsLogin] = useState(true);
     const [resetMode, setResetMode] = useState(false);
+    const [resetSent, setResetSent] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -158,7 +159,7 @@ const Login = () => {
                     redirectTo: window.location.origin + '/reset-password',
                 });
                 if (error) throw error;
-                toast.success(isRtl ? 'تم إعادة إرسال رمز استعادة كلمة المرور.' : 'Password recovery code resent.');
+                toast.success(isRtl ? 'تم إعادة إرسال رابط استعادة كلمة المرور.' : 'Password recovery link resent.');
             }
             setCountdown(60);
         } catch (err) {
@@ -167,6 +168,10 @@ const Login = () => {
                 msg = isRtl 
                     ? 'لحماية حسابك، يرجى الانتظار دقيقة واحدة على الأقل قبل طلب إعادة إرسال رمز جديد.'
                     : 'For security purposes, please wait at least 1 minute before requesting a new code.';
+            } else if (msg.toLowerCase().includes('error sending recovery email') || msg.toLowerCase().includes('unexpected_failure')) {
+                msg = isRtl
+                    ? 'تعذر إرسال البريد حالياً نظراً لقيود خادم SMTP في Supabase. يرجى التواصل مع إدارة النظام.'
+                    : 'Failed to send recovery email due to SMTP limits. Please contact system admin.';
             } else {
                 msg = msg || (isRtl ? 'فشل في إعادة إرسال الرمز.' : 'Failed to resend the code.');
             }
@@ -190,12 +195,11 @@ const Login = () => {
                 });
                 if (error) throw error;
                 
-                // Transition to OTP recovery screen!
-                setVerificationType('recovery');
-                setVerificationPending(true);
-                setOtpCode('');
-                setCountdown(60);
-                setSuccess(isRtl ? 'تم إرسال رمز استعادة كلمة المرور إلى بريدك الإلكتروني.' : 'Password recovery code has been sent to your email.');
+                // Show recovery link sent confirmation state
+                setResetSent(true);
+                setSuccess(isRtl 
+                    ? 'تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني بنجاح.' 
+                    : 'Password recovery link has been sent to your email.');
             } else if (isLogin) {
                 await signIn(email, password, rememberMe);
                 navigate('/');
@@ -219,7 +223,26 @@ const Login = () => {
                 }
             }
         } catch (err) {
-            setError(err.message === 'Invalid login credentials' ? t.errorInvalidLogin : err.message);
+            const rawMsg = err?.message || '';
+            if (rawMsg === 'Invalid login credentials' || rawMsg.includes('Invalid login')) {
+                setError(t.errorInvalidLogin);
+            } else if (
+                rawMsg.toLowerCase().includes('error sending recovery email') ||
+                rawMsg.toLowerCase().includes('unexpected_failure')
+            ) {
+                setError(isRtl 
+                    ? 'تعذر إرسال بريد الاستعادة حالياً نظراً لقيود خادم البريد (SMTP) في Supabase. يرجى مراجعة إدارة النظام لإعادة تعيين كلمة المرور مباشرة أو تفعيل Custom SMTP في لوحة تحكم Supabase.'
+                    : 'Unable to send recovery email due to Supabase SMTP limitations. Please contact your system administrator or configure Custom SMTP.');
+            } else if (
+                rawMsg.toLowerCase().includes('failed to fetch') ||
+                rawMsg.toLowerCase().includes('networkerror') ||
+                rawMsg.toLowerCase().includes('gateway timeout') ||
+                rawMsg.toLowerCase().includes('timeout')
+            ) {
+                setError(t.errorServerConnection || (isRtl ? 'تعذر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت أو المحاولة بعد قليل.' : 'Unable to connect to the server. Please check your connection or try again shortly.'));
+            } else {
+                setError(rawMsg);
+            }
         } finally {
             setLoading(false);
         }
@@ -527,6 +550,74 @@ const Login = () => {
                                         <span>{isRtl ? 'تشفير AES-256 للبيانات البنكية' : 'Bank-grade AES-256 encryption'}</span>
                                     </div>
                                 </motion.form>
+                            ) : resetSent ? (
+                                <motion.div
+                                    key="reset-sent"
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    style={{ textAlign: 'center', padding: '1.5rem 0' }}
+                                >
+                                    <div style={{
+                                        width: '64px',
+                                        height: '64px',
+                                        borderRadius: '50%',
+                                        background: 'rgba(34, 197, 94, 0.12)',
+                                        color: '#22c55e',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        margin: '0 auto 1.5rem',
+                                        boxShadow: '0 0 24px rgba(34, 197, 94, 0.2)'
+                                    }}>
+                                        <Mail size={32} />
+                                    </div>
+                                    <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '0.75rem', color: 'var(--text-primary)' }}>
+                                        {isRtl ? 'تم إرسال رابط الاستعادة بنجاح!' : 'Reset Link Sent Successfully!'}
+                                    </h3>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: '1.6', marginBottom: '1.5rem' }}>
+                                        {isRtl
+                                            ? `أرسلنا رابط إعادة تعيين كلمة المرور إلى ${email}. يرجى مراجعة صندوق الوارد ومجلد الرسائل غير المرغوب فيها (Spam) والنقر على الرابط لتسجيل كلمة مرورك الجديدة.`
+                                            : `We sent a password reset link to ${email}. Please check your inbox and spam folder and click the link to set a new password.`}
+                                    </p>
+
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                        <button
+                                            type="button"
+                                            className="submit-btn"
+                                            onClick={() => {
+                                                setResetSent(false);
+                                                setResetMode(false);
+                                                setError(null);
+                                                setSuccess(null);
+                                            }}
+                                        >
+                                            <span>{isRtl ? 'العودة لتسجيل الدخول' : 'Back to Sign In'}</span>
+                                            {isRtl ? <ArrowLeft size={16} /> : <ArrowRight size={16} />}
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setResetSent(false);
+                                                setVerificationType('recovery');
+                                                setVerificationPending(true);
+                                                setOtpCode('');
+                                            }}
+                                            style={{
+                                                background: 'none',
+                                                border: 'none',
+                                                color: 'var(--accent-primary)',
+                                                fontSize: '13px',
+                                                cursor: 'pointer',
+                                                textDecoration: 'underline',
+                                                padding: '8px'
+                                            }}
+                                        >
+                                            {isRtl ? 'هل استلمت كود رقمي بدلاً من الرابط؟ اضغط هنا' : 'Received a numeric code instead? Click here'}
+                                        </button>
+                                    </div>
+                                </motion.div>
                             ) : (
                                 <motion.form
                                     key={resetMode ? 'reset' : (isLogin ? 'login' : 'register')}
@@ -728,7 +819,7 @@ const Login = () => {
                                 {resetMode ? (
                                     <p>
                                         {isRtl ? 'تذكرت كلمة المرور؟' : 'Remember your password?'}
-                                        <button onClick={() => { setResetMode(false); setError(null); setSuccess(null); }}>
+                                        <button onClick={() => { setResetMode(false); setResetSent(false); setError(null); setSuccess(null); }}>
                                             {isRtl ? 'العودة لتسجيل الدخول' : 'Back to Sign In'}
                                         </button>
                                     </p>

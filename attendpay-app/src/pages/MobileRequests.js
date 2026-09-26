@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plane, Banknote, Clock, FileText, CalendarDays, Wallet, ArrowRightLeft, Info, HelpCircle } from 'lucide-react';
 import { useEmployeeAuth } from '../context/EmployeeAuthContext';
@@ -6,20 +6,25 @@ import { supabase } from '../supabaseClient';
 import { useLocale } from '../context/LocaleContext';
 import { toast } from 'sonner';
 
+import { useLocation } from 'react-router-dom';
+
 const MobileRequests = () => {
     const { employee } = useEmployeeAuth();
     const { t, language, formatCurrency } = useLocale();
-    const [activeTab, setActiveTab] = useState('leaves'); // 'leaves' or 'loans'
+    const location = useLocation();
+    const [activeTab, setActiveTab] = useState(location.state?.tab || 'leaves'); // 'leaves' or 'loans'
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Leave Form State
     const [leaveType, setLeaveType] = useState('annual');
     const [leaveStart, setLeaveStart] = useState('');
     const [leaveEnd, setLeaveEnd] = useState('');
+    const [leaveReason, setLeaveReason] = useState('');
 
     // Loan Form State
     const [loanAmount, setLoanAmount] = useState('');
     const [loanMonths, setLoanMonths] = useState('1');
+    const [loanReason, setLoanReason] = useState('');
 
     // Request History State
     const [requestsList, setRequestsList] = useState({ leaves: [], loans: [] });
@@ -50,12 +55,54 @@ const MobileRequests = () => {
     useEffect(() => {
         if (employee) {
             fetchRequests();
+
+            // Realtime updates for employee requests
+            const channel = supabase.channel(`employee_requests_${employee.id}`)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests', filter: `employee_id=eq.${employee.id}` }, fetchRequests)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'employee_loans', filter: `employee_id=eq.${employee.id}` }, fetchRequests)
+                .subscribe();
+
+            return () => {
+                supabase.removeChannel(channel);
+            };
         }
     }, [employee, fetchRequests]);
+
+    const { usedAnnualLeave, remainingAnnualLeave } = useMemo(() => {
+        let used = 0;
+        const currentYear = new Date().getFullYear();
+        if (requestsList?.leaves) {
+            requestsList.leaves.forEach(req => {
+                // Count approved or active annual leaves in the current year
+                if (req.leave_type === 'annual' && ['approved', 'active'].includes(req.status)) {
+                    const reqYear = new Date(req.start_date).getFullYear();
+                    if (reqYear === currentYear) {
+                        const start = new Date(req.start_date);
+                        const end = new Date(req.end_date);
+                        const diffTime = Math.abs(end - start);
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end dates
+                        used += diffDays;
+                    }
+                }
+            });
+        }
+        const total = employee?.annual_leave_balance ?? 21;
+        return { usedAnnualLeave: used, remainingAnnualLeave: Math.max(0, total - used) };
+    }, [requestsList, employee]);
 
     const handleLeaveSubmit = async (e) => {
         e.preventDefault();
         if (!leaveStart || !leaveEnd) return;
+        
+        if (leaveType === 'annual') {
+            const start = new Date(leaveStart);
+            const end = new Date(leaveEnd);
+            const requestedDays = Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24)) + 1;
+            if (requestedDays > remainingAnnualLeave) {
+                toast.error(language === 'ar' ? `لا يمكنك طلب ${requestedDays} يوم، رصيدك المتبقي هو ${remainingAnnualLeave} أيام` : `Cannot request ${requestedDays} days. Your remaining balance is ${remainingAnnualLeave} days.`);
+                return;
+            }
+        }
         
         setIsSubmitting(true);
         try {
@@ -68,8 +115,18 @@ const MobileRequests = () => {
             });
 
             if (error) throw error;
+            
+            if (leaveReason) {
+                try {
+                    const { data: latest } = await supabase.from('leave_requests').select('id').eq('employee_id', employee.id).order('created_at', { ascending: false }).limit(1).single();
+                    if (latest) {
+                        await supabase.from('leave_requests').update({ reason: leaveReason }).eq('id', latest.id);
+                    }
+                } catch (e) {}
+            }
+
             toast.success(t.empLeaveSubmittedSuccess || 'Leave request submitted for review');
-            setLeaveStart(''); setLeaveEnd('');
+            setLeaveStart(''); setLeaveEnd(''); setLeaveReason('');
             fetchRequests(); // Refresh requests history
         } catch (err) {
             toast.error(err.message || t.errorGeneric || 'An error occurred');
@@ -95,8 +152,18 @@ const MobileRequests = () => {
             });
 
             if (error) throw error;
+
+            if (loanReason) {
+                try {
+                    const { data: latest } = await supabase.from('employee_loans').select('id').eq('employee_id', employee.id).order('created_at', { ascending: false }).limit(1).single();
+                    if (latest) {
+                        await supabase.from('employee_loans').update({ notes: loanReason }).eq('id', latest.id);
+                    }
+                } catch (e) {}
+            }
+
             toast.success(t.empLoanSubmittedSuccess || 'Loan request submitted for review');
-            setLoanAmount(''); setLoanMonths('1');
+            setLoanAmount(''); setLoanMonths('1'); setLoanReason('');
             fetchRequests(); // Refresh requests history
         } catch (err) {
             toast.error(err.message || t.errorGeneric || 'An error occurred');
@@ -157,8 +224,13 @@ const MobileRequests = () => {
                     layoutId="activeRequestTab"
                     className="absolute bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-xl h-[calc(100%-12px)] top-1.5"
                     animate={{
-                        left: activeTab === 'leaves' ? '6px' : '50%',
-                        right: activeTab === 'leaves' ? '50%' : '6px',
+                        ...(isRtl ? {
+                            right: activeTab === 'leaves' ? '6px' : '50%',
+                            left: activeTab === 'leaves' ? '50%' : '6px',
+                        } : {
+                            left: activeTab === 'leaves' ? '6px' : '50%',
+                            right: activeTab === 'leaves' ? '50%' : '6px',
+                        }),
                         width: 'calc(50% - 6px)'
                     }}
                     transition={{ type: 'spring', stiffness: 350, damping: 28 }}
@@ -198,13 +270,25 @@ const MobileRequests = () => {
                                 </select>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3.5">
+                            {leaveType === 'annual' && (
+                                <div className="bg-indigo-500/10 border border-indigo-500/20 p-3 rounded-xl flex items-center justify-between">
+                                    <span className="text-xs font-bold text-indigo-300">
+                                        {language === 'ar' ? 'الرصيد السنوي المتبقي:' : 'Remaining Annual Balance:'}
+                                    </span>
+                                    <span className="text-sm font-black text-indigo-400">
+                                        {remainingAnnualLeave} {language === 'ar' ? 'أيام' : 'days'}
+                                    </span>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                                 <div className="space-y-1">
                                     <label className="block text-xs font-bold text-slate-400">{t.fromDateLabel}</label>
                                     <input 
                                         type="date" 
                                         value={leaveStart}
                                         onChange={(e) => setLeaveStart(e.target.value)}
+                                        min={new Date().toISOString().split('T')[0]}
                                         className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 outline-none transition-all"
                                         required
                                     />
@@ -215,10 +299,21 @@ const MobileRequests = () => {
                                         type="date" 
                                         value={leaveEnd}
                                         onChange={(e) => setLeaveEnd(e.target.value)}
+                                        min={leaveStart || new Date().toISOString().split('T')[0]}
                                         className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 outline-none transition-all"
                                         required
                                     />
                                 </div>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="block text-xs font-bold text-slate-400">{language === 'ar' ? 'سبب الإجازة (اختياري)' : 'Reason (Optional)'}</label>
+                                <textarea 
+                                    value={leaveReason}
+                                    onChange={(e) => setLeaveReason(e.target.value)}
+                                    placeholder={language === 'ar' ? 'اكتب سبب الإجازة هنا...' : 'Write reason here...'}
+                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 outline-none transition-all resize-none h-20"
+                                />
                             </div>
 
                             <button 
@@ -283,6 +378,16 @@ const MobileRequests = () => {
                                     </select>
                                 </div>
                             )}
+
+                            <div className="space-y-1">
+                                <label className="block text-xs font-bold text-slate-400">{language === 'ar' ? 'سبب السلفة (اختياري)' : 'Reason (Optional)'}</label>
+                                <textarea 
+                                    value={loanReason}
+                                    onChange={(e) => setLoanReason(e.target.value)}
+                                    placeholder={language === 'ar' ? 'اكتب سبب السلفة هنا...' : 'Write reason here...'}
+                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 outline-none transition-all resize-none h-20"
+                                />
+                            </div>
 
                             <button 
                                 type="submit" 

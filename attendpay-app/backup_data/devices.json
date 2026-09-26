@@ -1,0 +1,90 @@
+[
+  {
+    "id": "311198fe-4273-4d52-ba49-683f2e35a6e5",
+    "company_id": "127294a0-1438-42fb-a4f9-3e92d6b4b493",
+    "device_name": "المركزية",
+    "serial_number": "A6F5224260402",
+    "ip_address": "192.168.1.201",
+    "port": 4370,
+    "last_sync": "2026-09-10 23:51:10.26327+00",
+    "status": "connected",
+    "created_at": "2026-04-25 13:20:49.784757+00"
+  },
+  {
+    "id": "73e1da79-32ec-46a5-b8b5-f2c6031b053c",
+    "company_id": "88d4c96c-9489-482d-a8c9-c1f017674af7",
+    "device_name": "الجهاز الاول",
+    "serial_number": "ZK-1",
+    "ip_address": "192.168.100.201",
+    "port": 4370,
+    "last_sync": "2026-09-12 15:41:10.731358+00",
+    "status": "connected",
+    "created_at": "2026-09-03 11:45:17.460983+00"
+  },
+  {
+    "id": "4d1b91e2-b5f9-4c7a-8bf6-8ac6ae727b9b",
+    "company_id": "a1c4f5a9-fe9c-4cc6-be28-a4ef44b4b361",
+    "device_name": "REDLINE",
+    "serial_number": "ZK",
+    "ip_address": "192.168.100.201",
+    "port": 4370,
+    "last_sync": null,
+    "status": "disconnected",
+    "created_at": "2026-09-04 15:35:05.647931+00"
+  },
+  {
+    "id": "8a0e14d3-9bde-435d-89a5-db9a19ffc3dc",
+    "company_id": "127294a0-1438-42fb-a4f9-3e92d6b4b493",
+    "device_name": "وادي دجلة",
+    "serial_number": "GED7250700227",
+    "ip_address": "192.168.1.201",
+    "port": 4370,
+    "last_sync": "2026-06-04 22:28:43.127+00",
+    "status": "connected",
+    "created_at": "2026-04-26 12:25:59.114031+00"
+  },
+  {
+    "id": "29a28352-afe1-4e57-8f35-ffd543c91208",
+    "company_id": "2668b23a-b363-4d52-9d73-4ebd90025aec",
+    "device_name": "السنباطي",
+    "serial_number": "zk",
+    "ip_address": "192.168.1.201",
+    "port": 4370,
+    "last_sync": "2026-09-15 12:48:31.760295+00",
+    "status": "connected",
+    "created_at": "2026-04-26 11:01:17.775488+00"
+  },
+  {
+    "id": "15b3638a-670e-4c20-85e7-a922f29a2749",
+    "company_id": "88d4c96c-9489-482d-a8c9-c1f017674af7",
+    "device_name": "الجهاز الثاني",
+    "serial_number": "ZK-2",
+    "ip_address": "192.168.100.202",
+    "port": 4370,
+    "last_sync": "2026-09-05 12:40:25.01066+00",
+    "status": "connected",
+    "created_at": "2026-09-03 11:46:03.051051+00"
+  },
+  {
+    "id": "d1fc92d0-546c-4bcd-a045-9435aef30772",
+    "company_id": "27320dbf-0df9-4fbd-9df5-2e36d0107053",
+    "device_name": "الفرع الرئيسي",
+    "serial_number": "GED725070001",
+    "ip_address": "192.168.1.201",
+    "port": 4370,
+    "last_sync": "2026-06-04 22:42:03.518+00",
+    "status": "connected",
+    "created_at": "2026-04-05 12:03:05.804259+00"
+  },
+  {
+    "id": "90129a4e-c5bd-443f-abfa-a9de0c1766e8",
+    "company_id": "cc8dda7c-9c65-456e-83ea-b94de1fbcffd",
+    "device_name": "الجهاز الرئيسي",
+    "serial_number": "zk",
+    "ip_address": "192.168.1.201",
+    "port": 4370,
+    "last_sync": "2026-06-14 21:00:05.971682+00",
+    "status": "connected",
+    "created_at": "2026-03-24 17:58:40.515363+00"
+  }
+]

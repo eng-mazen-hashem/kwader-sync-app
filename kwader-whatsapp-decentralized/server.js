@@ -97,8 +97,69 @@ async function startWhatsAppLeaderEngine() {
                 queueProcessor.stop();
             }
         },
-        onMessage: async (msgUpsert) => {
-            // Can be routed to AI Assistant / Customer Service
+        onMessage: async (msgUpsert, sock) => {
+            try {
+                if (!msgUpsert.messages || !msgUpsert.messages[0]) return;
+                const msg = msgUpsert.messages[0];
+                if (msg.key.fromMe) return;
+                
+                const text = msg.message?.conversation || msg.message?.extendedTextMessage?.text;
+                if (!text) return;
+
+                const jid = msg.key.remoteJid;
+                if (jid.includes('@g.us') || jid === 'status@broadcast') return;
+
+                const phone = jid.split('@')[0];
+
+                const { data: channelData } = await supabase
+                    .from('whatsapp_channels')
+                    .select('company_id, ai_enabled')
+                    .eq('id', DEFAULT_CHANNEL_ID)
+                    .single();
+                
+                if (!channelData?.company_id || !channelData?.ai_enabled) {
+                    return; // Ignore if AI not enabled
+                }
+
+                console.log(`[WhatsApp AI] Received message from ${phone}. Routing to AI Assistant...`);
+
+                const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-assistant`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        company_id: channelData.company_id,
+                        messages: [
+                            { 
+                                role: 'system', 
+                                content: `أنت الآن تتحدث مع عميل أو موظف عبر تطبيق الواتساب. رقم هاتفه هو ${phone}. أجب باختصار شديد ومباشرة، وباحترافية.`
+                            },
+                            { role: 'user', content: text }
+                        ]
+                    })
+                });
+
+                const aiData = await res.json();
+                
+                let replyText = "";
+                if (aiData?.choices && aiData.choices[0]?.message?.content) {
+                    replyText = aiData.choices[0].message.content;
+                }
+
+                // Strip internal <ACTION> tags
+                replyText = replyText.replace(/<ACTION>[\s\S]*?<\/ACTION>/g, '').trim();
+
+                if (replyText) {
+                    // Force String to avoid [object Promise]
+                    await sock.sendMessage(jid, { text: String(replyText) });
+                    console.log(`[WhatsApp AI] Sent reply to ${phone}`);
+                }
+
+            } catch (err) {
+                console.error("[WhatsApp AI] Error routing message:", err);
+            }
         }
     });
 }

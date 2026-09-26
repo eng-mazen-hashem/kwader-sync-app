@@ -83,7 +83,14 @@ export default function Leaves() {
   useEffect(() => { 
     fetchData(); 
     if (isModalOpen && employees.length === 0) fetchEmployees();
-  }, [fetchData, isModalOpen, employees.length, fetchEmployees]);
+
+    if (company?.id) {
+      const channel = supabase.channel('leaves_page_updates')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests', filter: `company_id=eq.${company.id}` }, fetchData)
+        .subscribe();
+      return () => { supabase.removeChannel(channel); };
+    }
+  }, [fetchData, isModalOpen, employees.length, fetchEmployees, company?.id]);
 
   const handleAction = async (id, status) => {
     const req = requests.find(r => r.id === id);

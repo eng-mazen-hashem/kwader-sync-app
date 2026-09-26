@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
+import useSWR from 'swr';
 import {
     Search, UserPlus, Phone, Pencil, Trash2,
     Users, UserCheck, Clock, ChevronLeft, ChevronRight,
@@ -132,11 +133,7 @@ function Employees() {
 
 // -------------------------------------------------------------------------
     const fetchEmployees = useCallback(async () => {
-        if (!company) {
-            setLoading(false);
-            return;
-        }
-        setLoading(true);
+        if (!company) return { data: [], count: 0 };
         try {
             let query = supabase
                 .from('employees')
@@ -155,19 +152,35 @@ function Employees() {
                 .range(from, to);
 
             if (error) throw error;
-            setEmployeeList(data || []);
-            setTotalCount(count || 0);
+            return { data: data || [], count: count || 0 };
         } catch (err) {
             console.error('[Employees] fetchEmployees:', err.message);
             toast.error(t.errFetchFailed);
-        } finally {
-            setLoading(false);
+            return { data: [], count: 0 };
         }
-    }, [company, t, page, pageSize, debouncedSearch]);
+    }, [company, page, pageSize, debouncedSearch]);
+
+    const { data: employeesData, isLoading: isSWRLoading, mutate: refreshEmployees } = useSWR(
+        company?.id ? ['employees', company.id, page, pageSize, debouncedSearch] : null,
+        fetchEmployees,
+        { refreshInterval: 0, revalidateOnFocus: false }
+    );
+
+    useEffect(() => {
+        if (isSWRLoading) setLoading(true);
+        else setLoading(false);
+    }, [isSWRLoading]);
+
+    useEffect(() => {
+        if (employeesData) {
+            setEmployeeList(employeesData.data);
+            setTotalCount(employeesData.count);
+        }
+    }, [employeesData]);
 
 // -------------------------------------------------------------------------
     const fetchDepartments = useCallback(async () => {
-        if (!company) return;
+        if (!company) return [];
         try {
             const { data, error } = await supabase
                 .from('departments')
@@ -175,14 +188,24 @@ function Employees() {
                 .eq('company_id', company.id);
 
             if (error) throw error;
-            setDepartments(data || []);
+            return data || [];
         } catch (err) {
             console.error('[Employees] fetchDepartments:', err.message);
+            return [];
         }
     }, [company]);
 
-    useEffect(() => { fetchEmployees();   }, [fetchEmployees]);
-    useEffect(() => { fetchDepartments(); }, [fetchDepartments]);
+    const { data: deptsData } = useSWR(
+        company?.id ? ['departments', company.id] : null,
+        fetchDepartments,
+        { refreshInterval: 0, revalidateOnFocus: false }
+    );
+
+    useEffect(() => {
+        if (deptsData) {
+            setDepartments(deptsData);
+        }
+    }, [deptsData]);
 
     if (false && isMobile && !isStandalone) {
         const isRtl = language === 'ar';
@@ -355,6 +378,16 @@ function Employees() {
         try {
             const empToDel = employeeList.find(e => e.id === employeeToDelete);
 
+            // 1. Clean up referencing records in correct dependency order to prevent FK / NOT NULL violations
+            await supabase.from('shift_employees').delete().eq('employee_id', employeeToDelete);
+            await supabase.from('employee_documents').delete().eq('employee_id', employeeToDelete);
+            await supabase.from('leave_requests').delete().eq('employee_id', employeeToDelete);
+            await supabase.from('processed_attendance').delete().eq('employee_id', employeeToDelete);
+            await supabase.from('employee_loans').delete().eq('employee_id', employeeToDelete);
+            await supabase.from('payroll_items').delete().eq('employee_id', employeeToDelete);
+            await supabase.from('payrolls').delete().eq('employee_id', employeeToDelete);
+
+            // 2. Delete the employee record
             const { error } = await supabase
                 .from('employees')
                 .delete()
@@ -375,10 +408,14 @@ function Employees() {
                 newData   : null,
             });
 
-            fetchEmployees();
+            refreshEmployees();
         } catch (err) {
             console.error('[Employees] confirmDelete:', err.message);
-            toast.error(t.errorDeleteEmployee);
+            if (err.message?.includes('permission') || err.message?.includes('policy') || err.code === '42501') {
+                toast.error(language === 'ar' ? 'عذراً، ليس لديك صلاحية لحذف الموظف' : 'Permission denied to delete employee');
+            } else {
+                toast.error(t.errorDeleteEmployee + (err?.message ? `: ${err.message}` : ''));
+            }
         } finally {
             setEmployeeToDelete(null);
         }
@@ -508,7 +545,7 @@ function Employees() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15 }}
             >
-                <div className="emp-table-wrap">
+                <div className="emp-table-wrap emp-desktop-only">
                     <table className="emp-table">
                         <thead>
                             <tr>
@@ -639,6 +676,79 @@ function Employees() {
                     </table>
                 </div>
 
+                <div className="emp-mobile-cards-wrap emp-mobile-only">
+                    <AnimatePresence mode="wait">
+                        {loading ? (
+                            [...Array(5)].map((_, i) => (
+                                <div key={`sk-mob-${i}`} className="emp-mobile-card skeleton">
+                                    <div className="emp-skeleton" style={{ height: 120, width: '100%', borderRadius: 16 }} />
+                                </div>
+                            ))
+                        ) : visibleList.length === 0 ? (
+                            <div className="emp-empty">
+                                <Users size={40} style={{ opacity: 0.2, marginBottom: 12 }} />
+                                <p>{searchTerm ? t.noMatchingEmployees : t.noEmployeesFound}</p>
+                            </div>
+                        ) : (
+                            visibleList.map((emp, index) => {
+                                const { cls: badgeCls, label: badgeLabel } = getBadgeConfig(emp.status, t);
+                                return (
+                                    <motion.div
+                                        key={emp.id}
+                                        className="emp-mobile-card"
+                                        initial={{ opacity: 0, y: 15 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: index * 0.04 }}
+                                        onClick={() => navigate(`/employees/${emp.id}`)}
+                                    >
+                                        <div className="emp-mc-header">
+                                            <div className="emp-mc-user">
+                                                <div
+                                                    className="emp-avatar"
+                                                    style={{ background: avatarColor(emp.name) }}
+                                                >
+                                                    {emp.name.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div className="emp-mc-name-wrap">
+                                                    <span className="emp-name">{emp.name}</span>
+                                                    <span className="emp-mc-dept">{emp.departments?.name || '—'}</span>
+                                                </div>
+                                            </div>
+                                            <span className={`emp-status-badge ${badgeCls}`}>
+                                                {badgeLabel}
+                                            </span>
+                                        </div>
+                                        
+                                        <div className="emp-mc-body">
+                                            <div className="emp-mc-info">
+                                                <Phone size={14} />
+                                                <span>{emp.phone || '—'}</span>
+                                            </div>
+                                            <div className="emp-mc-info">
+                                                <span className="emp-pin-badge">{emp.device_pin}</span>
+                                            </div>
+                                            <div className="emp-mc-info privacy-blur emp-mc-salary">
+                                                {formatCurrency(emp.base_salary)}
+                                            </div>
+                                        </div>
+
+                                        <div className="emp-mc-footer" onClick={(e) => e.stopPropagation()}>
+                                            <button className="emp-mc-action-btn" onClick={() => handleOpenEdit(emp)}>
+                                                <Pencil size={15} />
+                                                <span>{language === 'ar' ? 'تعديل' : 'Edit'}</span>
+                                            </button>
+                                            <button className="emp-mc-action-btn emp-mc-action-danger" onClick={() => handleDelete(emp.id)}>
+                                                <Trash2 size={15} />
+                                                <span>{language === 'ar' ? 'حذف' : 'Delete'}</span>
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                );
+                            })
+                        )}
+                    </AnimatePresence>
+                </div>
+
 
                 {totalCount > pageSize && (
                     <div className="emp-pagination">
@@ -679,11 +789,15 @@ function Employees() {
                 )}
             </motion.div>
 
+            {/* Mobile FAB */}
+            <button className="emp-fab-add emp-mobile-only" onClick={handleOpenAdd} title={t.addEmployeeBtn}>
+                <UserPlus size={24} />
+            </button>
 
             <EmployeeFormModal
                 isOpen={showModal}
                 onClose={() => setShowModal(false)}
-                onSaved={() => { setShowModal(false); fetchEmployees(); }}
+                onSaved={() => { setShowModal(false); refreshEmployees(); }}
                 editingEmployee={editingEmployee}
                 departments={departments}
             />

@@ -84,6 +84,9 @@ const EMPTY_SHIFT = {
     break_policy: 'ignore_temp',
     overtime_rate: 1.5, grace_minutes: 5, is_active: true,
     deduct_half_on_missing: false,
+    early_arrival_grace_minutes: 0,
+    overtime_start_after_minutes: 0,
+    overtime_rate_start_hours: 0,
 };
 
 // -------------------------------------------------------------------------
@@ -174,24 +177,74 @@ function PolicyExplainer({ policy, t }) {
 }
 
 // -------------------------------------------------------------------------
+const getInitialFormValues = (s) => {
+    if (!s) return { ...EMPTY_SHIFT };
+    return {
+        ...EMPTY_SHIFT,
+        ...s,
+        name: s.name || EMPTY_SHIFT.name,
+        color: s.color || EMPTY_SHIFT.color,
+        shift_type: s.shift_type || EMPTY_SHIFT.shift_type,
+        target_hours: s.target_hours ?? EMPTY_SHIFT.target_hours,
+        start_time: s.start_time ? s.start_time.slice(0, 5) : EMPTY_SHIFT.start_time,
+        end_time: s.end_time ? s.end_time.slice(0, 5) : EMPTY_SHIFT.end_time,
+        work_days: Array.isArray(s.work_days) && s.work_days.length > 0 ? s.work_days : EMPTY_SHIFT.work_days,
+        has_break: s.has_break ?? EMPTY_SHIFT.has_break,
+        break_start: s.break_start ? s.break_start.slice(0, 5) : EMPTY_SHIFT.break_start,
+        break_duration: s.break_duration ?? EMPTY_SHIFT.break_duration,
+        break_policy: s.break_policy || EMPTY_SHIFT.break_policy,
+        grace_minutes: s.grace_minutes ?? EMPTY_SHIFT.grace_minutes,
+        overtime_rate: s.overtime_rate ?? EMPTY_SHIFT.overtime_rate,
+        is_active: s.is_active ?? EMPTY_SHIFT.is_active,
+        deduct_half_on_missing: s.deduct_half_on_missing ?? EMPTY_SHIFT.deduct_half_on_missing,
+        early_arrival_grace_minutes: s.early_arrival_grace_minutes ?? EMPTY_SHIFT.early_arrival_grace_minutes,
+        overtime_start_after_minutes: s.overtime_start_after_minutes ?? EMPTY_SHIFT.overtime_start_after_minutes,
+        overtime_rate_start_hours: s.overtime_rate_start_hours ?? EMPTY_SHIFT.overtime_rate_start_hours,
+    };
+};
+
 function ShiftModal({ shift, onClose, onSave }) {
     const { t, language } = useLocale();
 
     const shiftSchema = useMemo(() => z.object({
         name: z.string().min(1, t.sh_err_name || 'يرجى إدخال اسم الوردية'),
-        color: z.string(),
+        color: z.string().default('#818cf8'),
         shift_type: z.enum(['fixed', 'flexible']).default('fixed'),
-        target_hours: z.coerce.number().min(1, t.sh_err_hours || 'يجب أن يكون ساعة واحدة على الأقل').optional(),
-        start_time: z.string(),
-        end_time: z.string(),
+        target_hours: z.preprocess(
+            (val) => (val === null || val === undefined || val === '' ? undefined : Number(val)),
+            z.number().min(1, t.sh_err_hours || 'يجب أن يكون ساعة واحدة على الأقل').optional()
+        ),
+        start_time: z.string().default('08:00'),
+        end_time: z.string().default('16:00'),
         work_days: z.array(z.string()).min(1, t.sh_err_days || 'يرجى اختيار يوم عمل واحد على الأقل'),
-        has_break: z.boolean(),
-        break_start: z.string(),
-        break_duration: z.coerce.number().optional(),
-        break_policy: z.string(),
-        grace_minutes: z.coerce.number().min(0).max(60),
-        overtime_rate: z.coerce.number().min(1).max(3),
-        is_active: z.boolean(),
+        has_break: z.boolean().default(false),
+        break_start: z.string().nullable().optional(),
+        break_duration: z.preprocess(
+            (val) => (val === null || val === undefined || val === '' ? undefined : Number(val)),
+            z.number().optional()
+        ),
+        break_policy: z.string().default('ignore_temp'),
+        grace_minutes: z.preprocess(
+            (val) => (val === null || val === undefined || val === '' ? 5 : Number(val)),
+            z.number().min(0).max(60)
+        ),
+        overtime_rate: z.preprocess(
+            (val) => (val === null || val === undefined || val === '' ? 1.5 : Number(val)),
+            z.number().min(1).max(3).optional()
+        ),
+        early_arrival_grace_minutes: z.preprocess(
+            (val) => (val === null || val === undefined || val === '' ? 0 : Number(val)),
+            z.number().min(0).max(180).optional()
+        ),
+        overtime_start_after_minutes: z.preprocess(
+            (val) => (val === null || val === undefined || val === '' ? 0 : Number(val)),
+            z.number().min(0).max(180).optional()
+        ),
+        overtime_rate_start_hours: z.preprocess(
+            (val) => (val === null || val === undefined || val === '' ? 0 : Number(val)),
+            z.number().min(0).max(12).optional()
+        ),
+        is_active: z.boolean().default(true),
         deduct_half_on_missing: z.boolean().default(false),
     }).superRefine((data, ctx) => {
         if (data.has_break && !data.break_duration) {
@@ -205,7 +258,7 @@ function ShiftModal({ shift, onClose, onSave }) {
 
     const { register, handleSubmit, watch, setValue, formState: { isSubmitting, errors } } = useForm({
         resolver: zodResolver(shiftSchema),
-        defaultValues: shift ? { ...EMPTY_SHIFT, ...shift } : { ...EMPTY_SHIFT },
+        defaultValues: getInitialFormValues(shift),
     });
 
     const formValues = watch();
@@ -227,6 +280,11 @@ function ShiftModal({ shift, onClose, onSave }) {
     // Determine if shift spans overnight
     const isOvernight = formValues.start_time > formValues.end_time;
 
+    const onFormError = (formErrors) => {
+        console.error('[Shift Form Validation Errors]:', formErrors);
+        toast.error(t.sh_err_validation || 'يرجى التأكد من ملء جميع البيانات المطلوب بشكل صحيح');
+    };
+
     return (
         <div className="sh-modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
             <div className="sh-form-card" style={{ '--modal-accent': formValues.color }}>
@@ -246,7 +304,7 @@ function ShiftModal({ shift, onClose, onSave }) {
                     <button type="button" onClick={onClose} className="sh-btn-close"><X size={18} /></button>
                 </header>
 
-                <form onSubmit={handleSubmit(onSave)} className="sh-form-body">
+                <form onSubmit={handleSubmit(onSave, onFormError)} className="sh-form-body">
                     {/* Name + Color */}
                     <div className="sh-form-row">
                         <div style={{ flex: 1 }}>
@@ -403,6 +461,138 @@ function ShiftModal({ shift, onClose, onSave }) {
                                     onClick={() => setValue('deduct_half_on_missing', !formValues.deduct_half_on_missing)}
                                     style={{ '--switch-color': formValues.color }}>
                                     <div className="sh-switch-handle" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Overtime & Early Arrival Settings */}
+                    <div className="sh-section-card">
+                        <div className="sh-section-card-inside">
+                            <div className="sh-section-header" style={{ marginBottom: '1rem' }}>
+                                <div>
+                                    <div className="sh-section-title">⚡ {t.sh_advanced_overtime_early_title || 'العمل الإضافي والحضور المبكر'}</div>
+                                    <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginTop: '0.25rem' }}>
+                                        {t.sh_advanced_overtime_early_desc || 'تحديد سياسات احتساب الإضافي وسماحية الحضور المبكر الدقيقة دون تضخيم الساعات'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="sh-form-grid-3" style={{ marginBottom: '1rem' }}>
+                                {/* Early Arrival Tolerance */}
+                                <div className="form-group">
+                                    <label className="sh-label" title={t.sh_early_arrival_desc}>
+                                        ⏱️ {t.sh_early_arrival_label || 'سماحية الحضور المبكر (د)'}
+                                    </label>
+                                    <div className="sh-input-wrapper">
+                                        <Clock className="sh-input-icon" size={16} />
+                                        <input 
+                                            type="number" 
+                                            min="0"
+                                            max="180"
+                                            placeholder="0"
+                                            className={`sh-input ${errors.early_arrival_grace_minutes ? 'error' : ''}`} 
+                                            {...register('early_arrival_grace_minutes')} 
+                                        />
+                                    </div>
+                                    <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', marginTop: '4px', display: 'block' }}>
+                                        {t.sh_early_arrival_desc || 'يُسجّل الدخول على موعد الوردية بالتحديد'}
+                                    </span>
+                                </div>
+
+                                {/* Overtime Start Threshold */}
+                                <div className="form-group">
+                                    <label className="sh-label" title={t.sh_overtime_start_after_desc}>
+                                        ⏳ {t.sh_overtime_start_after_label || 'بدء الإضافي بعد (د)'}
+                                    </label>
+                                    <div className="sh-input-wrapper">
+                                        <AlertTriangle className="sh-input-icon" size={16} />
+                                        <input 
+                                            type="number" 
+                                            min="0"
+                                            max="180"
+                                            placeholder="0"
+                                            className={`sh-input ${errors.overtime_start_after_minutes ? 'error' : ''}`} 
+                                            {...register('overtime_start_after_minutes')} 
+                                        />
+                                    </div>
+                                    <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', marginTop: '4px', display: 'block' }}>
+                                        {t.sh_overtime_start_after_desc || 'أقل من هذا الحد لا يُحسب إضافي'}
+                                    </span>
+                                </div>
+
+                                {/* Overtime Rate Multiplier */}
+                                <div className="form-group">
+                                    <label className="sh-label" title={t.sh_overtime_rate_desc}>
+                                        ⚡ {t.sh_overtime_rate_label || 'معدل الساعة الإضافية'}
+                                    </label>
+                                    <div className="sh-input-wrapper">
+                                        <input 
+                                            type="number" 
+                                            step="0.25"
+                                            min="1"
+                                            max="3"
+                                            placeholder="1.5"
+                                            className={`sh-input ${errors.overtime_rate ? 'error' : ''}`} 
+                                            {...register('overtime_rate')} 
+                                        />
+                                    </div>
+                                    <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', marginTop: '4px', display: 'block' }}>
+                                        {t.sh_overtime_rate_desc || 'الساعة بـ 1.5 ساعة عمل'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Overtime Tier Start Hours */}
+                            <div className="form-group" style={{ marginBottom: '1rem' }}>
+                                <label className="sh-label" title={t.sh_overtime_tier_start_desc}>
+                                    🔢 {t.sh_overtime_tier_start_label || 'يبدأ تطبيق معدل الـ 1.5 بعد (ساعات إضافية)'}
+                                </label>
+                                <div className="sh-input-wrapper" style={{ maxWidth: '320px' }}>
+                                    <input 
+                                        type="number" 
+                                        step="0.5"
+                                        min="0"
+                                        max="12"
+                                        placeholder="0"
+                                        className={`sh-input ${errors.overtime_rate_start_hours ? 'error' : ''}`} 
+                                        {...register('overtime_rate_start_hours')} 
+                                    />
+                                </div>
+                                <span style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.5)', marginTop: '4px', display: 'block' }}>
+                                    {t.sh_overtime_tier_start_desc || '0 = مباشرة من أول ساعة إضافية، 1 = بعد ساعة واحدة، 2 = بعد ساعتين'}
+                                </span>
+                            </div>
+
+                            {/* Live Simulation Card */}
+                            <div className="sh-policy-explainer" style={{ '--exp-color': formValues.color || '#818cf8', marginTop: '0.75rem' }}>
+                                <div className="sh-explainer-result">{t.sh_sim_title || '💡 محاكاة حسابية حية للسياسة'}</div>
+                                <div className="sh-explainer-note" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.35rem' }}>
+                                    {Number(formValues.early_arrival_grace_minutes || 0) > 0 ? (
+                                        <div>
+                                            ⏱️ {(t.sh_sim_early_note || 'حضور مبكر {earlyMins} دقيقة ← يُسجّل موعد الدخول {shiftStart} تماماً بدون تضخيم ساعات العمل')
+                                                .replace('{earlyMins}', formValues.early_arrival_grace_minutes)
+                                                .replace('{shiftStart}', formValues.start_time || '08:00')}
+                                        </div>
+                                    ) : (
+                                        <div>⏱️ الحضور المبكر: يحسب من وقت البصمة الفعلي (لم يتم تحديد سماحية تسوية).</div>
+                                    )}
+
+                                    {Number(formValues.overtime_start_after_minutes || 0) > 0 ? (
+                                        <div>
+                                            ⏳ {(t.sh_sim_ot_zero_note || 'انصراف بعد {extraMins} دقيقة (أقل من {threshold} دقيقة) ← لا يُحسب إضافي وتُعتمد ساعات الوردية النظامية')
+                                                .replace('{extraMins}', Math.max(1, Math.floor(Number(formValues.overtime_start_after_minutes) / 2)))
+                                                .replace('{threshold}', formValues.overtime_start_after_minutes)}
+                                        </div>
+                                    ) : null}
+
+                                    <div>
+                                        ⚡ {(t.sh_sim_ot_active_note || 'انصراف بعد {extraMins} دقيقة ← يحتسب {otHours} س إضافي بمعدل {otRate}x (صافي الساعات الموزونة: {otWeighted} س)')
+                                            .replace('{extraMins}', Math.max(60, Number(formValues.overtime_start_after_minutes || 0) + 60))
+                                            .replace('{otHours}', '1.0')
+                                            .replace('{otRate}', formValues.overtime_rate || '1.5')
+                                            .replace('{otWeighted}', Number(formValues.overtime_rate_start_hours || 0) > 0 ? '1.0' : String(Number(formValues.overtime_rate || 1.5) * 1.0))}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -673,6 +863,22 @@ function ShiftCard({ shift, employeeCount, onEdit, onDelete, onManageEmployees }
                 </div>
             )}
 
+            {Number(shift.early_arrival_grace_minutes || 0) > 0 && (
+                <div className="shift-policy-chip" style={{ background: 'rgba(16, 185, 129, 0.1)', borderColor: 'rgba(16, 185, 129, 0.25)', color: '#34d399', marginTop: '0.4rem' }}>
+                    <span>⏱️</span>
+                    <span>{t.sh_early_arrival_badge || 'حضور مبكر مضبوط'}: {shift.early_arrival_grace_minutes}{t.sh_mins_short || 'د'}</span>
+                </div>
+            )}
+
+            {(Number(shift.overtime_start_after_minutes || 0) > 0 || Number(shift.overtime_rate || 0) > 0) && (
+                <div className="shift-policy-chip" style={{ background: 'rgba(99, 102, 241, 0.1)', borderColor: 'rgba(99, 102, 241, 0.25)', color: '#818cf8', marginTop: '0.4rem' }}>
+                    <span>⚡</span>
+                    <span>
+                        {t.sh_overtime_badge || 'إضافي'}: {Number(shift.overtime_start_after_minutes || 0) > 0 ? `بعد ${shift.overtime_start_after_minutes}د` : 'مباشرة'} ({shift.overtime_rate || 1.5}x{Number(shift.overtime_rate_start_hours || 0) > 0 ? ` بعد ${shift.overtime_rate_start_hours}س` : ''})
+                    </span>
+                </div>
+            )}
+
             {/* Manage employees CTA */}
             <button className="shift-manage-btn" onClick={() => onManageEmployees(shift)}>
                 <Users size={16} />
@@ -818,7 +1024,7 @@ function Shifts() {
             const ids = (shiftIds || []).map(s => s.id);
 
             const [{ data: sData }, { data: eData }, { data: seData }] = await Promise.all([
-                supabase.from('shifts').select('id, name, color, start_time, end_time, work_days, has_break, break_start, break_duration, break_policy, grace_minutes, is_active, shift_type, target_hours, deduct_half_on_missing').eq('company_id', company.id).order('created_at'),
+                supabase.from('shifts').select('id, name, color, start_time, end_time, work_days, has_break, break_start, break_duration, break_policy, grace_minutes, is_active, shift_type, target_hours, deduct_half_on_missing, early_arrival_grace_minutes, overtime_start_after_minutes, overtime_rate, overtime_rate_start_hours').eq('company_id', company.id).order('created_at'),
                 supabase.from('employees').select('id,name').eq('company_id', company.id).eq('status', 'active'),
                 ids.length > 0 ? supabase.from('shift_employees').select('shift_id,employee_id').in('shift_id', ids) : Promise.resolve({ data: [] }),
             ]);
@@ -846,7 +1052,8 @@ function Shifts() {
             const payload = { ...form, company_id: company.id };
             let savedShiftId = editingShift?.id;
             if (editingShift) {
-                await supabase.from('shifts').update(payload).eq('id', editingShift.id);
+                const { error: updateErr } = await supabase.from('shifts').update(payload).eq('id', editingShift.id);
+                if (updateErr) throw updateErr;
                 toast.success(t.sh_toast_save_success || 'تم التحديث بنجاح');
                 await logAudit({
                     companyId: company.id,
@@ -858,7 +1065,8 @@ function Shifts() {
                     newData: payload,
                 });
             } else {
-                const { data: inserted } = await supabase.from('shifts').insert(payload).select('id').single();
+                const { data: inserted, error: insertErr } = await supabase.from('shifts').insert(payload).select('id').single();
+                if (insertErr) throw insertErr;
                 savedShiftId = inserted?.id;
                 toast.success(t.sh_toast_save_success || 'تم الإنشاء بنجاح');
                 await logAudit({

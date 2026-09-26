@@ -47,9 +47,15 @@ BEGIN
             COALESCE(p_day_names ->> v_dow::TEXT, v_day::TEXT)  AS day_label,
 
             -- COUNT FILTER أسرع من CASE WHEN في PostgreSQL
-            COUNT(*) FILTER (WHERE pa.status = 'present')  AS present,
+            COUNT(*) FILTER (
+                WHERE pa.status IN ('present', 'early_leave', 'manual', 'missing_checkout')
+                   OR (pa.check_in IS NOT NULL AND pa.status != 'late')
+            ) AS present,
             COUNT(*) FILTER (WHERE pa.status = 'late')     AS late,
-            COUNT(*) FILTER (WHERE pa.status = 'absent')   AS absent
+            COUNT(*) FILTER (
+                WHERE pa.status = 'absent'
+                   OR (pa.check_in IS NULL AND pa.check_out IS NULL AND pa.status NOT IN ('present', 'late', 'leave', 'on_leave'))
+            ) AS absent
 
         FROM processed_attendance pa
         WHERE

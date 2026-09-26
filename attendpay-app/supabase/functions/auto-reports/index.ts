@@ -28,10 +28,29 @@ serve(async (req) => {
         })
       }
 
-      // ✅ الجديد: إدراج الرسالة في طابور الواتساب اللامركزي
+      // تحديد القناة المستهدفة (من الطلب أو من إعدادات الشركة المخصصة)
+      let targetChannelId = body.channel_id || null
+      if (!targetChannelId && body.company_id) {
+        const { data: comp } = await supabase
+          .from('companies')
+          .select('whatsapp_channel_id')
+          .eq('id', body.company_id)
+          .maybeSingle()
+        if (comp?.whatsapp_channel_id) {
+          targetChannelId = comp.whatsapp_channel_id
+        }
+      }
+
+      // ✅ إدراج الرسالة في طابور الواتساب اللامركزي بأولوية فورية مع توجيه القناة المحددة
       const { error: queueError } = await supabase
         .from('whatsapp_queue')
-        .insert({ phone: phone.replace(/\D/g, ''), message, status: 'pending' })
+        .insert({ 
+          phone: phone.replace(/\D/g, ''), 
+          message, 
+          status: 'pending',
+          priority: 10,
+          channel_id: targetChannelId
+        })
 
       if (queueError) {
         return new Response(JSON.stringify({ error: 'فشل إضافة الرسالة إلى الطابور', details: queueError.message }), {
@@ -49,7 +68,7 @@ serve(async (req) => {
     // 1. Get due schedules
     const { data: schedules, error: schedError } = await supabase
       .from('report_schedules')
-      .select('*, companies(name, settings)')
+      .select('*, companies(name, settings, whatsapp_channel_id)')
       .eq('is_active', true)
       .lte('next_send_at', new Date().toISOString())
 
@@ -93,17 +112,17 @@ serve(async (req) => {
           await sendTelegram(settings.telegram_token, settings.telegram_chat_id, reportText)
         }
 
-        // --- WhatsApp (Decentralized Queue - v2.0) ---
+        // --- WhatsApp (Decentralized Queue - v2.0 with Channel Routing) ---
         const toPhone = settings.whatsapp_phone || settings.whatsapp_number;
         if (sched.channels.includes('whatsapp') && toPhone) {
-          // ✅ الجديد: إدراج الرسالة في الطابور اللامركزي
-          // سيلتقطها عميل الواتساب النشط (LEADER) على جهاز أحد المشتركين تلقائياً
           const { error: queueError } = await supabase
             .from('whatsapp_queue')
             .insert({
-              phone:   toPhone.replace(/\D/g, ''),
-              message: reportText,
-              status:  'pending'
+              phone:      toPhone.replace(/\D/g, ''),
+              message:    reportText,
+              status:     'pending',
+              priority:   0,
+              channel_id: company.whatsapp_channel_id || null
             })
           if (queueError) {
             throw new Error(`فشل إضافة تقرير الجدولة إلى طابور الواتساب: ${queueError.message}`)

@@ -53,12 +53,13 @@ export function LocaleProvider({ children }) {
 
     const t = React.useMemo(() => TRANSLATIONS[language] || TRANSLATIONS.ar, [language]);
 
-    // Derive the active country from company settings.
+    // Derive the active country from company settings or direct company meta.
     // Falls back to DEFAULT_COUNTRY when nothing is saved yet.
     const country = React.useMemo(() => {
-        const code = company?.settings?.country || employeeCompany?.settings?.country;
+        const rawCode = company?.settings?.country || company?.country || employeeCompany?.settings?.country || employeeCompany?.country;
+        const code = (rawCode && rawCode !== '—') ? rawCode : null;
         return code ? (getCountryByCode(code) ?? DEFAULT_COUNTRY) : DEFAULT_COUNTRY;
-    }, [company?.settings?.country, employeeCompany?.settings?.country]);
+    }, [company?.settings?.country, company?.country, employeeCompany?.settings?.country, employeeCompany?.country]);
 
     // All formatters are memoized — they only rebuild when country changes.
     const value = useMemo(() => {

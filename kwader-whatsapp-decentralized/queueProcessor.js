@@ -71,43 +71,35 @@ class QueueProcessor {
     }
 
     setupRealtime() {
-        try {
-            const topic = `wa_queue_${this.channelId}_${this.nodeId}`;
-            this.realtimeSub = this.supabase
-                .channel(topic)
-                .on(
-                    'postgres_changes',
-                    {
-                        event: 'INSERT',
-                        schema: 'public',
-                        table: 'whatsapp_queue'
-                    },
-                    (payload) => {
-                        if (!this.isRunning || !this.isLeader()) return;
-                        const row = payload.new;
-                        // Process if for our channel or unassigned channel
-                        if (!row.channel_id || row.channel_id === this.channelId) {
-                            this.schedulePoll(300);
-                        }
-                    }
-                )
-                .subscribe();
-        } catch (err) {
-            console.error('[QueueProcessor] Error setting up realtime queue:', err.message);
-        }
+        // PRO FIX: Realtime disabled for whatsapp_queue to save 100% of the Supabase Realtime Quota.
+        // Bulk inserts (e.g. 10,000 messages) would trigger 10,000 WebSocket events, instantly draining the free tier.
+        // We will rely entirely on the 3.5-second polling mechanism which uses a single DB query.
+        console.log('[QueueProcessor] Realtime disabled to save quota. Relying on optimized polling.');
     }
 
-    schedulePoll(delayMs = this.pollIntervalMs) {
+    schedulePoll(delayMs = null) {
         if (!this.isRunning) return;
         clearTimeout(this.pollTimer);
+        
+        if (delayMs !== null) {
+            this.currentPollInterval = delayMs;
+        } else {
+            // Exponential backoff up to 60 seconds
+            this.currentPollInterval = Math.min((this.currentPollInterval || this.pollIntervalMs) * 1.5, 60000);
+        }
+
         this.pollTimer = setTimeout(async () => {
             if (this.isRunning && this.isLeader()) {
-                await this.processNextBatch();
+                const processed = await this.processNextBatch();
+                if (processed > 0) {
+                    // Reset backoff if we found work
+                    this.currentPollInterval = this.pollIntervalMs;
+                }
             }
             if (this.isRunning) {
                 this.schedulePoll();
             }
-        }, delayMs);
+        }, this.currentPollInterval);
     }
 
     /**
@@ -128,55 +120,32 @@ class QueueProcessor {
     }
 
     async processNextBatch() {
-        if (this.isProcessing || !this.isLeader()) return;
+        if (this.isProcessing || !this.isLeader()) return 0;
         const sock = this.getSocket();
-        if (!sock) return;
+        if (!sock) return 0;
 
         this.isProcessing = true;
+        let processedCount = 0;
         try {
-            // 1. Fetch pending messages ordered by priority DESC, created_at ASC
-            let query = this.supabase
-                .from('whatsapp_queue')
-                .select('*')
-                .eq('status', 'pending')
-                .order('priority', { ascending: false })
-                .order('created_at', { ascending: true })
-                .limit(5);
+            // Use pessimistic locking via RPC to safely claim 5 messages
+            const { data: messages, error } = await this.supabase.rpc('claim_whatsapp_messages', {
+                p_node_id: this.nodeId,
+                p_channel_id: this.channelId || null,
+                p_limit: 5
+            });
 
-            if (this.channelId) {
-                query = query.or(`channel_id.eq.${this.channelId},channel_id.is.null`);
-            }
-
-            const { data: messages, error } = await query;
             if (error) {
-                console.error('[QueueProcessor] Fetch error:', error.message);
-                return;
+                console.error('[QueueProcessor] RPC Claim error:', error.message);
+                return 0;
             }
 
             if (!messages || messages.length === 0) {
-                return;
+                return 0;
             }
 
             for (const msg of messages) {
                 if (!this.isRunning || !this.isLeader()) break;
-
-                // 2. Claim message atomically (optimistic concurrency lock)
-                const { data: claimed, error: claimErr } = await this.supabase
-                    .from('whatsapp_queue')
-                    .update({
-                        status: 'processing',
-                        node_id: this.nodeId,
-                        processed_at: new Date().toISOString()
-                    })
-                    .eq('id', msg.id)
-                    .eq('status', 'pending')
-                    .select();
-
-                if (claimErr || !claimed || claimed.length === 0) {
-                    // Claimed by another worker or already handled
-                    continue;
-                }
-
+                processedCount++;
                 await this.sendMessageWithThrottling(sock, msg);
             }
         } catch (err) {
@@ -184,6 +153,7 @@ class QueueProcessor {
         } finally {
             this.isProcessing = false;
         }
+        return processedCount;
     }
 
     /**

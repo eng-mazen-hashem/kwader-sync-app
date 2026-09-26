@@ -20,11 +20,13 @@ import {
     ChevronsRight,
     ChevronUp,
     Briefcase,
-    Store
+    Store,
+    Sparkles
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
 import AccountSettingsModal from './AccountSettingsModal';
+import { supabase } from '../supabaseClient';
 import './Sidebar.css';
 
 function Sidebar({ collapsed, mobileOpen, onToggle, onClose }) {
@@ -36,6 +38,42 @@ function Sidebar({ collapsed, mobileOpen, onToggle, onClose }) {
     const [showAccountModal, setShowAccountModal] = useState(false);
     const roleMenuRef = useRef(null);
 
+    const [pendingCounts, setPendingCounts] = useState({ leaves: 0, loans: 0 });
+
+    useEffect(() => {
+        const fetchCounts = async () => {
+            const queries = [
+                company?.id
+                    ? supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('company_id', company.id).eq('status', 'pending')
+                    : Promise.resolve({ count: 0 }),
+                company?.id
+                    ? supabase.from('employee_loans').select('id', { count: 'exact', head: true }).eq('company_id', company.id).eq('status', 'pending')
+                    : Promise.resolve({ count: 0 }),
+            ];
+
+            const [leavesRes, loansRes] = await Promise.all(queries);
+            
+            setPendingCounts({
+                leaves: leavesRes?.count || 0,
+                loans: loansRes?.count || 0,
+            });
+        };
+
+        fetchCounts();
+
+        const channel = supabase.channel('sidebar_pending_counts');
+        if (company?.id) {
+            channel
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests', filter: `company_id=eq.${company.id}` }, fetchCounts)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'employee_loans', filter: `company_id=eq.${company.id}` }, fetchCounts);
+        }
+        channel.subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [company?.id]);
+
 // -------------------------------------------------------------------------
     const navGroups = [
         {
@@ -45,11 +83,11 @@ function Sidebar({ collapsed, mobileOpen, onToggle, onClose }) {
                 { path: '/dashboard', label: t.dashboard, icon: LayoutDashboard },
                 { path: '/employees', label: t.employees, icon: Users, permission: 'manage_employees' },
                 { path: '/attendance', label: t.attendance, icon: ClipboardCheck, permission: 'manage_attendance' },
-                { path: '/leaves', label: t.leaves, icon: CalendarDays, permission: 'manage_attendance' },
+                { path: '/leaves', label: t.leaves, icon: CalendarDays, permission: 'manage_attendance', badge: pendingCounts.leaves },
                 { path: '/structure', label: t.structure, icon: Building2, permission: 'manage_settings' },
                 { path: '/shifts', label: t.shifts, icon: Clock, permission: 'manage_attendance' },
                 { path: '/payroll', label: t.payroll, icon: DollarSign, permission: 'manage_payroll' },
-                { path: '/loans', label: t.loans, icon: HandCoins, permission: 'manage_loans' },
+                { path: '/loans', label: t.loans, icon: HandCoins, permission: 'manage_loans', badge: pendingCounts.loans },
             ].filter(item => !item.permission || hasPermission(item.permission)),
         },
         {
@@ -172,6 +210,34 @@ function Sidebar({ collapsed, mobileOpen, onToggle, onClose }) {
                                         <item.icon size={20} strokeWidth={1.8} className="nav-icon" />
                                     </div>
                                     <span className="nav-label">{item.label}</span>
+                                    {item.badge > 0 && !collapsed && (
+                                        <div className="nav-badge" style={{
+                                            backgroundColor: '#ef4444',
+                                            color: 'white',
+                                            fontSize: '10px',
+                                            fontWeight: 'bold',
+                                            padding: '2px 6px',
+                                            borderRadius: '10px',
+                                            marginLeft: language === 'ar' ? '0' : 'auto',
+                                            marginRight: language === 'ar' ? 'auto' : '0',
+                                            lineHeight: '1',
+                                            boxShadow: '0 0 10px rgba(239, 68, 68, 0.4)',
+                                        }}>
+                                            {item.badge > 99 ? '99+' : item.badge}
+                                        </div>
+                                    )}
+                                    {item.badge > 0 && collapsed && (
+                                        <div className="nav-badge-dot" style={{
+                                            position: 'absolute',
+                                            top: '10px',
+                                            right: '10px',
+                                            width: '8px',
+                                            height: '8px',
+                                            backgroundColor: '#ef4444',
+                                            borderRadius: '50%',
+                                            boxShadow: '0 0 8px rgba(239, 68, 68, 0.6)'
+                                        }} />
+                                    )}
                                     <div className="nav-active-indicator" aria-hidden="true" />
                                 </NavLink>
                             ))}

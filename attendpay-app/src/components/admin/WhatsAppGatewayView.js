@@ -1663,6 +1663,10 @@ echo $response;
                           >
                             🛡️ <span>استعداد (محطة بديلة)</span>
                           </span>
+                        ) : activeNode && isNodeAlive ? (
+                          <span className="inline-flex items-center gap-1 bg-purple-50 text-purple-800 border border-purple-200 font-bold text-[10px] px-2.5 py-0.5 rounded-lg">
+                            ⏳ <span>عقدة متصلة (بانتظار مسح QR)</span>
+                          </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-500 font-medium text-[10px] px-2.5 py-0.5 rounded-lg">
                             ⚪ <span>غير متصل بمحطة</span>
@@ -3473,34 +3477,60 @@ echo $response;
                   </p>
 
                   <div className="flex flex-col items-center justify-center p-4 bg-gray-50 rounded-2xl border border-gray-100 min-h-[240px]">
-                    {liveQrChannel.qr_code ? (
-                      <div className="space-y-3 flex flex-col items-center">
-                        <div className="p-3 bg-white rounded-2xl border border-gray-200 shadow-sm inline-block">
-                          <QRCode value={liveQrChannel.qr_code} size={210} />
+                    {(() => {
+                      const qrAgeSeconds = liveQrChannel?.updated_at 
+                        ? Math.round((Date.now() - new Date(liveQrChannel.updated_at).getTime()) / 1000) 
+                        : 0;
+                      const isQrStale = liveQrChannel?.qr_code && qrAgeSeconds > 90;
+
+                      if (liveQrChannel?.qr_code && !isQrStale) {
+                        return (
+                          <div className="space-y-3 flex flex-col items-center">
+                            <div className="p-3 bg-white rounded-2xl border border-gray-200 shadow-sm inline-block">
+                              <QRCode value={liveQrChannel.qr_code} size={210} />
+                            </div>
+                            <div className="flex items-center gap-2 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                              <span>رمز الـ QR نشط وجاهز للمسح الآن</span>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      if (liveQrChannel?.qr_code && isQrStale) {
+                        return (
+                          <div className="flex flex-col items-center justify-center text-amber-700 gap-3 py-6 text-center">
+                            <Loader2 className="w-9 h-9 animate-spin text-amber-600" />
+                            <div className="space-y-1">
+                              <div className="text-xs font-bold text-gray-800">انتهت صلاحية الرمز السابق، جاري تجديد الرمز...</div>
+                              <div className="text-[11px] text-gray-500">يتم فحص وتحديث الرمز تلقائياً لضمان تطابقه مع هاتفك</div>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      if (qrWaitSeconds >= 180) {
+                        return (
+                          <div className="flex flex-col items-center justify-center text-gray-600 gap-3 py-4 text-center">
+                            <span className="text-3xl">⚠️</span>
+                            <div className="space-y-1">
+                              <div className="text-xs font-bold text-gray-800">لم تتصل أي عقدة بالقناة بعد</div>
+                              <div className="text-[11px] text-gray-500">تأكد من تشغيل تطبيق المزامنة (whatsapp-node.exe) على جهاز العميل</div>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="flex flex-col items-center justify-center text-gray-400 gap-3 py-6">
+                          <Loader2 className="w-9 h-9 animate-spin text-emerald-600" />
+                          <div className="space-y-1">
+                            <div className="text-xs font-bold text-gray-800">جاري انتظار توليد رمز الـ QR من العقدة...</div>
+                            <div className="text-[11px] text-gray-500">يتم فحص وتحديث الرمز تلقائياً في الخلفية ({Math.max(0, 180 - qrWaitSeconds)}ث متبقية)</div>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                          <span>رمز الـ QR نشط وجاهز للمسح الآن</span>
-                        </div>
-                      </div>
-                    ) : qrWaitSeconds >= 180 ? (
-                      // ✅ Timeout message: بعد 3 دقائق بدون وصول QR نعرض رسالة توضيحية
-                      <div className="flex flex-col items-center justify-center text-gray-600 gap-3 py-4 text-center">
-                        <span className="text-3xl">⚠️</span>
-                        <div className="space-y-1">
-                          <div className="text-xs font-bold text-gray-800">لم تتصل أي عقدة بالقناة بعد</div>
-                          <div className="text-[11px] text-gray-500">تأكد من تشغيل تطبيق المزامنة (whatsapp-node.exe) على جهاز العميل</div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center text-gray-400 gap-3 py-6">
-                        <Loader2 className="w-9 h-9 animate-spin text-emerald-600" />
-                        <div className="space-y-1">
-                          <div className="text-xs font-bold text-gray-800">جاري انتظار توليد رمز الـ QR من العقدة...</div>
-                          <div className="text-[11px] text-gray-500">يتم فحص وتحديث الرمز تلقائياً في الخلفية ({Math.max(0, 180 - qrWaitSeconds)}ث متبقية)</div>
-                        </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
 
                   <div className="flex items-center justify-between pt-2 border-t border-gray-100">
@@ -3509,9 +3539,16 @@ echo $response;
                       disabled={refreshingQr}
                       onClick={async () => {
                         setRefreshingQr(true);
+                        try {
+                          await supabase.from("system_settings").upsert({
+                            key: liveQrChannel.is_default ? "whatsapp_control_master" : `whatsapp_control_${liveQrChannel.id}`,
+                            value: { action: "refresh_qr", requested_at: new Date().toISOString() },
+                            updated_at: new Date().toISOString()
+                          }, { onConflict: "key" });
+                        } catch (e) {}
                         await fetchChannelQr(liveQrChannel.id);
-                        setTimeout(() => setRefreshingQr(false), 500);
-                        toast.success("تم تحديث حالة الرمز");
+                        setTimeout(() => setRefreshingQr(false), 800);
+                        toast.success("تم إرسال طلب تجديد الرمز للعقدة");
                       }}
                       className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-3 py-2 rounded-xl transition-all border border-emerald-200 cursor-pointer"
                     >

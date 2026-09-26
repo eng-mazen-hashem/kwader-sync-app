@@ -352,7 +352,7 @@ function Devices() {
                                 <p className="insight-desc">
                                     {t.dev_sync_agent_desc || 'لربط أجهزة البصمة المحلية بالمنصة السحابية، يجب تثبيت أداة المزامنة على أي جهاز كمبيوتر (Windows 10/11) متصل بنفس شبكة أجهزة البصمة. تدعم جميع أجهزة ZKTeco.'}
                                 </p>
-                                <a href={agentDownloadUrl} target="_blank" rel="noopener noreferrer" download="KWADER_Sync_Setup_v1.3.2.exe" className="insight-button">
+                                <a href={agentDownloadUrl} target="_blank" rel="noopener noreferrer" download="KWADER_Sync_Setup_v1.4.0.exe" className="insight-button">
                                     <HiOutlineDesktopComputer size={20} />
                                     {t.dev_download_agent || 'تحميل الأداة'}
                                 </a>

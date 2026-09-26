@@ -91,6 +91,58 @@ const MessageItem = ({ msg, onAction }) => {
                                 إرسال إلى {msg.action.name || 'الموظف'} عبر واتساب
                             </button>
                         )}
+
+                        {msg.action && msg.action.type === 'view_salary_slip' && (
+                            <button
+                                onClick={() => window.open(`/salary-slip/${msg.action.payroll_id}`, '_blank')}
+                                style={{
+                                    marginTop: 14,
+                                    padding: '10px 18px',
+                                    borderRadius: 12,
+                                    border: 'none',
+                                    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                                    color: '#fff',
+                                    cursor: 'pointer',
+                                    fontFamily: 'Cairo',
+                                    fontSize: '0.85rem',
+                                    fontWeight: 700,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                    boxShadow: '0 4px 15px rgba(99,102,241,0.35)'
+                                }}
+                            >
+                                <span style={{ fontSize: '1.1rem' }}>📄</span>
+                                فتح وطباعة قسيمة الراتب الرسمية (PDF)
+                            </button>
+                        )}
+
+                        {msg.action && msg.action.type !== 'whatsapp' && msg.action.type !== 'view_salary_slip' && (
+                            <div style={{
+                                marginTop: 12,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                padding: '6px 12px',
+                                borderRadius: 10,
+                                background: 'rgba(99, 102, 241, 0.15)',
+                                border: '1px solid rgba(99, 102, 241, 0.3)',
+                                color: '#a5b4fc',
+                                fontSize: '0.78rem',
+                                fontWeight: 700
+                            }}>
+                                <span>⚡</span>
+                                <span>
+                                    {msg.action.type === 'add_employee' && 'تم إدراج الموظف في قاعدة البيانات'}
+                                    {msg.action.type === 'update_employee' && 'تم تحديث بيانات الموظف في قاعدة البيانات'}
+                                    {msg.action.type === 'create_leave' && 'تم تسجيل طلب الإجازة في النظام'}
+                                    {(msg.action.type === 'update_leave_status' || msg.action.type === 'approve_leave' || msg.action.type === 'reject_leave') && 'تم تحديث حالة طلب الإجازة'}
+                                    {msg.action.type === 'record_loan' && 'تم قيد السلفة المالية في النظام'}
+                                    {(msg.action.type === 'record_adjustment' || msg.action.type === 'record_bonus' || msg.action.type === 'record_deduction') && 'تم قيد البند المالي في السلف والاستقطاعات ومسير الرواتب'}
+                                    {msg.action.type === 'generate_payroll' && 'تم إرسال أمر تشغيل مسير الرواتب للمؤسسة'}
+                                </span>
+                            </div>
+                        )}
                     </>
                 )}
             </div>

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useLocale } from '../context/LocaleContext';
+import { useLocation } from 'react-router-dom';
 import './PwaInstaller.css';
 
 const PwaInstaller = () => {
     const { language } = useLocale();
+    const location = useLocation();
     const [deferredPrompt, setDeferredPrompt] = useState(null);
     const [isStandalone, setIsStandalone] = useState(false);
     const [isIos, setIsIos] = useState(false);
@@ -70,8 +72,11 @@ const PwaInstaller = () => {
         // 'dismissed' — no action needed, overlay stays until user installs or closes
     };
 
-    // If already installed or shouldn't show overlay, render nothing
-    if (isStandalone || !showOverlay || !isMobileDevice()) return null;
+    // Check if current route is part of the employee portal (starts with /me)
+    const isMePath = location.pathname.startsWith('/me');
+
+    // If already installed, shouldn't show overlay, not a mobile device, or not on an employee page, render nothing
+    if (isStandalone || !showOverlay || !isMobileDevice() || !isMePath) return null;
 
     const isRtl = language === 'ar';
 

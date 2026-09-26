@@ -8,14 +8,15 @@
     display: flex;
     flex-direction: column;
     position: relative;
-    padding-bottom: 70px; /* Space for bottom nav */
+    padding-bottom: 90px; /* Space for new premium bottom nav */
 }
+
 
 /* Header */
 .emp-portal-header {
-    background: rgba(26, 26, 36, 0.8);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: rgba(15, 15, 22, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     padding: 1rem 1.5rem;
     display: flex;
@@ -24,6 +25,7 @@
     position: sticky;
     top: 0;
     z-index: 40;
+    transition: all 0.3s ease;
 }
 
 .emp-portal-logo {
@@ -38,18 +40,18 @@
 
 .emp-portal-logo span {
     font-size: 1.125rem;
-    font-weight: 700;
-    background: linear-gradient(to right, #fff, #cbd5e1);
+    font-weight: 800;
+    background: linear-gradient(135deg, #ffffff, #a5b4fc);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
 .emp-portal-logout {
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
-    border: none;
+    background: rgba(239, 68, 68, 0.08);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.1);
     padding: 0.5rem;
-    border-radius: 8px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -57,33 +59,38 @@
     transition: all 0.2s ease;
 }
 
-.emp-portal-logout:hover {
-    background: rgba(239, 68, 68, 0.2);
+.emp-portal-logout:hover, .emp-portal-logout:active {
+    background: rgba(239, 68, 68, 0.15);
+    transform: scale(0.95);
 }
 
 /* Main Content Area */
 .emp-portal-main {
     flex: 1;
-    padding: 1.5rem;
+    padding: 1rem 1.5rem;
     overflow-y: auto;
+    position: relative;
 }
 
-/* Bottom Navigation Bar */
+/* -------------------------------------------------------------------------
+   Premium Bottom Navigation Bar
+------------------------------------------------------------------------- */
 .emp-bottom-nav {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
-    background: rgba(26, 26, 36, 0.95);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(15, 15, 22, 0.85);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
     display: flex;
     justify-content: space-around;
     align-items: center;
-    height: 70px;
+    height: 75px;
     z-index: 50;
-    padding-bottom: env(safe-area-inset-bottom); /* iOS support */
+    padding-bottom: env(safe-area-inset-bottom);
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .emp-nav-item {
@@ -91,34 +98,76 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.25rem;
+    gap: 4px;
     color: #64748b;
     text-decoration: none;
-    font-size: 0.75rem;
-    font-weight: 500;
+    font-size: 0.7rem;
+    font-weight: 600;
     flex: 1;
     height: 100%;
-    transition: all 0.2s ease;
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.emp-nav-item svg {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .emp-nav-item.active {
-    color: #8b5cf6;
+    color: #818cf8;
 }
 
-.emp-nav-item .nav-icon {
-    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+.emp-nav-item.active svg {
+    transform: translateY(-4px);
+    color: #818cf8;
+    filter: drop-shadow(0 0 8px rgba(129, 140, 248, 0.6));
 }
 
-.emp-nav-item.active .nav-icon {
-    transform: translateY(-2px);
-    color: #6366f1;
+/* Glowing Indicator Dot */
+.emp-nav-item::after {
+    content: '';
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%) scale(0);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #818cf8;
+    box-shadow: 0 0 8px #818cf8;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Mobile specific utilities */
+.emp-nav-item.active::after {
+    transform: translateX(-50%) scale(1);
+}
+
+/* -------------------------------------------------------------------------
+   Premium Mobile Cards Utilities
+------------------------------------------------------------------------- */
 .mobile-card {
-    background: rgba(30, 30, 42, 0.6);
+    background: rgba(30, 30, 42, 0.5);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 16px;
-    padding: 1.25rem;
+    border-radius: 20px;
+    padding: 1.5rem;
     margin-bottom: 1rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Ambient glow inside card */
+.mobile-card::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    left: -50px;
+    width: 100px;
+    height: 100px;
+    background: rgba(99, 102, 241, 0.15);
+    border-radius: 50%;
+    filter: blur(40px);
+    pointer-events: none;
 }

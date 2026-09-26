@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Lock, Eye, EyeOff, ShieldCheck, Check, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
+import { supabase } from '../supabaseClient';
 import './ResetPassword.css';
 
 const ResetPassword = () => {
@@ -39,14 +40,29 @@ const ResetPassword = () => {
     const strength = getPasswordStrength();
 
     useEffect(() => {
-        // If auth loading is done and there's absolutely no user, and no hash token
-        // we might want to redirect them to login after a short delay to allow hash processing.
-        if (!authLoading && !user && !window.location.hash) {
+        const hasHashToken = window.location.hash && (window.location.hash.includes('access_token') || window.location.hash.includes('type=recovery'));
+        const hasSearchCode = window.location.search && (window.location.search.includes('code=') || window.location.search.includes('token='));
+
+        // If PKCE code is in query params, exchange it for session
+        if (window.location.search && window.location.search.includes('code=')) {
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get('code');
+            if (code) {
+                supabase.auth.exchangeCodeForSession(code).catch(err => {
+                    console.error('Failed to exchange code:', err);
+                    setError(isRtl 
+                        ? 'رابط إعادة تعيين كلمة المرور غير صالح أو منتهي الصلاحية.' 
+                        : 'The password reset link is invalid or expired.');
+                });
+            }
+        }
+
+        if (!authLoading && !user && !hasHashToken && !hasSearchCode) {
             const timer = setTimeout(() => {
                 setError(isRtl 
                     ? 'رابط إعادة تعيين كلمة المرور غير صالح أو منتهي الصلاحية.' 
                     : 'The password reset link is invalid or expired.');
-            }, 1500);
+            }, 3000);
             return () => clearTimeout(timer);
         }
     }, [authLoading, user, isRtl]);
@@ -207,7 +223,7 @@ const ResetPassword = () => {
                                     </div>
 
                                     {/* Submit Button */}
-                                    <button className="submit-btn" type="submit" disabled={loading || (!user && !window.location.hash)}>
+                                    <button className="submit-btn" type="submit" disabled={loading || (!user && !window.location.hash && !window.location.search.includes('code='))}>
                                         {loading ? <div className="loader" /> : (
                                             <>
                                                 <span>{isRtl ? 'تحديث وفتح لوحة التحكم' : 'Update & Open Dashboard'}</span>

@@ -75,7 +75,7 @@ function getPeriodRatio(start: Date, end: Date, totalDays: number): number {
   return totalDays / 30;
 }
 
-// ─── تحقق: هل الفترة شهر كامل (من أول إلى آخر يوم)؟ ─────────────────────────
+// ─── تحقق: هل الفترة شهر تقويمي كامل (من أول إلى آخر يوم)؟ ─────────────────────────
 function isFullCalendarMonth(start: Date, end: Date): boolean {
   return (
     start.getDate() === 1 &&
@@ -99,10 +99,15 @@ serve(async (req: Request) => {
       return fail('المعاملات المطلوبة مفقودة: start_date أو end_date أو company_id');
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('[process-payroll] Missing Supabase environment variables.');
+      return fail('خطأ في إعدادات الخادم الداخلية: مفتاح قاعدة البيانات غير متوفر.');
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const periodStart = new Date(start_date);
     const periodEnd   = new Date(end_date);
@@ -147,8 +152,12 @@ serve(async (req: Request) => {
       .eq('end_date', end_date);
 
     const customBonusesByEmp: Record<string, { reason: string, percentage: number, amount: number }[]> = {};
+    const existingIdByEmp: Record<string, string> = {};
 
     if (existingPayrolls && existingPayrolls.length > 0) {
+      for (const ep of existingPayrolls) {
+        if (ep.id) existingIdByEmp[ep.employee_id] = ep.id;
+      }
       const loanReverts: Record<string, number> = {};
       for (const ep of existingPayrolls) {
         let bd = [];
@@ -265,7 +274,7 @@ serve(async (req: Request) => {
 
       supabase
         .from('shifts')
-        .select('id, work_days, start_time, end_time, break_duration, shift_type, target_hours, deduct_half_on_missing, shift_employees(employee_id)')
+        .select('id, work_days, start_time, end_time, break_duration, shift_type, target_hours, deduct_half_on_missing, early_arrival_grace_minutes, overtime_start_after_minutes, overtime_rate, overtime_rate_start_hours, shift_employees(employee_id)')
         .eq('company_id', company_id)
         .eq('is_active', true),
     ]);
@@ -364,6 +373,9 @@ serve(async (req: Request) => {
       const empLeaves = leavesByEmp[emp.id] || new Map<string, string>();
 
       let totalWorkHrs   = 0;
+      let totalRegularWorkHrs = 0;
+      let totalOvertimeHrs = 0;
+      let totalOvertimePay = 0;
       let ruleDeductions = 0;
       let ruleBonuses    = 0;
       let daysPresent    = 0;
@@ -386,6 +398,7 @@ serve(async (req: Request) => {
           const dayAmount = round2(dailyShiftHours * hourlyRate);
           if (isPaidLeave) {
             totalWorkHrs += dailyShiftHours;
+            totalRegularWorkHrs += dailyShiftHours;
             daysPresent++;
             breakdown.push({
               date: dateStr,
@@ -422,6 +435,40 @@ serve(async (req: Request) => {
                 daysPresent += shift?.deduct_half_on_missing ? 0.5 : 1;
               }
               totalWorkHrs += workHrs;
+
+              // Separate regular shift hours from overtime hours according to HR labor law standards
+              const regularHrs = Math.min(workHrs, dailyShiftHours);
+              totalRegularWorkHrs += regularHrs;
+
+              if (workHrs > dailyShiftHours) {
+                const otHours = round2(workHrs - dailyShiftHours);
+                const otRate = num(shift?.overtime_rate || 1.5);
+                const otTierStart = num(shift?.overtime_rate_start_hours || 0);
+
+                let weightedOtHours = 0;
+                if (otTierStart <= 0) {
+                  weightedOtHours = otHours * otRate;
+                } else {
+                  const tier1 = Math.min(otHours, otTierStart);
+                  const tier2 = Math.max(0, otHours - otTierStart);
+                  weightedOtHours = tier1 * 1.0 + tier2 * otRate;
+                }
+
+                const dayOtPay = round2(weightedOtHours * hourlyRate);
+                if (dayOtPay > 0) {
+                  totalOvertimeHrs += otHours;
+                  totalOvertimePay += dayOtPay;
+                  breakdown.push({
+                    date: dateStr,
+                    rule_name: `ساعات عمل إضافية (${otHours}س بمعدل ${otRate}x)`,
+                    action_type: 'overtime_pay',
+                    amount: dayOtPay,
+                    hours: otHours,
+                    rate: otRate,
+                    is_deduction: false,
+                  });
+                }
+              }
 
               if (isMissingPunch && shift?.deduct_half_on_missing) {
                 breakdown.push({
@@ -505,10 +552,30 @@ serve(async (req: Request) => {
         cur.setDate(cur.getDate() + 1);
       }
 
-      // ── الراتب المستحق بالساعات الفعلية ──────────────────────────────────
-      const earnedBase = totalWorkHrs > 0 && hourlyRate > 0
-        ? round2(totalWorkHrs * hourlyRate)
+      // ── الراتب المستحق بالساعات الرسمية المجدولة ──────────────────────────
+      const earnedBase = totalRegularWorkHrs > 0 && hourlyRate > 0
+        ? round2(totalRegularWorkHrs * hourlyRate)
         : 0;
+
+      // ── استقطاع ساعات وأيام عدم الحضور (الفرق بين الراتب التعاقدي والفعلي) ─
+      const unworkedAmount = round2(period_bs - earnedBase);
+      if (currentRunType !== 'weekly_advance' && unworkedAmount > 0) {
+        const unworkedDays = Math.max(0, scheduledDays - daysPresent);
+        const unworkedHours = round2(scheduledHours - totalRegularWorkHrs);
+        const subParts: string[] = [];
+        if (unworkedDays > 0) subParts.push(`${unworkedDays} يوم غياب`);
+        if (unworkedHours > 0) subParts.push(`${unworkedHours} ساعة غير مكتملة`);
+        const subDesc = subParts.length > 0 ? ` (${subParts.join(' · ')})` : '';
+
+        ruleDeductions += unworkedAmount;
+        breakdown.push({
+          date: start_date,
+          rule_name: `استقطاع ساعات وأيام عدم الحضور${subDesc}`,
+          action_type: 'deduct_unworked_hours',
+          amount: unworkedAmount,
+          is_deduction: true,
+        });
+      }
 
       // ── خصم السلف (employee_loans) ────────────────────────────────────────
       const empLoansArr = loansByEmp[emp.id] || [];
@@ -560,7 +627,7 @@ serve(async (req: Request) => {
       // ═══════════════════════════════════════════════════════════════════════
       // ── منطق السلف الأسبوعية ─────────────────────────────────────────────
       // ═══════════════════════════════════════════════════════════════════════
-      let grossEarned   = round2(earnedBase + housingAmt + transportAmt + ruleBonuses);
+      let grossEarned   = round2(earnedBase + totalOvertimePay + housingAmt + transportAmt + ruleBonuses);
       let advancePaid   = 0;
       let weeklyAdvancesDeduction = 0;
 
@@ -606,7 +673,7 @@ serve(async (req: Request) => {
 
       // ── الخصومات الكلية والصافي ───────────────────────────────────────────
       const totalDeductions = round2(ruleDeductions + loanDeduction + weeklyAdvancesDeduction);
-      const totalBonuses    = round2(ruleBonuses);
+      const totalBonuses    = round2(ruleBonuses + totalOvertimePay);
 
       let netSalary: number;
 
@@ -615,27 +682,29 @@ serve(async (req: Request) => {
         netSalary = round2(advancePaid - totalDeductions);
         if (netSalary < 0) netSalary = 0;
       } else {
-        // في المسيرة العادية أو الشهرية النهائية: الصافي الكامل
-        netSalary = round2(earnedBase + housingAmt + transportAmt + totalBonuses - totalDeductions);
+        // في المسيرة العادية أو الشهرية النهائية: الصافي = الراتب الأساسي + البدلات والمكافآت - إجمالي الاستقطاعات
+        netSalary = round2(period_bs + housingAmt + transportAmt + totalBonuses - totalDeductions);
         if (netSalary < 0) netSalary = 0; // لا يمكن أن يكون سالباً
       }
 
+      const existingId = existingIdByEmp[emp.id];
       payrollsToInsert.push({
+        ...(existingId ? { id: existingId } : {}),
         company_id,
         employee_id:      emp.id,
         start_date,
         end_date,
         run_type:         currentRunType,
         advance_rate:     isAdvanceMode ? advanceRate : 0,
-        gross_earned:     round2(earnedBase), // الراتب المستحق قبل السلفة
+        gross_earned:     round2(earnedBase + totalOvertimePay), // الراتب المستحق مع الإضافي
         advance_paid:     advancePaid,        // ما دُفع كسلفة (في المسيرة الأسبوعية)
         base_salary:      round2(period_bs),
         net_salary:       netSalary,
         deductions:       totalDeductions,
         housing:          round2(housingAmt),
         transport:        round2(transportAmt),
-        overtime_hours:   0,
-        overtime_amount:  totalBonuses,
+        overtime_hours:   round2(totalOvertimeHrs),
+        overtime_amount:  round2(totalOvertimePay),
         days_worked:      daysPresent,
         total_days:       scheduledDays,
         total_work_hours: round2(totalWorkHrs),

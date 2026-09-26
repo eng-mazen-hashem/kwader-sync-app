@@ -1,6 +1,7 @@
 import {
   LayoutDashboard, Users, CreditCard, LifeBuoy, Settings,
-  LogOut, ChevronRight, Activity, Building2, RefreshCw, Bell, Megaphone
+  LogOut, ChevronRight, Activity, Building2, RefreshCw, Bell, Megaphone,
+  MessageSquare, Sparkles
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useAuth } from "../../context/AuthContext";
@@ -17,6 +18,8 @@ export function AdminSidebar({ activeView, onViewChange, openTicketsCount = 0, p
     { id: "renewals", label: "Renewal Requests", icon: RefreshCw, badge: pendingRenewalsCount },
     { id: "payments", label: "طلبات الدفع 💳", icon: CreditCard, badge: pendingPaymentsCount },
     { id: "tickets", label: "Support Tickets", icon: LifeBuoy, badge: openTicketsCount },
+    { id: "whatsapp_gateway", label: "بوابة الواتساب والـ API 📲", icon: MessageSquare },
+    { id: "ai_agent", label: "وكيل المبيعات والخدمة (AI) 🤖", icon: Sparkles },
     { id: "diagnostics", label: "Devices & Diagnostics", icon: Activity },
     { id: "notifications", label: "Notifications", icon: Bell, badge: unreadNotificationsCount },
     { id: "broadcast", label: "Broadcast Alerts", icon: Megaphone },

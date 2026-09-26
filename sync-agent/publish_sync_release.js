@@ -104,7 +104,7 @@ function uploadReleaseAsset(uploadUrl, fileName, filePath) {
 
 async function main() {
     console.log('🚀 Starting KWADER Sync Agent Release Deployment...\n');
-    const version = '1.3.1';
+    const version = '1.4.2';
     const tagName = `v${version}`;
 
     const setupFile = path.join(__dirname, 'installer', `KWADER_Sync_Setup_v${version}.exe`);
@@ -123,7 +123,7 @@ async function main() {
     console.log(`   Size    : ${sizeMb} MB (${fileBuffer.length} bytes)`);
     console.log(`   SHA-256 : ${sha256}\n`);
 
-    // ── 1. Create or Update Release v1.3.1 ────────────────────────────────────
+    // ── 1. Create or Update Release v1.4.0 ────────────────────────────────────
     console.log(`🔍 Checking if release "${tagName}" exists on GitHub...`);
     let release = null;
     try {
@@ -146,13 +146,13 @@ async function main() {
         tag_name:         tagName,
         target_commitish: 'master',
         name:             `KWADER Sync v${version}`,
-        body:             `## KWADER Sync Agent v${version}\n\n### What's New:\n- 🚀 WhatsApp Node v2.4.0 integration with persistent session stability\n- 🛡️ Fixed reconnect session wipe issue (added sessionKnownCorrupted guard)\n- 🤖 Fixed AI Orchestrator response type casting\n- ⚡ Egress and Realtime channel subscription optimization\n\n**SHA-256:** \`${sha256}\``,
+        body:             `## KWADER Sync Agent v${version}\n\n### What's New:\n- 🚀 **Decentralized WhatsApp Engine v2.5.0**: Multi-node cluster with automated heartbeat leases and instant failover\n- 🛡️ **Zero Black Windows / GUI Subsystem**: whatsapp-node.exe runs completely silent in background without any console or popup windows\n- ⚡ **Realtime Queue Processing**: Distributed transactional message delivery with zero duplicates\n- 🔄 **Automated OTA Engine**: Auto-restart & background recovery\n\n**SHA-256:** \`${sha256}\``,
         draft:            false,
         prerelease:       false,
     });
     console.log(`✅ Release created: ${release.html_url}`);
 
-    // Upload KWADER_Sync_Setup_v1.3.0.exe
+    // Upload KWADER_Sync_Setup_v1.4.0.exe
     console.log(`⬆️ Uploading ${path.basename(setupFile)} to release ${tagName}...`);
     const asset1 = uploadReleaseAsset(release.upload_url, path.basename(setupFile), setupFile);
     console.log(`   ✅ Uploaded: ${asset1.browser_download_url}`);
@@ -190,7 +190,16 @@ async function main() {
         { key: 'sync_agent_version', value: `v${version}` },
         { key: 'sync_agent_download_url', value: primaryDownloadUrl },
         { key: 'desktop_version', value: version },
-        { key: 'desktop_download_url', value: primaryDownloadUrl }
+        { key: 'desktop_download_url', value: primaryDownloadUrl },
+        {
+            key: 'sync_app_release',
+            value: {
+                version: version,
+                sha256: sha256,
+                download_url: primaryDownloadUrl,
+                updated_at: new Date().toISOString()
+            }
+        }
     ];
 
     for (const item of updates) {

@@ -12,8 +12,10 @@ import {
     AlertTriangle, CheckCircle2, XCircle,
     Upload, Plus, Trash2, ExternalLink, FileCheck,
     DollarSign, CreditCard, Users, Shield, RefreshCw,
-    PowerOff, Power, X, Save, Loader2
+    PowerOff, Power, X, Save, Loader2, QrCode, MessageCircle, Share2,
+    Smartphone, RotateCcw
 } from 'lucide-react';
+import QRCode from 'react-qr-code';
 import { toast } from 'sonner';
 import { logAudit } from '../utils/auditLogger';
 import './EmployeeProfile.css';
@@ -297,6 +299,63 @@ function StatusModal({ isOpen, onClose, onConfirm, employee }) {
 }
 
 // -------------------------------------------------------------------------
+function ShareAccessModal({ isOpen, onClose, employee }) {
+    if (!isOpen || !employee) return null;
+    const loginLink = `${window.location.origin}/me/login`;
+    const shareText = `مرحباً ${employee.name}،\nتفضل رابط الدخول لبوابة الموظفين الخاصة بك:\n${loginLink}\n\nرقم البصمة الخاص بك (PIN): ${employee.device_pin}\n\n*ملاحظة أمنية:* عند تسجيل الدخول لأول مرة، سيصلك كود تحقق (OTP) على رقمك هذا على واتساب لتوثيق جهازك الشخصي ومنع تسجيل الحضور بالنيابة.`;
+    const whatsappUrl = `https://wa.me/${employee.phone ? employee.phone.replace(/\D/g, '') : ''}?text=${encodeURIComponent(shareText)}`;
+
+    return (
+        <div className="ep-modal-overlay" onClick={onClose}>
+            <div className="ep-modal-card ep-modal-sm" onClick={e => e.stopPropagation()} style={{ textAlign: 'center' }}>
+                <div className="ep-modal-header" style={{ justifyContent: 'center' }}>
+                    <div className="ep-modal-icon-header" style={{ color: '#6366f1', background: 'rgba(99, 102, 241, 0.1)', margin: '0 auto' }}>
+                        <QrCode size={24} />
+                    </div>
+                    <button className="ep-modal-close" onClick={onClose} style={{ position: 'absolute', left: '16px' }}><X size={20} /></button>
+                </div>
+                <h3 style={{ marginTop: '12px', color: 'var(--text-primary)' }}>مشاركة رابط الدخول</h3>
+                <p className="ep-modal-desc" style={{ marginBottom: '16px' }}>
+                    امسح رمز الاستجابة السريعة (QR Code) أو أرسل الرابط عبر واتساب للموظف.
+                </p>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px', background: '#fff', padding: '16px', borderRadius: '12px', width: 'fit-content', margin: '0 auto 16px' }}>
+                    <QRCode value={loginLink} size={150} level="M" />
+                </div>
+                <div className="ep-form-row">
+                    <label style={{ textAlign: 'right' }}>رقم الموظف</label>
+                    <input type="text" value={employee.phone || 'غير مسجل'} disabled style={{ textAlign: 'center' }} />
+                </div>
+                <div className="ep-form-row">
+                    <label style={{ textAlign: 'right' }}>رقم البصمة (PIN)</label>
+                    <input type="text" value={employee.device_pin || 'غير مسجل'} disabled style={{ textAlign: 'center', letterSpacing: '2px', fontWeight: 'bold' }} />
+                </div>
+                <div style={{ background: 'rgba(37, 211, 102, 0.08)', border: '1px solid rgba(37, 211, 102, 0.25)', borderRadius: '8px', padding: '10px 12px', marginTop: '12px', textAlign: 'right', fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                    <div style={{ fontWeight: 600, color: '#25D366', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                        <Shield size={14} /> حماية أمان الجهاز ورمز OTP
+                    </div>
+                    عند الدخول لأول مرة سيرسل النظام كود تحقق OTP تلقائياً على واتساب لتوثيق جهاز الموظف الشخصي ومنع تسجيل الحضور بالنيابة أو الدخول من جهاز آخر.
+                </div>
+                <div className="ep-modal-footer" style={{ justifyContent: 'center', marginTop: '20px', flexWrap: 'wrap' }}>
+                    <a
+                        href={whatsappUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ep-btn ep-btn--primary"
+                        style={{ background: '#25D366', borderColor: '#25D366', color: '#fff', width: '100%', justifyContent: 'center', padding: '12px' }}
+                        disabled={!employee.phone}
+                        onClick={(e) => { if (!employee.phone) { e.preventDefault(); toast.error('رقم هاتف الموظف غير مسجل'); } }}
+                    >
+                        <MessageCircle size={18} />
+                        إرسال عبر واتساب
+                    </a>
+                    <button className="ep-btn-cancel" onClick={onClose} style={{ width: '100%' }}>إغلاق</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// -------------------------------------------------------------------------
 export default function EmployeeProfile() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -339,6 +398,7 @@ export default function EmployeeProfile() {
     const [editForm, setEditForm] = useState({});
     const [editSaving, setEditSaving] = useState(false);
     const [departments, setDepartments] = useState([]);
+    const [shareModal, setShareModal] = useState(false);
 
 // -------------------------------------------------------------------------
     const fetchEmployee = useCallback(async () => {
@@ -351,7 +411,8 @@ export default function EmployeeProfile() {
                     id, name, phone, device_pin, base_salary, joining_date,
                     department_id, status, employment_type, position,
                     national_id, notes, inactive_reason, termination_date,
-                    exclude_from_weekly_advance, departments(name)
+                    exclude_from_weekly_advance, bound_device_id, bound_device_name,
+                    device_bound_at, first_login_at, departments(name)
                 `)
                 .eq('id', id)
                 .eq('company_id', company.id)
@@ -575,6 +636,38 @@ export default function EmployeeProfile() {
         }
     };
 
+    const handleResetDevice = () => {
+        toast('هل أنت متأكد من فك ربط جهاز هذا الموظف؟', {
+            description: 'سيتمكن الموظف من تسجيل الدخول من جهاز جديد وتوثيقه بكود WhatsApp OTP جديد.',
+            action: {
+                label: 'فك الربط',
+                onClick: async () => {
+                    try {
+                        const { data, error } = await supabase.rpc('admin_reset_employee_device', {
+                            p_employee_id: id,
+                            p_company_id: company.id,
+                        });
+                        if (error) throw error;
+                        if (!data?.success) throw new Error(data?.message || 'فشل فك ربط الجهاز');
+                        toast.success('✅ تم فك ربط الجهاز بنجاح. سيطلب منه رمز OTP عند الدخول مجدداً.');
+                        await logAudit({
+                            company_id: company.id,
+                            action: 'RESET_EMPLOYEE_DEVICE',
+                            table_name: 'employees',
+                            record_id: id,
+                        });
+                        fetchEmployee();
+                    } catch (err) {
+                        console.error('[EmployeeProfile] handleResetDevice:', err.message);
+                        toast.error('حدث خطأ: ' + err.message);
+                    }
+                },
+            },
+            cancel: { label: 'إلغاء', onClick: () => {} },
+            duration: 8000,
+        });
+    };
+
 // -------------------------------------------------------------------------
     const handleDeleteDoc = useCallback(async (docId) => {
         // constitution §9: no window.confirm — use toast with action button
@@ -728,6 +821,10 @@ export default function EmployeeProfile() {
                                     {isActive ? <PowerOff size={15} /> : <Power size={15} />}
                                     {isActive ? 'إيقاف' : 'تفعيل'}
                                 </button>
+                                <button className="ep-btn ep-btn--ghost" onClick={() => setShareModal(true)}>
+                                    <Share2 size={15} />
+                                    مشاركة الدخول
+                                </button>
                                 <button className="ep-btn ep-btn--ghost" onClick={() => setMoreMenu(m => !m)}>
                                     <MoreHorizontal size={18} />
                                 </button>
@@ -828,8 +925,9 @@ export default function EmployeeProfile() {
             {activeTab === 'basic' && (
                 <div className="ep-tab-content">
                     <div className="ep-two-col">
-                        {/* Column 1: Core Info */}
-                        <div className="ep-card">
+                        {/* Column 1: Core Info & Security */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                            <div className="ep-card">
                             <h3 className="ep-card-title"><Shield size={18} /> المعلومات الأساسية</h3>
                             <div className="ep-info-grid">
                                 {editMode ? (
@@ -912,8 +1010,79 @@ export default function EmployeeProfile() {
                             </div>
                         </div>
 
-                        {/* Column 2: Leave Summary */}
+                        {/* Device Security Card */}
                         <div className="ep-card">
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+                                <h3 className="ep-card-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <Smartphone size={18} /> أمان الحساب والجهاز المعتمد
+                                </h3>
+                                <span className={`ep-chip ${employee.bound_device_id ? 'success' : 'warning'}`} style={{ fontSize: '0.78rem' }}>
+                                    {employee.bound_device_id ? 'جهاز موثق ومقيد' : 'لم يتم ربط جهاز'}
+                                </span>
+                            </div>
+                            
+                            <div style={{
+                                padding: '16px',
+                                borderRadius: '12px',
+                                background: employee.bound_device_id ? 'rgba(99, 102, 241, 0.05)' : 'rgba(245, 158, 11, 0.05)',
+                                border: `1px solid ${employee.bound_device_id ? 'rgba(99, 102, 241, 0.2)' : 'rgba(245, 158, 11, 0.2)'}`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                flexWrap: 'wrap',
+                                gap: '14px'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', flex: 1, minWidth: '240px' }}>
+                                    <div style={{
+                                        width: '42px',
+                                        height: '42px',
+                                        borderRadius: '10px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        background: employee.bound_device_id ? 'rgba(99, 102, 241, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                                        color: employee.bound_device_id ? '#6366f1' : '#f59e0b',
+                                        flexShrink: 0
+                                    }}>
+                                        <Smartphone size={22} />
+                                    </div>
+                                    <div>
+                                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem' }}>
+                                            {employee.bound_device_id ? (employee.bound_device_name || 'جهاز مسجل') : 'لم يتم ربط أي جهاز حتى الآن'}
+                                        </div>
+                                        <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '4px', lineHeight: 1.5 }}>
+                                            {employee.bound_device_id ? (
+                                                <>
+                                                    <span>تم التحقق والربط عبر كود WhatsApp OTP في {formatDate(employee.device_bound_at)}.</span>
+                                                    <br />
+                                                    <span style={{ color: 'var(--text-tertiary)', fontSize: '0.78rem' }}>
+                                                        معرف الجهاز: {employee.bound_device_id.slice(0, 18)}...
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <span>عند أول تسجيل دخول للموظف، سيرسل له النظام كود OTP على الواتساب لتوثيق جهازه الشخصي ولن يُسمح بتسجيل الدخول من جهاز موظف آخر منعاً لتسجيل الحضور بالنيابة.</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                                {employee.bound_device_id && (
+                                    <button
+                                        type="button"
+                                        className="ep-btn ep-btn--ghost"
+                                        style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)', fontSize: '0.82rem', padding: '8px 14px' }}
+                                        onClick={handleResetDevice}
+                                        title="فك ارتباط هذا الجهاز ليتمكن الموظف من تسجيل الدخول وتوثيق جهاز جديد برمز OTP"
+                                    >
+                                        <RotateCcw size={14} />
+                                        فك ربط الجهاز (إلغاء التوثيق)
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Column 2: Leave Summary */}
+                    <div className="ep-card">
                             <h3 className="ep-card-title"><PlaneTakeoff size={18} /> سجل الإجازات</h3>
                             {leaves.length === 0 ? (
                                 <div className="ep-empty-inner">
@@ -1103,6 +1272,20 @@ export default function EmployeeProfile() {
                                             <tr key={pay.id} className="ep-payroll-row">
                                                 <td>
                                                     <p className="ep-pay-period">{formatDate(pay.start_date)} — {formatDate(pay.end_date)}</p>
+                                                    <span style={{ 
+                                                        display: 'inline-block',
+                                                        fontSize: '11px',
+                                                        fontFamily: 'monospace',
+                                                        background: 'rgba(59, 130, 246, 0.08)',
+                                                        color: '#3b82f6',
+                                                        padding: '1px 6px',
+                                                        borderRadius: '4px',
+                                                        marginTop: '3px',
+                                                        fontWeight: 600,
+                                                        letterSpacing: '0.5px'
+                                                    }}>
+                                                        PAY-{(pay.id || '').slice(0, 8).toUpperCase()}
+                                                    </span>
                                                 </td>
                                                 <td>{formatCurrency(pay.base_salary)}</td>
                                                 <td>{pay.overtime_hours ? `${pay.overtime_hours}س` : '—'}</td>
@@ -1266,6 +1449,12 @@ export default function EmployeeProfile() {
                 isOpen={statusModal}
                 onClose={() => setStatusModal(false)}
                 onConfirm={handleToggleStatus}
+                employee={employee}
+            />
+
+            <ShareAccessModal
+                isOpen={shareModal}
+                onClose={() => setShareModal(false)}
                 employee={employee}
             />
         </div>

@@ -12,10 +12,10 @@ const ctaStyles = [
 
 export function Pricing() {
   const [isYearly, setIsYearly] = useState(false);
-  const [monthlyPrices, setMonthlyPrices] = useState([29, 79, 199]);
-  const [yearlyPrices, setYearlyPrices] = useState([23, 63, 159]);
+  const [monthlyPrices, setMonthlyPrices] = useState([690, 1690, 3290]);
+  const [yearlyPrices, setYearlyPrices] = useState([550, 1350, 2650]);
   const [plansDetails, setPlansDetails] = useState([]);
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const p = t.pricing;
 
   useEffect(() => {
@@ -158,14 +158,15 @@ export function Pricing() {
                   <h3 className="text-gray-900 mb-1" style={{ fontWeight: 800, fontSize: "1.2rem" }}>{name}</h3>
                   <p className="text-gray-500 text-sm mb-6" style={{ lineHeight: 1.6 }}>{plan.description}</p>
 
-                  <div className="flex items-end gap-1 mb-1">
+                  <div className="flex items-baseline gap-1.5 mb-1" dir={isRTL ? "rtl" : "ltr"}>
                     <span
                       className="text-gray-900"
-                      style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: "2.8rem", lineHeight: 1 }}
+                      style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: "2.4rem", lineHeight: 1 }}
                     >
-                      ${isYearly ? yearly : monthly}
+                      {isYearly ? yearly : monthly}
                     </span>
-                    <span className="text-gray-400 text-sm mb-1">{p.perMonth}</span>
+                    <span className="text-gray-600 font-black text-sm">{p.currency || (isRTL ? 'ج.م' : 'EGP')}</span>
+                    <span className="text-gray-400 text-xs font-normal ms-1">{p.perMonth}</span>
                   </div>
                   {isYearly ? (
                     <p className="text-emerald-600 text-xs mb-6" style={{ fontWeight: 600 }}>

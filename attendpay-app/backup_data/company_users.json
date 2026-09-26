@@ -1,0 +1,30 @@
+[
+  {
+    "id": "9cbcae10-b4d2-43f6-a5f7-385d7950d539",
+    "company_id": "127294a0-1438-42fb-a4f9-3e92d6b4b493",
+    "user_id": "a67bd8bd-c384-4a4e-a5dd-35328c9edbab",
+    "role": "hr",
+    "permissions": {
+      "manage_loans": true,
+      "manage_payroll": true,
+      "manage_settings": false,
+      "manage_employees": false,
+      "manage_attendance": true
+    },
+    "created_at": "2026-06-03 11:17:09.302298+00"
+  },
+  {
+    "id": "971543aa-48de-4477-8097-5c5ea2f683cc",
+    "company_id": "a1c4f5a9-fe9c-4cc6-be28-a4ef44b4b361",
+    "user_id": "7fbe37f6-921a-4766-b330-c9eb79a6d6fd",
+    "role": "hr",
+    "permissions": {
+      "manage_loans": true,
+      "manage_payroll": false,
+      "manage_settings": false,
+      "manage_employees": true,
+      "manage_attendance": true
+    },
+    "created_at": "2026-09-04 16:47:13.052838+00"
+  }
+]

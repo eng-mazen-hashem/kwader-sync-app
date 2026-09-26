@@ -96,7 +96,7 @@
 @media (max-width: 640px) {
     .emp-page {
         gap: 1rem !important;
-        padding: 0.1rem 0 115px !important;
+        padding: 0.5rem 0 115px !important;
     }
     .emp-header {
         gap: 0.75rem !important;
@@ -104,38 +104,51 @@
         align-items: flex-start !important;
     }
     .emp-title {
-        font-size: 1.4rem !important;
-        margin-bottom: 0.15rem !important;
+        font-size: 1.5rem !important;
+        margin-bottom: 0.25rem !important;
+        letter-spacing: -0.02em !important;
     }
     .emp-subtitle {
-        font-size: 0.78rem !important;
+        font-size: 0.85rem !important;
     }
     .emp-header-actions {
         width: 100% !important;
         display: flex !important;
-        gap: 0.5rem !important;
+        gap: 0.75rem !important;
     }
     .emp-btn-primary, 
     .emp-btn-secondary {
         flex: 1 !important;
         justify-content: center !important;
-        padding: 0.55rem 0.75rem !important;
-        font-size: 0.8rem !important;
-        border-radius: 12px !important;
-    }
-    .emp-stats-row { 
-        grid-template-columns: repeat(2, 1fr) !important; 
-        gap: 0.55rem !important;
-    }
-    .emp-stats-row > div:nth-child(3) {
-        grid-column: span 2 !important;
-    }
-    .emp-stat-card {
-        padding: 0.75rem 0.85rem !important;
+        padding: 0.7rem 1rem !important;
+        font-size: 0.85rem !important;
         border-radius: 14px !important;
     }
+    
+    /* Google-style Horizontal scroll for stats */
+    .emp-stats-row { 
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        scroll-snap-type: x mandatory;
+        gap: 0.75rem !important;
+        padding-bottom: 0.5rem;
+        -webkit-overflow-scrolling: touch;
+        /* Hide scrollbar */
+        scrollbar-width: none; 
+    }
+    .emp-stats-row::-webkit-scrollbar {
+        display: none;
+    }
+    .emp-stat-card {
+        flex: 0 0 calc(85% - 0.75rem) !important;
+        scroll-snap-align: center;
+        padding: 1.25rem !important;
+        border-radius: 20px !important;
+        min-width: 220px;
+    }
     .emp-stat-top {
-        margin-bottom: 0.4rem !important;
+        margin-bottom: 0.75rem !important;
     }
     .emp-stat-icon {
         width: 2.2rem !important;
@@ -153,8 +166,13 @@
         font-size: 1.35rem !important;
     }
     .emp-filter-bar {
-        gap: 0.5rem !important;
+        position: sticky !important;
+        top: 0.5rem;
+        z-index: 40;
+        gap: 0.75rem !important;
         flex-direction: column !important;
+        padding: 1rem !important;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2) !important;
     }
     .emp-search-wrap,
     .emp-filter-group {
@@ -162,12 +180,12 @@
     }
     .emp-search-input,
     .emp-select {
-        font-size: 0.82rem !important;
-        padding: 0.5rem 0.75rem !important;
-        border-radius: 12px !important;
+        font-size: 0.875rem !important;
+        padding: 0.65rem 1rem !important;
+        border-radius: 14px !important;
     }
     .emp-search-input {
-        padding-inline-start: 2.3rem !important;
+        padding-inline-start: 2.75rem !important;
     }
     .emp-table-wrap {
         overflow-x: auto !important;
@@ -1042,6 +1060,7 @@
     letter-spacing: -0.02em;
     background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -1288,4 +1307,237 @@
 @keyframes emp-mb-fade-in {
     from { opacity: 0; }
     to { opacity: 1; }
+}
+
+/* -------------------------------------------------------------------------
+   Mobile & Desktop Visibility Classes
+------------------------------------------------------------------------- */
+.emp-mobile-only {
+    display: none !important;
+}
+
+.emp-desktop-only {
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .emp-mobile-only {
+        display: block !important;
+    }
+    .emp-desktop-only {
+        display: none !important;
+    }
+}
+
+/* -------------------------------------------------------------------------
+   Mobile FAB (Floating Action Button)
+------------------------------------------------------------------------- */
+.emp-fab-add {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px; /* MD3 rounded square style */
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    border: none;
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 50;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ar .emp-fab-add {
+    right: auto;
+    left: 20px;
+}
+.emp-fab-add:hover, .emp-fab-add:active {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 12px 28px rgba(99, 102, 241, 0.5);
+    border-radius: 20px;
+}
+
+/* -------------------------------------------------------------------------
+   Mobile Cards View
+------------------------------------------------------------------------- */
+.emp-mobile-cards-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 16px;
+    padding-bottom: 24px;
+}
+
+/* Material Design 3 Style Cards */
+.emp-mobile-card {
+    background: rgba(30, 30, 46, 0.65);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 20px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.emp-mobile-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.05), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.emp-mobile-card:active {
+    transform: scale(0.97);
+}
+
+.emp-mobile-card:active::before {
+    opacity: 1;
+}
+
+[data-theme='light'] .emp-mobile-card {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+}
+
+.emp-mc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.emp-mc-user {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.emp-mc-name-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.emp-mc-name-wrap .emp-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+}
+
+.emp-mc-dept {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 3px 10px;
+    border-radius: 9999px; /* Pill shape */
+    margin-top: 4px;
+    width: fit-content;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+[data-theme='light'] .emp-mc-dept {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.03);
+}
+
+.emp-mc-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.02);
+}
+
+[data-theme='light'] .emp-mc-body {
+    background: #f8fafc;
+    border-color: rgba(0,0,0,0.03);
+}
+
+.emp-mc-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    min-width: 45%;
+    font-weight: 500;
+}
+
+.emp-mc-salary {
+    font-weight: 800;
+    color: var(--text-primary);
+    background: rgba(16, 185, 129, 0.1);
+    color: #34d399;
+    padding: 4px 10px;
+    border-radius: 8px;
+}
+[data-theme='light'] .emp-mc-salary {
+    color: #059669;
+}
+
+.emp-mc-footer {
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+/* Material Tonal Buttons for Actions */
+.emp-mc-action-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 14px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    background: rgba(99, 102, 241, 0.1);
+    color: #818cf8;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme='light'] .emp-mc-action-btn {
+    background: rgba(99, 102, 241, 0.08);
+    color: #6366f1;
+}
+
+.emp-mc-action-btn:hover, .emp-mc-action-btn:active {
+    background: rgba(99, 102, 241, 0.15);
+    color: #818cf8;
+    transform: scale(0.97);
+}
+
+.emp-mc-action-btn.emp-mc-action-danger {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.emp-mc-action-btn.emp-mc-action-danger:hover, .emp-mc-action-btn.emp-mc-action-danger:active {
+    background: rgba(239, 68, 68, 0.18);
+    color: #ef4444;
+}
+
+/* Fix mobile modal closing issue and stats */
+@media (max-width: 768px) {
+    .emp-header-actions .emp-btn-primary {
+        display: none !important; /* hidden in favor of FAB */
+    }
 }
