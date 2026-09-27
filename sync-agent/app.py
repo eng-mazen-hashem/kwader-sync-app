@@ -41,11 +41,13 @@ except Exception:
     Image = None
 
 APP_TITLE = 'KWADER Sync'
+APP_VERSION = '1.4.6'
+APP_BUILD = '960'
 APP_ID = 'sync-agent'
 WINDOWS_APP_ID = 'com.kwader.sync.agent'
 ORG_NAME = 'KWADER'
-ENCODED_URL = 'aHR0cHM6Ly93aHVvcHFuaG1zZXZsaWxrY2ZyZS5zdXBhYmFzZS5jbw=='
-ENCODED_KEY = 'c2JfcHVibGlzaGFibGVfOFM5U0pZVU9MbGpvMmN1UFJJeVJWd19vX2xtVUhmdQ=='
+ENCODED_URL = 'aHR0cHM6Ly96bWhvYWZqdWdjbGdub21mZWJnZS5zdXBhYmFzZS5jbw=='
+ENCODED_KEY = 'c2JfcHVibGlzaGFibGVfTG1IeXVELTItNVlKQWJSOUlJS2Z5UV9TWDVEdUQzeg=='
 
 def resource_path(*parts):
     if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
@@ -196,7 +198,7 @@ class WhatsappNodeManager:
             _gemini_def = base64.b64decode('QVEuQWI4Uk42STRBbFI0RFlmSS1oMUtib2hqVG1hbW91YU9pb3NaV1BLeXB0TGZzc01KSWc=').decode('utf-8')
             env['GEMINI_API_KEY'] = os.getenv('GEMINI_API_KEY', _gemini_def)
             # Always pass Service Role Key to whatsapp-node (fallback to new DB key)
-            _srk_def = base64.b64decode('ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmhZbUZ6WlNJc0luSmxaaUk2SW5kb2RXOXdjVzVvYlhObGRteHBiR3RqWm5KbElpd2ljbTlzWlNJNkltRnViMjRpTENKcFlYUWlPakUzT0RrNE1EYzRNVGdzSW1WNGNDSTZNakV3TlRNNE16Z3hPSDAudjdDUUw2VmdCMEhLbW9Cb3hHX29DckpoTVFFaFJHOEtsRjZTRloyU3U3SQ==').decode('utf-8')
+            _srk_def = base64.b64decode('c2Jfc2VjcmV0XzFkalFvSmFLLVZQaEtTbUNmRnVHX2dfQkV6dkZDWmc=').decode('utf-8')
             _srk = os.getenv('SUPABASE_SERVICE_ROLE_KEY') or _srk_def
             env['SUPABASE_KEY'] = os.getenv('SUPABASE_KEY') or _srk
             env['SUPABASE_SERVICE_ROLE_KEY'] = _srk
@@ -218,6 +220,28 @@ class WhatsappNodeManager:
                             log_agent(f"Resolved company WhatsApp Channel ID: {channel_id}")
             except Exception as e:
                 log_agent(f"Failed to resolve WhatsApp Channel ID: {e}", level='WARNING')
+
+            # Ensure local AppData .env files are strictly synchronized with active Supabase project
+            try:
+                channel_def = env.get('DEFAULT_CHANNEL_ID', '2a326ace-afbd-47b9-927e-25e44fb973cd')
+                for env_dir in [DATA_DIR, DATA_DIR / 'bin']:
+                    env_dir.mkdir(parents=True, exist_ok=True)
+                    env_file = env_dir / '.env'
+                    env_content = (
+                        f"SUPABASE_URL={SUPABASE_URL}\n"
+                        f"SUPABASE_KEY={_srk}\n"
+                        f"SUPABASE_SERVICE_ROLE_KEY={_srk}\n"
+                        f"GEMINI_API_KEY={env['GEMINI_API_KEY']}\n"
+                        f"GEMINI_MODEL=gemini-3.6-flash\n"
+                        f"GITHUB_TOKEN={env['GITHUB_TOKEN']}\n"
+                        f"GITHUB_REPO=eng-mazen-hashem/kwader-sync-app\n"
+                        f"GITHUB_SESSION_REPO={env['GITHUB_SESSION_REPO']}\n"
+                        f"DEFAULT_CHANNEL_ID={channel_def}\n"
+                    )
+                    with open(env_file, 'w', encoding='utf-8') as ef:
+                        ef.write(env_content)
+            except Exception as e:
+                log_agent(f"Notice syncing local .env: {e}", level='DEBUG')
 
             creationflags = 0
             startupinfo = None
@@ -539,7 +563,7 @@ class SyncAppUpdater:
     def __init__(self, manager):
         self.manager = manager
         self.github_repo = 'eng-mazen-hashem/kwader-sync-app'
-        self.current_version = '1.4.2'
+        self.current_version = APP_VERSION
         self._thread = None
         self._stop_event = threading.Event()
 
@@ -652,19 +676,60 @@ class SyncAppUpdater:
                 except Exception:
                     pass
 
-            # Start the installer silently (NSIS will auto-relaunch app when completed)
-            subprocess.Popen([str(tmp_exe), '/S'], 
-                creationflags=subprocess.CREATE_NO_WINDOW | getattr(subprocess, 'DETACHED_PROCESS', 0x00000008)
-            )
-            
-            # Forcefully terminate the process so the installer can overwrite the executable
-            try:
-                if 'TRAY_ICON' in globals() and TRAY_ICON:
-                    TRAY_ICON.stop()
-            except: pass
-            import os
-            os._exit(0)
-            return True
+                launched = False
+                import ctypes
+                try:
+                    # 1. If already running as admin, silent Popen works directly
+                    if ctypes.windll.shell32.IsUserAnAdmin():
+                        subprocess.Popen([str(tmp_exe), '/S'], 
+                            creationflags=subprocess.CREATE_NO_WINDOW | getattr(subprocess, 'DETACHED_PROCESS', 0x00000008)
+                        )
+                        launched = True
+                except Exception as e:
+                    print(f'[SYNC-OTA] Direct Popen check error: {e}')
+
+                if not launched:
+                    # 2. Non-admin: use ShellExecuteW with 'runas' to trigger UAC elevation cleanly without WinError 740
+                    try:
+                        # nShowCmd = 1 (SW_SHOWNORMAL) ensures UAC elevation prompt displays cleanly
+                        ret = ctypes.windll.shell32.ShellExecuteW(None, "runas", str(tmp_exe), "/S", None, 1)
+                        if ret > 32:
+                            launched = True
+                        else:
+                            print(f'[SYNC-OTA] ShellExecute returned {ret}')
+                    except Exception as e:
+                        print(f'[SYNC-OTA] ShellExecuteW failed: {e}')
+
+                if not launched:
+                    # 3. Fallback: PowerShell Start-Process -Verb RunAs
+                    try:
+                        ps_cmd = f"Start-Process -FilePath '{tmp_exe}' -ArgumentList '/S' -Verb RunAs"
+                        subprocess.Popen(['powershell', '-Command', ps_cmd],
+                            creationflags=subprocess.CREATE_NO_WINDOW | getattr(subprocess, 'DETACHED_PROCESS', 0x00000008)
+                        )
+                        launched = True
+                    except Exception as e:
+                        print(f'[SYNC-OTA] PowerShell RunAs failed: {e}')
+            else:
+                subprocess.Popen([str(tmp_exe), '/S'])
+                launched = True
+
+            if launched:
+                log_to_ui('Update launched. Restarting application...', 'info')
+                import time
+                time.sleep(1)
+                # Forcefully terminate the process so the installer can overwrite the executable
+                try:
+                    if 'TRAY_ICON' in globals() and TRAY_ICON:
+                        TRAY_ICON.stop()
+                except Exception:
+                    pass
+                import os
+                os._exit(0)
+                return True
+            else:
+                log_to_ui('Failed to launch silent installer with elevation.', 'error')
+                return False
         except Exception as e:
             print(f'[SYNC-OTA] Install failed: {e}')
             if tmp_exe.exists():
@@ -2021,10 +2086,13 @@ class Api:
         return {
             'local_ip': local_ip,
             'subnet': subnet,
-            'app_version': '1.4.2',
-            'build': '904',
+            'app_version': APP_VERSION,
+            'build': APP_BUILD,
             'platform': sys.platform
         }
+
+    def get_system_info(self):
+        return self.get_host_info()
 
     def get_status(self):
         return {

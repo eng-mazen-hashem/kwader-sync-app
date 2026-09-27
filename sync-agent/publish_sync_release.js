@@ -30,21 +30,26 @@ function getGitHubToken() {
         });
         const m = out.match(/password=(.+)/);
         if (m) return m[1].trim();
-    } catch {}
+    } catch { }
     return '';
 }
 
 // Config & Credentials
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://whuopqnhmsevlilkcfre.supabase.co';
-const _defSrk = Buffer.from('c2Jfc2VjcmV0X0tCeW1oQ25RRW1WOTMyQ0J3R0tTVWdfcUZHZDJYTmo=', 'base64').toString('utf8');
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || _defSrk;
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://zmhoafjugclgnomfebge.supabase.co';
+const _srkDef = Buffer.from('c2Jfc2VjcmV0XzFkalFvSmFLLVZQaEtTbUNmRnVHX2dfQkV6dkZDWmc=', 'base64').toString('utf-8');
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || _srkDef;
 const _tkParts = ['g' + 'h' + 'p' + '_', '3B9H86YY', 'NqICRIYo', 'KTfPY3HG', 'X7yKM615Wc2Q'];
 const _defGhToken = _tkParts.join('');
 const GITHUB_TOKEN = getGitHubToken() || _defGhToken;
-const GITHUB_REPO  = 'eng-mazen-hashem/kwader-sync-app';
+const GITHUB_REPO = 'eng-mazen-hashem/kwader-sync-app';
 const [GH_OWNER, GH_REPO] = GITHUB_REPO.split('/');
 
-const { createClient } = require(path.join(__dirname, '..', 'kwader-whatsapp-service', 'node_modules', '@supabase', 'supabase-js'));
+let createClient;
+try {
+    createClient = require('@supabase/supabase-js').createClient;
+} catch {
+    createClient = require(path.join(__dirname, 'node_modules', '@supabase', 'supabase-js')).createClient;
+}
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 function computeSha256(filePath) {
@@ -60,9 +65,9 @@ function githubRequest(method, reqPath, body = null) {
             method,
             headers: {
                 'Authorization': `token ${GITHUB_TOKEN}`,
-                'Accept':        'application/vnd.github+json',
-                'User-Agent':    'kwader-sync-publisher/1.1.0',
-                'Content-Type':  'application/json',
+                'Accept': 'application/vnd.github+json',
+                'User-Agent': 'kwader-sync-publisher/1.1.0',
+                'Content-Type': 'application/json',
             },
         };
 
@@ -104,7 +109,7 @@ function uploadReleaseAsset(uploadUrl, fileName, filePath) {
 
 async function main() {
     console.log('🚀 Starting KWADER Sync Agent Release Deployment...\n');
-    const version = '1.4.2';
+    const version = '1.4.6';
     const tagName = `v${version}`;
 
     const setupFile = path.join(__dirname, 'installer', `KWADER_Sync_Setup_v${version}.exe`);
@@ -123,7 +128,7 @@ async function main() {
     console.log(`   Size    : ${sizeMb} MB (${fileBuffer.length} bytes)`);
     console.log(`   SHA-256 : ${sha256}\n`);
 
-    // ── 1. Create or Update Release v1.4.0 ────────────────────────────────────
+    // ── 1. Create or Update Release v1.4.6 ────────────────────────────────────
     console.log(`🔍 Checking if release "${tagName}" exists on GitHub...`);
     let release = null;
     try {
@@ -139,16 +144,16 @@ async function main() {
     // Delete tag ref if exists
     try {
         await githubRequest('DELETE', `/repos/${GH_OWNER}/${GH_REPO}/git/refs/tags/${tagName}`);
-    } catch {}
+    } catch { }
 
     console.log(`📦 Creating new GitHub Release "${tagName}"...`);
     release = await githubRequest('POST', `/repos/${GH_OWNER}/${GH_REPO}/releases`, {
-        tag_name:         tagName,
+        tag_name: tagName,
         target_commitish: 'master',
-        name:             `KWADER Sync v${version}`,
-        body:             `## KWADER Sync Agent v${version}\n\n### What's New:\n- 🚀 **Decentralized WhatsApp Engine v2.5.0**: Multi-node cluster with automated heartbeat leases and instant failover\n- 🛡️ **Zero Black Windows / GUI Subsystem**: whatsapp-node.exe runs completely silent in background without any console or popup windows\n- ⚡ **Realtime Queue Processing**: Distributed transactional message delivery with zero duplicates\n- 🔄 **Automated OTA Engine**: Auto-restart & background recovery\n\n**SHA-256:** \`${sha256}\``,
-        draft:            false,
-        prerelease:       false,
+        name: `KWADER Sync v${version}`,
+        body: `## KWADER Sync Agent v${version}\n\n### What's New:\n- 🛡️ **Silent OTA Elevation**: Fixed silent background installer execution with proper UAC elevation and process lifecycle handling\n- 🚀 **Decentralized WhatsApp Engine v2.7.1**: Zero black windows GUI subsystem, automatic leader heartbeat and failover\n- 📱 **QR Code & Gateway Stabilization**: High-density QR rendering and real-time status synchronization\n- ⚡ **Zero Quota Bleed**: Optimized polling and resource caching\n\n**SHA-256:** \`${sha256}\``,
+        draft: false,
+        prerelease: false,
     });
     console.log(`✅ Release created: ${release.html_url}`);
 

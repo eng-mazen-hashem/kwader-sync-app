@@ -494,6 +494,21 @@ async function initApp() {
     applyLicenseAndQuotaData(settings);
     renderAll();
 
+    // Dynamically update agent version in sidebar
+    try {
+      if (api.get_system_info) {
+        const sysInfo = await api.get_system_info();
+        if (sysInfo && sysInfo.app_version) {
+          const verEl = document.getElementById('nodeVersionLabel');
+          if (verEl) {
+            verEl.innerText = `Agent v${sysInfo.app_version} • Build ${sysInfo.build || '950'}`;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('System info query skipped:', e);
+    }
+
     // Run auto-diagnostics in background after 2 seconds
     setTimeout(() => {
       runFullDiagnostics(true);
