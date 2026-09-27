@@ -41,8 +41,8 @@ except Exception:
     Image = None
 
 APP_TITLE = 'KWADER Sync'
-APP_VERSION = '1.4.6'
-APP_BUILD = '960'
+APP_VERSION = '1.4.7'
+APP_BUILD = '970'
 APP_ID = 'sync-agent'
 WINDOWS_APP_ID = 'com.kwader.sync.agent'
 ORG_NAME = 'KWADER'
@@ -586,7 +586,7 @@ class SyncAppUpdater:
             except Exception as e:
                 print(f'[SYNC-OTA] Error during update check: {e}')
 
-            if self._stop_event.wait(3600): # 1 hour
+            if self._stop_event.wait(600): # 10 minutes
                 break
 
     @staticmethod
@@ -2093,6 +2093,13 @@ class Api:
 
     def get_system_info(self):
         return self.get_host_info()
+
+    def check_updates(self):
+        def _bg():
+            log_to_ui('Checking for updates...', 'info')
+            SYNC_UPDATER.check_and_apply_update()
+        threading.Thread(target=_bg, daemon=True).start()
+        return {'status': 'checking'}
 
     def get_status(self):
         return {

@@ -6,7 +6,7 @@ $pyinstaller = Join-Path $venv 'Scripts\pyinstaller.exe'
 $makensis = "C:\Program Files (x86)\NSIS\makensis.exe"
 
 Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host " Building KWADER Sync Agent v1.4.6 Installer" -ForegroundColor Cyan
+Write-Host " Building KWADER Sync Agent v1.4.7 Installer" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 
 # 1. Check Python Venv
@@ -26,10 +26,6 @@ $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 $content = [System.IO.File]::ReadAllText("$root\app.py", [System.Text.Encoding]::UTF8)
 [System.IO.File]::WriteAllText("$root\app.py", $content, $utf8NoBom)
 Write-Host "[1/4] Cleaned app.py UTF-8 encoding (No BOM)." -ForegroundColor Green
-
-# Stop running instance if any
-cmd /c "taskkill /F /IM \"KWADER Sync.exe\" /T 2>NUL"
-cmd /c "taskkill /F /IM whatsapp-node.exe /T 2>NUL"
 
 # 4. Clean previous dist and build directories
 if (Test-Path "$root\dist\KWADER Sync") {
@@ -73,7 +69,7 @@ Push-Location "$root\installer"
 & $makensis kwader_sync.nsi
 Pop-Location
 
-$versionedSetup = "$root\installer\KWADER_Sync_Setup_v1.4.6.exe"
+$versionedSetup = "$root\installer\KWADER_Sync_Setup_v1.4.7.exe"
 $genericSetup = "$root\installer\KWADER Sync Setup.exe"
 
 if (Test-Path $versionedSetup) {

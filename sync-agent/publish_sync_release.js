@@ -109,7 +109,7 @@ function uploadReleaseAsset(uploadUrl, fileName, filePath) {
 
 async function main() {
     console.log('🚀 Starting KWADER Sync Agent Release Deployment...\n');
-    const version = '1.4.6';
+    const version = '1.4.7';
     const tagName = `v${version}`;
 
     const setupFile = path.join(__dirname, 'installer', `KWADER_Sync_Setup_v${version}.exe`);
@@ -128,7 +128,7 @@ async function main() {
     console.log(`   Size    : ${sizeMb} MB (${fileBuffer.length} bytes)`);
     console.log(`   SHA-256 : ${sha256}\n`);
 
-    // ── 1. Create or Update Release v1.4.6 ────────────────────────────────────
+    // ── 1. Create or Update Release v1.4.7 ────────────────────────────────────
     console.log(`🔍 Checking if release "${tagName}" exists on GitHub...`);
     let release = null;
     try {
@@ -151,7 +151,7 @@ async function main() {
         tag_name: tagName,
         target_commitish: 'master',
         name: `KWADER Sync v${version}`,
-        body: `## KWADER Sync Agent v${version}\n\n### What's New:\n- 🛡️ **Silent OTA Elevation**: Fixed silent background installer execution with proper UAC elevation and process lifecycle handling\n- 🚀 **Decentralized WhatsApp Engine v2.7.1**: Zero black windows GUI subsystem, automatic leader heartbeat and failover\n- 📱 **QR Code & Gateway Stabilization**: High-density QR rendering and real-time status synchronization\n- ⚡ **Zero Quota Bleed**: Optimized polling and resource caching\n\n**SHA-256:** \`${sha256}\``,
+        body: `## KWADER Sync Agent v${version} (OTA Test Release)\n\n### What's New:\n- ⚡ **Seamless OTA Experience**: Verified background OTA update pipeline with automatic prompt and zero disruption\n- 🛡️ **Silent OTA Elevation**: Fixed silent background installer execution with proper UAC elevation\n- 🚀 **Decentralized WhatsApp Engine v2.7.1**: Zero black windows GUI subsystem, automatic leader heartbeat and failover\n- 🔄 **Quick Update Checks**: Reduced update check interval and added on-demand update trigger\n\n**SHA-256:** \`${sha256}\``,
         draft: false,
         prerelease: false,
     });
