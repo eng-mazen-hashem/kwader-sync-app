@@ -41,8 +41,8 @@ except Exception:
     Image = None
 
 APP_TITLE = 'KWADER Sync'
-APP_VERSION = '1.4.8'
-APP_BUILD = '980'
+APP_VERSION = '1.4.9'
+APP_BUILD = '990'
 APP_ID = 'sync-agent'
 WINDOWS_APP_ID = 'com.kwader.sync.agent'
 ORG_NAME = 'KWADER'
