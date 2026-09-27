@@ -5,7 +5,7 @@ const { execSync } = require('child_process');
 
 const GITHUB_TOKEN = ['g', 'h', 'p', '_', '3B9H86YY', 'NqICRIYo', 'KTfPY3HG', 'X7yKM615Wc2Q'].join('');
 const REPO = 'eng-mazen-hashem/kwader-sync-app';
-const filePath = path.join(__dirname, 'installer', 'KWADER_Sync_Setup_v1.4.8.exe');
+const filePath = path.join(__dirname, 'installer', 'KWADER_Sync_Setup_v1.4.9.exe');
 
 function githubApi(endpoint, method = 'GET', data = null) {
     return new Promise((resolve, reject) => {
