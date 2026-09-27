@@ -41,8 +41,8 @@ except Exception:
     Image = None
 
 APP_TITLE = 'KWADER Sync'
-APP_VERSION = '1.4.7'
-APP_BUILD = '970'
+APP_VERSION = '1.4.8'
+APP_BUILD = '980'
 APP_ID = 'sync-agent'
 WINDOWS_APP_ID = 'com.kwader.sync.agent'
 ORG_NAME = 'KWADER'
@@ -458,10 +458,10 @@ class WhatsappNodeUpdater:
 
             log_agent(f"[OTA-UPDATER] Downloading update from {url}...")
             hasher = hashlib.sha256()
-            with requests.get(url, stream=True, timeout=90) as r:
+            with requests.get(url, stream=True, timeout=(30, 900)) as r:
                 r.raise_for_status()
                 with open(tmp_download, 'wb') as f:
-                    for chunk in r.iter_content(chunk_size=65536):
+                    for chunk in r.iter_content(chunk_size=262144):
                         if chunk:
                             f.write(chunk)
                             hasher.update(chunk)
@@ -655,10 +655,10 @@ class SyncAppUpdater:
         tmp_exe = DATA_DIR / 'KWADER_Sync_Update.exe'
         try:
             if tmp_exe.exists(): tmp_exe.unlink()
-            with requests.get(url, stream=True, timeout=90) as r:
+            with requests.get(url, stream=True, timeout=(30, 900)) as r:
                 r.raise_for_status()
                 with open(tmp_exe, 'wb') as f:
-                    for chunk in r.iter_content(chunk_size=65536):
+                    for chunk in r.iter_content(chunk_size=262144):
                         if chunk: f.write(chunk)
             
             log_to_ui(f'Update downloaded. Installing v{version} silently...', 'warning')
