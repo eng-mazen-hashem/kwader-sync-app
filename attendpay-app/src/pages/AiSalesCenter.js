@@ -526,7 +526,7 @@ export default function AiSalesCenter() {
     try {
       const { data, error } = await supabase
         .from('whatsapp_channels')
-        .select('id, name, phone_number, status, is_default, is_active, ai_enabled, company_id')
+        .select('id, name, phone_number, status, is_default, is_active, ai_enabled, company_id, ai_mode, ai_name, ai_greeting, ai_prompt_instructions, ai_auto_handoff_keywords')
         .order('created_at', { ascending: true });
       if (error) throw error;
       setChannels(data || []);
