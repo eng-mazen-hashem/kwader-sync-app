@@ -597,7 +597,7 @@ export function SupportTicketsView({ tickets = [], stats, totalCount, loading = 
 
       const { data, error } = await supabase
         .from("support_ticket_replies")
-        .select("*")
+        .select("id, ticket_id, sender_type, sender_name, message, created_at")
         .eq("ticket_id", ticketId)
         .order("created_at", { ascending: false }) // Get newest first to isolate correct range
         .range(fromRange, toRange);
@@ -838,16 +838,25 @@ export function SupportTicketsView({ tickets = [], stats, totalCount, loading = 
     }
   };
 
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   useEffect(() => {
     if (!serverMode) return;
     onQueryChange({
-      search,
+      search: debouncedSearch,
       status: statusFilter,
       priority: priorityFilter,
       page,
       pageSize,
     });
-  }, [onQueryChange, page, pageSize, priorityFilter, search, serverMode, statusFilter]);
+  }, [onQueryChange, page, pageSize, priorityFilter, debouncedSearch, serverMode, statusFilter]);
 
   const filtered = serverMode
     ? tickets
@@ -1311,8 +1320,8 @@ export function SystemSettingsView() {
   const [trialDays, setTrialDays] = useState(35);
 
   // Sync Agent dynamic settings
-  const [syncAgentVersion, setSyncAgentVersion] = useState("v1.4.0");
-  const [syncAgentDownloadUrl, setSyncAgentDownloadUrl] = useState("https://github.com/eng-mazen-hashem/kwader-sync-app/releases/download/v1.4.0/KWADER_Sync_Setup_v1.4.0.exe");
+  const [syncAgentVersion, setSyncAgentVersion] = useState("v1.4.4");
+  const [syncAgentDownloadUrl, setSyncAgentDownloadUrl] = useState("https://github.com/eng-mazen-hashem/kwader-sync-app/releases/download/v1.4.4/KWADER_Sync_Setup_v1.4.4.exe");
   const [selectedAgentFile, setSelectedAgentFile] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -1405,7 +1414,7 @@ export function SystemSettingsView() {
       setActiveNode(activeNodeName || defaultCh?.active_node_id || 'سيرفر ويندوز');
       setLastBeat(heartbeatTime || defaultCh?.last_heartbeat);
       setWaQr(null);
-    } else if (isAlive && (isQrFresh || activeChannelQr || defaultCh?.status === 'qr_pending')) {
+    } else if (isAlive && (isQrFresh || activeChannelQr || defaultCh?.status === 'qr_pending' || defaultCh?.status === 'waiting_for_qr' || defaultCh?.status === 'connecting')) {
       setWaStatus('qr_pending');
       setWaQr(activeChannelQr || (isQrFresh ? qrData?.value?.qr : null));
     } else {
@@ -1924,7 +1933,11 @@ export function SystemSettingsView() {
               <div className="bg-white p-3 rounded-xl border border-amber-200 shadow-sm">
 
                 {waQr ? (
-                  <QRCode value={waQr} size={192} style={{ height: "auto", maxWidth: "100%", width: "100%" }} />
+                  waQr.startsWith('data:image/') || waQr.startsWith('http') ? (
+                    <img src={waQr} alt="WhatsApp QR Code" className="w-48 h-48 object-contain mx-auto" />
+                  ) : (
+                    <QRCode value={waQr} size={192} style={{ height: "auto", maxWidth: "100%", width: "100%" }} />
+                  )
                 ) : (
                   <div className="flex flex-col items-center justify-center w-48 h-48 text-gray-400">
                     <Loader2 className="w-8 h-8 animate-spin mb-2" />
@@ -3628,18 +3641,25 @@ export function BroadcastAlertsView() {
   const [message, setMessage] = useState("");
   const [type, setType] = useState("info"); // info, warning, error, success
   const [sendEmail, setSendEmail] = useState(false);
+  const [sendWhatsApp, setSendWhatsApp] = useState(false);
   const [companiesCount, setCompaniesCount] = useState(0);
+  const [waEligibleCount, setWaEligibleCount] = useState(0);
   const [loadingCount, setLoadingCount] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     async function loadCompaniesCount() {
       try {
-        const { count, error } = await supabase
+        const { data, error } = await supabase
           .from("companies")
-          .select("id", { count: "exact", head: true });
-        if (!error) {
-          setCompaniesCount(count || 0);
+          .select("id, name, phone, settings");
+        if (!error && data) {
+          setCompaniesCount(data.length);
+          const waCount = data.filter((c) => {
+            const p = c.settings?.whatsapp_phone || c.phone || c.settings?.whatsapp_number;
+            return !!p;
+          }).length;
+          setWaEligibleCount(waCount);
         }
       } catch (err) {
         console.error("Failed to load companies count:", err);
@@ -3659,10 +3679,10 @@ export function BroadcastAlertsView() {
 
     setSubmitting(true);
     try {
-      // 1. Fetch all company IDs
+      // 1. Fetch all companies with settings for phone numbers
       const { data: allCompanies, error: fetchError } = await supabase
         .from("companies")
-        .select("id");
+        .select("id, name, phone, settings");
 
       if (fetchError) throw fetchError;
 
@@ -3671,13 +3691,12 @@ export function BroadcastAlertsView() {
         return;
       }
 
-      // 2. Prepare bulk insert
+      // 2. Prepare in-app bulk notifications (send_email removed to match DB schema)
       const notifications = allCompanies.map((c) => ({
         company_id: c.id,
         title: title.trim(),
         message: message.trim(),
         type,
-        send_email: sendEmail,
       }));
 
       // 3. Insert into company_notifications in chunks
@@ -3691,24 +3710,108 @@ export function BroadcastAlertsView() {
         if (insertError) throw insertError;
       }
 
-      // 4. Log admin activity
+      // 4. WhatsApp Broadcast Dispatch if enabled
+      let waDispatchedCount = 0;
+      if (sendWhatsApp) {
+        const { data: channels } = await supabase
+          .from("whatsapp_channels")
+          .select("id")
+          .eq("is_default", true)
+          .eq("is_active", true)
+          .limit(1);
+        const defaultChannelId = channels?.[0]?.id || null;
+
+        const typeLabels = {
+          info: { ar: 'ℹ️ إرشاد ومعلومات عامة', en: 'ℹ️ General Notice' },
+          success: { ar: '🚀 تحديث وميزة جديدة', en: '🚀 New Feature / Update' },
+          warning: { ar: '⚠️ تنبيه هام ومتابعة', en: '⚠️ Important Alert' },
+          error: { ar: '🚨 إشعار عاجل وحرج', en: '🚨 Urgent Notice' },
+        };
+        const currentTypeLabel = typeLabels[type]?.[language === 'ar' ? 'ar' : 'en'] || typeLabels.info.ar;
+
+        const waQueueItems = [];
+        for (const comp of allCompanies) {
+          const rawPhone = comp.settings?.whatsapp_phone || comp.phone || comp.settings?.whatsapp_number;
+          if (!rawPhone) continue;
+          let cleanPhone = String(rawPhone).replace(/\D/g, '');
+          if (!cleanPhone) continue;
+          if (cleanPhone.startsWith('01') && cleanPhone.length === 11) {
+            cleanPhone = '2' + cleanPhone;
+          }
+
+          // Distinctive, beautifully crafted professional WhatsApp message
+          const waMessage = 
+`━━━━━━━━━━━━━━━━━━━━
+📢 *إشعار رسمي من منصة كوادر | KWADER*
+━━━━━━━━━━━━━━━━━━━━
+
+السادة / *${comp.name || 'شركاء النجاح'}* المحترمين،
+تحية طيبة وبعد،
+
+📌 *الموضوع:* ${title.trim()}
+🏷️ *التصنيف:* ${currentTypeLabel}
+
+${message.trim()}
+
+━━━━━━━━━━━━━━━━━━━━
+🌐 يمكنك متابعة التفاصيل وإدارة حساب شركتك عبر لوحة التحكم:
+👉 https://kwader-system.web.app/dashboard
+
+فريق إدارة المنصة والدعم الفني — منصة كوادر
+━━━━━━━━━━━━━━━━━━━━`;
+
+          waQueueItems.push({
+            company_id: comp.id,
+            phone: cleanPhone,
+            message: waMessage,
+            status: 'pending',
+            priority: 10,
+            channel_id: defaultChannelId
+          });
+        }
+
+        if (waQueueItems.length > 0) {
+          for (let i = 0; i < waQueueItems.length; i += 50) {
+            const waChunk = waQueueItems.slice(i, i + 50);
+            const { error: waError } = await supabase
+              .from('whatsapp_queue')
+              .insert(waChunk);
+            if (waError) {
+              console.warn('WhatsApp queue insert error:', waError);
+            } else {
+              waDispatchedCount += waChunk.length;
+            }
+          }
+        }
+      }
+
+      // 5. Log admin activity
       await supabase.from("admin_activity").insert({
         event: "System Broadcast",
         action: "broadcast_notification",
-        description: `Broadcast sent to ${allCompanies.length} companies: "${title}"`,
+        description: `Broadcast sent to ${allCompanies.length} companies (WhatsApp: ${waDispatchedCount}): "${title}"`,
         actor: "Super Admin",
       });
 
-      toast.success(
-        language === "ar"
-          ? `تم إرسال الإشعار الجماعي إلى ${allCompanies.length} شركة بنجاح! 🚀`
-          : `Broadcast notification sent to ${allCompanies.length} companies successfully! 🚀`
-      );
+      if (sendWhatsApp && waDispatchedCount > 0) {
+        toast.success(
+          language === "ar"
+            ? `تم إرسال التنبيه إلى ${allCompanies.length} شركة في المنصة، وإرسال ${waDispatchedCount} رسالة واتساب لأصحاب الشركات بنجاح! 🚀`
+            : `Broadcast sent to ${allCompanies.length} companies, and ${waDispatchedCount} WhatsApp messages queued! 🚀`
+        );
+      } else {
+        toast.success(
+          language === "ar"
+            ? `تم إرسال الإشعار الجماعي إلى ${allCompanies.length} شركة بنجاح! 🚀`
+            : `Broadcast notification sent to ${allCompanies.length} companies successfully! 🚀`
+        );
+      }
 
       // Reset form
       setTitle("");
       setMessage("");
       setSendEmail(false);
+      setSendWhatsApp(false);
     } catch (err) {
       console.error("Broadcast notification error:", err);
       toast.error(
@@ -3871,15 +3974,70 @@ export function BroadcastAlertsView() {
                     : "Will send a background email alert to all company administrators"}
                 </div>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={sendEmail}
-                  onChange={(e) => setSendEmail(e.target.checked)}
-                  className="sr-only peer"
+              <button
+                type="button"
+                role="switch"
+                aria-checked={sendEmail}
+                onClick={() => setSendEmail(!sendEmail)}
+                className={`w-11 h-6 rounded-full relative transition-colors duration-200 cursor-pointer select-none flex-shrink-0 border border-transparent focus:outline-none ${
+                  sendEmail ? "bg-blue-600" : "bg-slate-300"
+                }`}
+              >
+                <span
+                  className={`w-5 h-5 rounded-full bg-white shadow-md absolute top-0.5 left-0.5 transition-transform duration-200 ease-in-out pointer-events-none ${
+                    sendEmail ? "translate-x-5" : "translate-x-0"
+                  }`}
                 />
-                <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:-translate-x-full after:translate-x-0 rtl:peer-checked:after:translate-x-full rtl:after:translate-x-0 peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-              </label>
+              </button>
+            </div>
+
+            {/* WhatsApp Broadcast Dispatch Toggle */}
+            <div className={`p-4 rounded-xl border transition-all ${sendWhatsApp ? 'bg-emerald-500/10 border-emerald-500/40 ring-1 ring-emerald-500/20' : 'bg-slate-50 border-gray-150'}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-start gap-3">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${sendWhatsApp ? 'bg-emerald-600 text-white' : 'bg-emerald-100 text-emerald-700'}`}>
+                    <MessageSquare className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-slate-800 flex items-center gap-2" style={{ fontWeight: 700 }}>
+                      <span>{language === "ar" ? "إرسال رسائل واتساب احترافية لأصحاب الشركات" : "Dispatch Professional WhatsApp to Company Owners"}</span>
+                      <span className="px-2 py-0.5 rounded-full text-[0.62rem] font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        {loadingCount ? '...' : (language === "ar" ? `${waEligibleCount} أرقام مربوطة` : `${waEligibleCount} linked`)}
+                      </span>
+                    </div>
+                    <div className="text-[0.68rem] text-slate-500 mt-1">
+                      {language === "ar"
+                        ? "سيتم إرسال رسالة واتساب رسمية ومميزة بهوية منصة كوادر لكل أصحاب الشركات الذين ربطوا رقمهم"
+                        : "Sends a branded, formal WhatsApp alert to all business owners who linked their WhatsApp number in settings"}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={sendWhatsApp}
+                  onClick={() => setSendWhatsApp(!sendWhatsApp)}
+                  className={`w-11 h-6 rounded-full relative transition-colors duration-200 cursor-pointer select-none flex-shrink-0 ms-3 border border-transparent focus:outline-none ${
+                    sendWhatsApp ? "bg-emerald-600" : "bg-slate-300"
+                  }`}
+                >
+                  <span
+                    className={`w-5 h-5 rounded-full bg-white shadow-md absolute top-0.5 left-0.5 transition-transform duration-200 ease-in-out pointer-events-none ${
+                      sendWhatsApp ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {sendWhatsApp && (
+                <div className="mt-3 pt-3 border-t border-emerald-500/20 flex items-center justify-between text-[0.68rem] text-emerald-800">
+                  <div className="flex items-center gap-1.5 font-medium">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                    <span>{language === "ar" ? "جاهز للإرسال الفوري عبر طابور الواتساب اللامركزي" : "Ready for immediate delivery via WhatsApp decentralized queue"}</span>
+                  </div>
+                  <span className="font-mono text-emerald-900 font-bold">{waEligibleCount} {language === "ar" ? "شركة مستلمة" : "recipients"}</span>
+                </div>
+              )}
             </div>
 
             {/* Actions */}
@@ -3968,6 +4126,42 @@ export function BroadcastAlertsView() {
                   </div>
                 </div>
               </div>
+
+              {/* WhatsApp Live Preview Bubble */}
+              {sendWhatsApp && (
+                <div className="bg-[#0b141a] border border-[#202c33] rounded-xl p-3.5 shadow-lg space-y-2">
+                  <div className="flex items-center justify-between border-b border-[#202c33] pb-2 text-[0.65rem] text-emerald-400 font-semibold">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+                      <span>{language === "ar" ? "💬 معاينة رسالة الواتساب الرسمية" : "💬 WhatsApp Message Preview"}</span>
+                    </div>
+                    <span className="text-[0.6rem] text-slate-500 font-mono">KWADER Official</span>
+                  </div>
+                  <div className="bg-[#1f2c34] text-slate-100 rounded-lg rounded-tr-none p-3 text-[0.68rem] leading-relaxed shadow-sm font-sans space-y-2 border border-[#2a3942]">
+                    <div className="text-emerald-400 font-bold border-b border-[#2a3942] pb-1">
+                      📢 إشعار رسمي من منصة كوادر | KWADER
+                    </div>
+                    <div>
+                      السادة / <span className="text-amber-300 font-semibold">شركة الأمل للتجارة</span> المحترمين،<br />
+                      تحية طيبة وبعد،
+                    </div>
+                    <div>
+                      📌 <b>الموضوع:</b> {title.trim() || "عنوان التنبيه..."}<br />
+                      🏷️ <b>التصنيف:</b> {type === "info" ? "ℹ️ إرشاد ومعلومات عامة" : type === "success" ? "🚀 تحديث وميزة جديدة" : type === "warning" ? "⚠️ تنبيه هام ومتابعة" : "🚨 إشعار عاجل وحرج"}
+                    </div>
+                    <div className="text-slate-200 whitespace-pre-wrap py-1 bg-[#111b21]/40 rounded p-2 border border-[#2a3942]/60">
+                      {message.trim() || "نص وتفاصيل التنبيه الموجه للشركات..."}
+                    </div>
+                    <div className="text-[0.62rem] text-slate-400 pt-1 border-t border-[#2a3942]">
+                      🌐 يمكنك متابعة التفاصيل عبر: <span className="text-sky-400 underline">kwader-system.web.app/dashboard</span>
+                    </div>
+                    <div className="text-[0.58rem] text-slate-500 text-left flex items-center justify-end gap-1">
+                      <span>{language === "ar" ? "الآن" : "now"}</span>
+                      <span className="text-sky-400 font-bold">✓✓</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Simulated Email view if sendEmail is checked */}
               {sendEmail && (

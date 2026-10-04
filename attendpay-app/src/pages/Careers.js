@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { useLocale } from '../context/LocaleContext';
 import { ArrowLeft, ArrowRight, MapPin, Clock, Zap, Users, Globe, TrendingUp, ChevronRight, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useSEO } from '../utils/useSEO';
 
 const JOBS = [
   {
@@ -117,6 +118,16 @@ const Careers = () => {
   const isRtl = language === 'ar';
   const navigate = useNavigate();
   const [filter, setFilter] = useState('all');
+
+  useSEO({
+    title: isRtl ? 'الوظائف الشاغرة | انضم إلى فريق كوادر KWADER' : 'Careers | Join the KWADER Team',
+    description: isRtl
+      ? 'استكشف الفرص الوظيفية في شركة كوادر (KWADER). نبحث عن مواهب استثنائية في الهندسة، التصميم، المبيعات والمنتج.'
+      : 'Explore career opportunities at KWADER. We are hiring engineers, designers, sales and product leaders across MENA and remotely.',
+    canonical: 'https://kwader.app/careers',
+    lang: language,
+  });
+
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   const teams = ['all', ...new Set(JOBS.map(j => isRtl ? j.teamAr : j.teamEn))];

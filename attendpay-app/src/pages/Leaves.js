@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -82,15 +82,24 @@ export default function Leaves() {
 
   useEffect(() => { 
     fetchData(); 
-    if (isModalOpen && employees.length === 0) fetchEmployees();
+  }, [fetchData]);
 
-    if (company?.id) {
-      const channel = supabase.channel('leaves_page_updates')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests', filter: `company_id=eq.${company.id}` }, fetchData)
-        .subscribe();
-      return () => { supabase.removeChannel(channel); };
-    }
-  }, [fetchData, isModalOpen, employees.length, fetchEmployees, company?.id]);
+  useEffect(() => {
+    if (isModalOpen && employees.length === 0) fetchEmployees();
+  }, [isModalOpen, employees.length, fetchEmployees]);
+
+  const fetchDataRef = useRef(fetchData);
+  useEffect(() => { fetchDataRef.current = fetchData; }, [fetchData]);
+
+  useEffect(() => {
+    if (!company?.id) return;
+    const channel = supabase.channel(`leaves_page_${company.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests', filter: `company_id=eq.${company.id}` }, () => {
+        fetchDataRef.current?.();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [company?.id]);
 
   const handleAction = async (id, status) => {
     const req = requests.find(r => r.id === id);

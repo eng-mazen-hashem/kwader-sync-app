@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
@@ -21,9 +21,19 @@ export default function Loans() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+
+  // Debounce search input to avoid issuing a database query on every keystroke
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 350);
+    return () => clearTimeout(handler);
+  }, [search]);
 
   // History modal state
   const [historyLoan, setHistoryLoan] = useState(null);
@@ -53,7 +63,7 @@ export default function Loans() {
 
       let query = supabase
         .from('employee_loans')
-        .select('*, employee:employees!inner(name)', { count: 'exact' })
+        .select('id, company_id, employee_id, total_amount, monthly_installment, repayment_months, amount, monthly_deduction, total_installments, remaining_amount, start_month, status, notes, created_at, employee:employees!inner(name)', { count: 'exact' })
         .eq('company_id', company.id);
 
       if (activeTab === 'active') {
@@ -62,8 +72,8 @@ export default function Loans() {
         query = query.eq('status', activeTab);
       }
 
-      if (search) {
-        query = query.ilike('employee.name', `%${search}%`);
+      if (debouncedSearch) {
+        query = query.ilike('employee.name', `%${debouncedSearch}%`);
       }
 
       const { data, count, error } = await query
@@ -94,17 +104,25 @@ export default function Loans() {
     } finally {
       setLoading(false);
     }
-  }, [company?.id, page, search, activeTab, t]);
+  }, [company?.id, page, debouncedSearch, activeTab, t]);
 
   useEffect(() => { 
     fetchData(); 
-    if (company?.id) {
-      const channel = supabase.channel('loans_page_updates')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'employee_loans', filter: `company_id=eq.${company.id}` }, fetchData)
-        .subscribe();
-      return () => { supabase.removeChannel(channel); };
-    }
-  }, [fetchData, company?.id]);
+  }, [fetchData]);
+
+  // Dedicated, decoupled Realtime subscription — won't re-subscribe on search or pagination
+  const fetchDataRef = useRef(fetchData);
+  useEffect(() => { fetchDataRef.current = fetchData; }, [fetchData]);
+
+  useEffect(() => {
+    if (!company?.id) return;
+    const channel = supabase.channel(`loans_page_${company.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'employee_loans', filter: `company_id=eq.${company.id}` }, () => {
+        fetchDataRef.current?.();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [company?.id]);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -197,8 +215,8 @@ export default function Loans() {
         employee_id: loan.employee_id,
         title: language === 'ar' ? 'الموافقة على السلفة' : 'Loan Request Approved',
         message: language === 'ar' 
-          ? `تمت الموافقة على طلب السلفة الخاص بك بقيمة ${formatCurrency(loan.total_amount)}.`
-          : `Your loan request of ${formatCurrency(loan.total_amount)} has been approved.`,
+          ? `تمت الموافقة على طلب السلفة الخاص بك بقيمة ${formatCurrency(loan.total_amount ?? loan.amount)}.`
+          : `Your loan request of ${formatCurrency(loan.total_amount ?? loan.amount)} has been approved.`,
         type: 'success'
       }]);
 
@@ -238,8 +256,8 @@ export default function Loans() {
         employee_id: loan.employee_id,
         title: language === 'ar' ? 'رفض السلفة' : 'Loan Request Rejected',
         message: language === 'ar' 
-          ? `تم رفض طلب السلفة الخاص بك بقيمة ${formatCurrency(loan.total_amount)}.`
-          : `Your loan request of ${formatCurrency(loan.total_amount)} has been rejected.`,
+          ? `تم رفض طلب السلفة الخاص بك بقيمة ${formatCurrency(loan.total_amount ?? loan.amount)}.`
+          : `Your loan request of ${formatCurrency(loan.total_amount ?? loan.amount)} has been rejected.`,
         type: 'warning'
       }]);
 
@@ -390,10 +408,12 @@ export default function Loans() {
           <div className="loans-grid">
             <AnimatePresence mode="popLayout">
               {loans.map((loan, idx) => {
-                const paidAmount = Number(loan.total_amount) - Number(loan.remaining_amount);
-                const progress = Number(loan.total_amount) > 0
-                  ? (paidAmount / Number(loan.total_amount)) * 100
-                  : 0;
+                const totalAmt = Number(loan.total_amount ?? loan.amount ?? 0);
+                const remAmt = Number(loan.remaining_amount ?? 0);
+                const paidAmount = totalAmt - remAmt;
+                const progress = totalAmt > 0
+                  ? Math.min(100, Math.max(0, (paidAmount / totalAmt) * 100))
+                  : (loan.status === 'paid' ? 100 : 0);
 
                 return (
                   <motion.div 
@@ -421,21 +441,21 @@ export default function Loans() {
                     <div className="loan-card-details">
                       <div className="detail-row">
                         <span>{t.loanTotalAmount}:</span>
-                        <strong className="privacy-blur">{formatCurrency(loan.total_amount)}</strong>
+                        <strong className="privacy-blur">{formatCurrency(loan.total_amount ?? loan.amount)}</strong>
                       </div>
                       <div className="detail-row">
                         <span>{t.loanMonthlyInstallment}:</span>
-                        <strong className="privacy-blur">{formatCurrency(loan.monthly_installment)}</strong>
+                        <strong className="privacy-blur">{formatCurrency(loan.monthly_installment ?? loan.monthly_deduction)}</strong>
                       </div>
-                      {loan.repayment_months && (
+                      {(loan.repayment_months || loan.total_installments) && (
                         <div className="detail-row">
                           <span>{t.totalMonths}</span>
-                          <strong>{loan.repayment_months} {t.monthsLabel}</strong>
+                          <strong>{loan.repayment_months || loan.total_installments} {t.monthsLabel}</strong>
                         </div>
                       )}
                       <div className="detail-row highlight">
                         <span>{t.loanRemainingAmount}:</span>
-                        <strong className="danger privacy-blur">{formatCurrency(loan.remaining_amount)}</strong>
+                        <strong className="danger privacy-blur">{formatCurrency(loan.remaining_amount ?? 0)}</strong>
                       </div>
                     </div>
 
@@ -594,17 +614,17 @@ export default function Loans() {
               <div className="history-summary">
                 <div className="history-summary-item">
                   <span>{t.loanAmountLabel}</span>
-                  <strong className="privacy-blur">{formatCurrency(historyLoan.total_amount)}</strong>
+                  <strong className="privacy-blur">{formatCurrency(historyLoan.total_amount ?? historyLoan.amount)}</strong>
                 </div>
                 <div className="history-summary-item">
                   <span>{t.paidAmountLabel}</span>
                   <strong className="paid privacy-blur">
-                    {formatCurrency(Number(historyLoan.total_amount) - Number(historyLoan.remaining_amount))}
+                    {formatCurrency(Number(historyLoan.total_amount ?? historyLoan.amount) - Number(historyLoan.remaining_amount ?? 0))}
                   </strong>
                 </div>
                 <div className="history-summary-item">
                   <span>{t.remainingAmountLabel}</span>
-                  <strong className="danger privacy-blur">{formatCurrency(historyLoan.remaining_amount)}</strong>
+                  <strong className="danger privacy-blur">{formatCurrency(historyLoan.remaining_amount ?? 0)}</strong>
                 </div>
               </div>
 

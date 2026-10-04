@@ -6,6 +6,7 @@ import {
     Server, Users, Bell, CheckCircle2, ExternalLink, ChevronRight
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useSEO } from '../utils/useSEO';
 
 /* ─── Data ─────────────────────────────────────────────────────────────────── */
 const SECTIONS = {
@@ -348,6 +349,15 @@ const PrivacyPolicy = () => {
     const isRtl = language === 'ar';
     const sections = SECTIONS[isRtl ? 'ar' : 'en'];
     const [activeSection, setActiveSection] = useState(sections[0].id);
+
+    useSEO({
+        title: isRtl ? 'سياسة الخصوصية وأمن البيانات | نظام كوادر KWADER' : 'Privacy Policy & Data Security | KWADER HR Platform',
+        description: isRtl
+            ? 'تعرف على التزامنا بأمن وسرية بياناتك وبيانات موظفيك، ومعايير التشفير والامتثال لقوانين حماية البيانات في نظام كوادر.'
+            : 'Learn about our rigorous security standards, encryption practices, and data privacy commitments at KWADER HR.',
+        canonical: 'https://kwader.app/privacy',
+        lang: language,
+    });
 
     // Scroll spy
     useEffect(() => {

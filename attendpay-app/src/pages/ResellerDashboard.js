@@ -485,7 +485,7 @@ export default function ResellerDashboard() {
     try {
       const fromRange = isLoadMore ? replies.length : 0;
       const { data, error } = await supabase.from("support_ticket_replies")
-        .select("*").eq("ticket_id", ticketId)
+        .select("id, ticket_id, sender_type, sender_name, message, created_at").eq("ticket_id", ticketId)
         .order("created_at", { ascending: false }).range(fromRange, fromRange + 29);
       if (error) throw error;
       const newReplies = data ? [...data].reverse() : [];

@@ -39,9 +39,10 @@ export function Testimonials() {
     try {
       const { data, error } = await supabase
         .from('landing_reviews')
-        .select('*')
+        .select('name, company, avatar_url, review, rating')
         .eq('approved', true)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(20);
       
       if (!error && data) {
         setDynamicReviews(data);

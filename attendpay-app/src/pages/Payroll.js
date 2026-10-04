@@ -345,7 +345,7 @@ function Payroll() {
 
             const { data: latestPayroll, error: getErr } = await supabase
                 .from('payrolls')
-                .select('*')
+                .select('id, breakdown, run_type, advance_paid, base_salary, housing, transport, net_salary')
                 .eq('id', payroll.id)
                 .single();
 
@@ -427,7 +427,7 @@ function Payroll() {
         try {
             const { data: latestPayroll, error: getErr } = await supabase
                 .from('payrolls')
-                .select('*')
+                .select('id, breakdown, run_type, advance_paid, base_salary, housing, transport, net_salary')
                 .eq('id', payroll.id)
                 .single();
 

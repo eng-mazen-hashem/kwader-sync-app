@@ -254,7 +254,7 @@ export default function SupportChatWidget() {
     try {
       const { data, error } = await supabase
         .from("support_tickets")
-        .select("*")
+        .select("id, subject, description, status, created_at, company_id")
         .eq("company_id", company.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -279,7 +279,7 @@ export default function SupportChatWidget() {
 
       const { data, error } = await supabase
         .from("support_ticket_replies")
-        .select("*")
+        .select("id, ticket_id, sender_type, sender_name, message, created_at")
         .eq("ticket_id", ticketId)
         .order("created_at", { ascending: false })
         .range(fromRange, toRange);

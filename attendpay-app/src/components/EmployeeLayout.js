@@ -87,9 +87,10 @@ const EmployeeLayout = () => {
         try {
             const { data, error } = await supabase
                 .from('employee_notifications')
-                .select('*')
+                .select('id, employee_id, title, message, read_at, created_at')
                 .eq('employee_id', employee.id)
-                .order('created_at', { ascending: false });
+                .order('created_at', { ascending: false })
+                .limit(50);
             if (error) throw error;
             setNotifications(data || []);
         } catch (err) {

@@ -88,7 +88,7 @@ const ResetPassword = () => {
             
             // Redirect after 3 seconds
             setTimeout(() => {
-                navigate('/');
+                navigate('/dashboard', { replace: true });
             }, 3000);
         } catch (err) {
             setError(err.message || (isRtl ? 'حدث خطأ أثناء تحديث كلمة المرور.' : 'An error occurred while updating the password.'));

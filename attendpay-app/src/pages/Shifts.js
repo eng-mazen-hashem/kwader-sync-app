@@ -14,6 +14,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import ConfirmModal from '../components/ConfirmModal';
+import { getDirtyDiff } from '../utils/dirtyCheck';
 import './Shifts.css';
 
 // -------------------------------------------------------------------------
@@ -1020,14 +1021,15 @@ function Shifts() {
         if (!company) return;
         setLoading(true);
         try {
-            const { data: shiftIds } = await supabase.from('shifts').select('id').eq('company_id', company.id);
-            const ids = (shiftIds || []).map(s => s.id);
-
-            const [{ data: sData }, { data: eData }, { data: seData }] = await Promise.all([
+            const [{ data: sData }, { data: eData }] = await Promise.all([
                 supabase.from('shifts').select('id, name, color, start_time, end_time, work_days, has_break, break_start, break_duration, break_policy, grace_minutes, is_active, shift_type, target_hours, deduct_half_on_missing, early_arrival_grace_minutes, overtime_start_after_minutes, overtime_rate, overtime_rate_start_hours').eq('company_id', company.id).order('created_at'),
                 supabase.from('employees').select('id,name').eq('company_id', company.id).eq('status', 'active'),
-                ids.length > 0 ? supabase.from('shift_employees').select('shift_id,employee_id').in('shift_id', ids) : Promise.resolve({ data: [] }),
             ]);
+
+            const ids = (sData || []).map(s => s.id);
+            const { data: seData } = ids.length > 0 
+                ? await supabase.from('shift_employees').select('shift_id,employee_id').in('shift_id', ids)
+                : { data: [] };
 
             setShifts(sData || []);
             setEmployees(eData || []);
@@ -1052,7 +1054,14 @@ function Shifts() {
             const payload = { ...form, company_id: company.id };
             let savedShiftId = editingShift?.id;
             if (editingShift) {
-                const { error: updateErr } = await supabase.from('shifts').update(payload).eq('id', editingShift.id);
+                const diff = getDirtyDiff(editingShift, form);
+                if (!diff) {
+                    toast.info(t.noChangesDetected || 'لم يتم تعديل أي بيانات');
+                    setShowModal(false);
+                    setEditingShift(null);
+                    return;
+                }
+                const { error: updateErr } = await supabase.from('shifts').update(diff).eq('id', editingShift.id);
                 if (updateErr) throw updateErr;
                 toast.success(t.sh_toast_save_success || 'تم التحديث بنجاح');
                 await logAudit({

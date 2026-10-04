@@ -17,6 +17,7 @@ import './Settings.css';
 import { supabase } from '../supabaseClient';
 import { toast } from 'sonner';
 import { logAudit } from '../utils/auditLogger';
+import { getDirtyDiff } from '../utils/dirtyCheck';
 
 function CountryDropdown({ value, onChange, t, language }) {
     const [open, setOpen] = useState(false);
@@ -148,6 +149,12 @@ function Settings() {
     };
 
     const [form, setForm] = useState({ ...defaults, ...(company?.settings || {}) });
+    const initialFormRef = useRef({ ...defaults, ...(company?.settings || {}) });
+    useEffect(() => {
+        if (company?.settings) {
+            initialFormRef.current = { ...defaults, ...company.settings };
+        }
+    }, [company?.settings]);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
 
@@ -463,7 +470,16 @@ function Settings() {
     const handleSave = async () => {
         setSaving(true);
         try {
+            const diff = getDirtyDiff(initialFormRef.current, form);
+            if (!diff) {
+                toast.info(t.noChangesDetected || 'لم يتم تعديل أي إعدادات');
+                setSaved(true);
+                setTimeout(() => setSaved(false), 2000);
+                setSaving(false);
+                return;
+            }
             await updateCompanySettings(form);
+            initialFormRef.current = { ...form };
             // constitution §15: audit sensitive settings changes
             const { data: { user: authUser } } = await supabase.auth.getUser();
             await logAudit({

@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { useLocale } from '../context/LocaleContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Sparkles, Mail, CheckCircle2, ChevronRight, Zap } from 'lucide-react';
+import { useSEO } from '../utils/useSEO';
 
 // Maps English routes to Arabic titles
 const arTitles = {
@@ -68,6 +69,15 @@ export default function GenericPage() {
     const titleAr = arTitles[pathKey] || fallbackTitleEn;
     
     const displayTitle = isRtl ? titleAr : titleEn;
+
+    useSEO({
+        title: `${displayTitle} | ${isRtl ? 'نظام كوادر لإدارة الموارد البشرية' : 'KWADER HR Platform'}`,
+        description: isRtl
+            ? `تعرف على ${displayTitle} من نظام كوادر (KWADER) لإدارة الموارد البشرية والرواتب والأتمتة الذكية.`
+            : `Learn about ${displayTitle} with KWADER - the intelligent HR, payroll, and attendance platform.`,
+        canonical: `https://kwader.app${location.pathname}`,
+        lang: language,
+    });
 
     const [email, setEmail] = useState('');
     const [subscribed, setSubscribed] = useState(false);

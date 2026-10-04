@@ -200,8 +200,10 @@ class QueueProcessor {
                 .from('whatsapp_queue')
                 .update({
                     status: 'sent',
+                    sent_at: new Date().toISOString(),
                     processed_at: new Date().toISOString(),
-                    error: null
+                    error: null,
+                    error_message: null
                 })
                 .eq('id', item.id);
 
@@ -219,7 +221,11 @@ class QueueProcessor {
                 .update({
                     status: 'failed',
                     error: err.message,
-                    processed_at: new Date().toISOString()
+                    error_message: err.message,
+                    processed_at: new Date().toISOString(),
+                    sent_at: new Date().toISOString(),
+                    retry_count: (item.retry_count || 0) + 1,
+                    attempts: (item.attempts || 0) + 1
                 })
                 .eq('id', item.id);
         }

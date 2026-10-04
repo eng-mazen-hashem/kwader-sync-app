@@ -136,13 +136,13 @@ export default function SuperAdminDashboard() {
     }
   }, [user]);
 
-  // Persist states to local storage and DB metadata on updates
+  // Persist states to local storage immediately, and debounce DB metadata sync by 1.5s to prevent GoTrue rate limits
   useEffect(() => {
     if (!initialSyncRef.current) return;
     localStorage.setItem("sa_read_notifications", JSON.stringify(readNotifIds));
     localStorage.setItem("sa_deleted_notifications", JSON.stringify(deletedNotifIds));
     
-    const saveToDb = async () => {
+    const timer = setTimeout(async () => {
       try {
         await supabase.auth.updateUser({
           data: {
@@ -153,8 +153,9 @@ export default function SuperAdminDashboard() {
       } catch (err) {
         console.error("Error saving notifications state to user metadata:", err);
       }
-    };
-    saveToDb();
+    }, 1500);
+
+    return () => clearTimeout(timer);
   }, [readNotifIds, deletedNotifIds]);
 
   const [dashboardData, setDashboardData] = useState({
@@ -607,7 +608,6 @@ export default function SuperAdminDashboard() {
 
       const [
         companiesRes,
-        openTicketsRes,
         growthData,
         ticketStats,
         expiringCount,
@@ -615,7 +615,6 @@ export default function SuperAdminDashboard() {
         approvedPaymentsRes,
       ] = await Promise.all([
         supabase.from("companies").select("id, plan, status, subscription_amount, settings, created_at"),
-        supabase.from("support_tickets").select("id", { count: "exact", head: true }).eq("status", "Open"),
         fetchGrowthData(),
         fetchTicketStats(),
         fetchExpiringCount(),
@@ -624,10 +623,6 @@ export default function SuperAdminDashboard() {
       ]);
 
       if (companiesRes.error) throw companiesRes.error;
-
-      if (openTicketsRes.error && !isMissingTableError(openTicketsRes.error)) {
-        throw openTicketsRes.error;
-      }
 
       const allCompanies = companiesRes.data || [];
       const totalUsers = allCompanies.length;
@@ -699,7 +694,7 @@ export default function SuperAdminDashboard() {
       const arpu = activePaidSubscriptions > 0 ? Math.round(totalMRR / activePaidSubscriptions) : 0;
 
       const activeSubscriptions = allCompanies.filter(c => (c.status || "active").toLowerCase() !== "suspended").length;
-      const openTickets = isMissingTableError(openTicketsRes.error) ? 0 : openTicketsRes.count ?? 0;
+      const openTickets = ticketStats?.open ?? 0;
       const pendingRenewalsCount = pendingRenewalsRes.error ? 0 : pendingRenewalsRes.count ?? 0;
 
       const planStats = {
@@ -1208,35 +1203,44 @@ export default function SuperAdminDashboard() {
     }
   }, []);
 
+  const fetchersRef = useRef({});
+  fetchersRef.current = {
+    fetchUsersPage,
+    fetchTicketsPage,
+    fetchOverviewData,
+    fetchAlerts,
+    fetchActivity,
+    fetchNotifications,
+    fetchRenewalsPage,
+    fetchPayments,
+  };
+
   const scheduleRefresh = useCallback((scope) => {
     if (!isMounted.current) return;
     if (refreshTimers.current[scope]) return;
 
     refreshTimers.current[scope] = setTimeout(() => {
       refreshTimers.current[scope] = null;
+      const f = fetchersRef.current;
       if (scope === "companies") {
-        fetchUsersPage({ silent: true });
-        fetchOverviewData({ silent: true });
-        fetchNotifications();
-      }
-      if (scope === "tickets") {
-        fetchTicketsPage({ silent: true });
-        fetchOverviewData({ silent: true });
-        fetchNotifications();
-      }
-      if (scope === "renewals") {
-        fetchRenewalsPage({ silent: true });
-        fetchOverviewData({ silent: true });
-        fetchNotifications();
-      }
-      if (scope === "alerts") {
-        fetchAlerts({ silent: true });
-      }
-      if (scope === "activity") {
-        fetchActivity({ silent: true });
+        f.fetchUsersPage?.({ silent: true });
+        f.fetchOverviewData?.({ silent: true });
+        f.fetchNotifications?.();
+      } else if (scope === "tickets") {
+        f.fetchTicketsPage?.({ silent: true });
+        f.fetchOverviewData?.({ silent: true });
+        f.fetchNotifications?.();
+      } else if (scope === "renewals") {
+        f.fetchRenewalsPage?.({ silent: true });
+        f.fetchOverviewData?.({ silent: true });
+        f.fetchNotifications?.();
+      } else if (scope === "alerts") {
+        f.fetchAlerts?.({ silent: true });
+      } else if (scope === "activity") {
+        f.fetchActivity?.({ silent: true });
       }
     }, 400);
-  }, [fetchActivity, fetchAlerts, fetchOverviewData, fetchTicketsPage, fetchUsersPage, fetchNotifications, fetchRenewalsPage]);
+  }, []);
 
   const handleRetry = useCallback(async () => {
     setError(null);
@@ -1300,16 +1304,6 @@ export default function SuperAdminDashboard() {
     if (initialLoadRef.current) return;
     fetchRenewalsPage();
   }, [authLoading, fetchRenewalsPage, isSuperAdmin, renewalQuery, user]);
-
-  useEffect(() => {
-    if (!user || !isSuperAdmin || authLoading) return;
-    if (initialLoadRef.current) return;
-    fetchOverviewData();
-    fetchAlerts();
-    fetchActivity();
-    fetchNotifications();
-    fetchRenewalsPage({ silent: true });
-  }, [authLoading, fetchActivity, fetchAlerts, fetchOverviewData, fetchNotifications, fetchRenewalsPage, isSuperAdmin, user]);
 
   useEffect(() => {
     if (!user || !isSuperAdmin || authLoading) return;
@@ -1422,7 +1416,7 @@ export default function SuperAdminDashboard() {
                 onClick: () => setActiveView("payments"),
               },
             });
-            fetchPayments();
+            fetchersRef.current.fetchPayments?.();
           }
         }
       )
@@ -1431,7 +1425,8 @@ export default function SuperAdminDashboard() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [authLoading, isSuperAdmin, scheduleRefresh, t, user, fetchPayments]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, isSuperAdmin, scheduleRefresh, t, user?.id]);
 
   const handleUserQueryChange = useCallback((next) => {
     setUserQuery((prev) => ({ ...prev, ...next }));
@@ -1583,7 +1578,6 @@ export default function SuperAdminDashboard() {
         title,
         message,
         type: type || "info",
-        send_email: !!sendEmail,
       };
       const { error: insertError } = await supabase
         .from("company_notifications")

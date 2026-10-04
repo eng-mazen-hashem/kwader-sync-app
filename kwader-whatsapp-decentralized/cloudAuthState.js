@@ -38,47 +38,60 @@ async function useCloudAuthState(supabase, channelId, encryptionKey) {
         }
     };
 
-    // 2. Read multiple keys in a single batch query for ultra-fast session hydration
+    // 2. Read multiple keys in chunked queries with dual-id fallback for ultra-fast session hydration
     const readKeysBatch = async (type, ids) => {
         const result = {};
         if (!ids || ids.length === 0) return result;
 
-        try {
-            const { data, error } = await supabase
-                .from('whatsapp_session_keys')
-                .select('key_id, key_data')
-                .eq('channel_id', channelId)
-                .eq('key_type', type)
-                .in('key_id', ids);
+        for (const id of ids) result[id] = null;
 
-            if (error) {
-                console.error(`[cloudAuthState] Error in readKeysBatch ${type}:`, error.message);
-            }
-
-            const foundMap = new Map();
-            if (data) {
-                for (const row of data) {
-                    try {
-                        const decryptedStr = decrypt(row.key_data, encryptionKey);
-                        if (decryptedStr) {
-                            let parsed = JSON.parse(decryptedStr, BufferJSON.reviver);
-                            if (type === 'app-state-sync-key' && parsed) {
-                                parsed = proto.Message.AppStateSyncKeyData.fromObject(parsed);
-                            }
-                            foundMap.set(row.key_id, parsed);
-                        }
-                    } catch (e) {
-                        console.error(`[cloudAuthState] Failed parsing key ${type}:${row.key_id}`, e.message);
-                    }
+        const CHUNK_SIZE = 50;
+        for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+            const chunk = ids.slice(i, i + CHUNK_SIZE);
+            const searchIds = new Set(chunk);
+            for (const id of chunk) {
+                if (typeof id === 'string') {
+                    searchIds.add(id.replace(/\//g, '__').replace(/:/g, '-'));
                 }
             }
 
-            for (const id of ids) {
-                result[id] = foundMap.get(id) || null;
+            try {
+                const { data, error } = await supabase
+                    .from('whatsapp_session_keys')
+                    .select('key_id, key_data')
+                    .eq('channel_id', channelId)
+                    .eq('key_type', type)
+                    .in('key_id', Array.from(searchIds));
+
+                if (error) {
+                    console.error(`[cloudAuthState] Error in readKeysBatch ${type}:`, error.message);
+                    continue;
+                }
+
+                if (data) {
+                    for (const row of data) {
+                        try {
+                            const decryptedStr = decrypt(row.key_data, encryptionKey);
+                            if (decryptedStr) {
+                                let parsed = JSON.parse(decryptedStr, BufferJSON.reviver);
+                                if (type === 'app-state-sync-key' && parsed) {
+                                    parsed = proto.Message.AppStateSyncKeyData.fromObject(parsed);
+                                }
+                                for (const id of chunk) {
+                                    const sanitized = typeof id === 'string' ? id.replace(/\//g, '__').replace(/:/g, '-') : id;
+                                    if (row.key_id === id || row.key_id === sanitized) {
+                                        result[id] = parsed;
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            console.error(`[cloudAuthState] Failed parsing key ${type}:${row.key_id}`, e.message);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error(`[cloudAuthState] Batch read failed for ${type}:`, err.message);
             }
-        } catch (err) {
-            console.error(`[cloudAuthState] Batch read failed for ${type}:`, err.message);
-            for (const id of ids) result[id] = null;
         }
 
         return result;
@@ -112,8 +125,8 @@ async function useCloudAuthState(supabase, channelId, encryptionKey) {
         const promises = [];
 
         if (toUpsert.length > 0) {
-            // Upsert in chunks of 100 to avoid payload size limits
-            const CHUNK_SIZE = 100;
+            // Upsert in chunks of 50 to avoid payload size limits
+            const CHUNK_SIZE = 50;
             for (let i = 0; i < toUpsert.length; i += CHUNK_SIZE) {
                 const chunk = toUpsert.slice(i, i + CHUNK_SIZE);
                 promises.push(
@@ -139,7 +152,12 @@ async function useCloudAuthState(supabase, channelId, encryptionKey) {
         }
 
         if (promises.length > 0) {
-            await Promise.all(promises);
+            const writeResults = await Promise.all(promises);
+            for (const wr of writeResults) {
+                if (wr?.error) {
+                    console.error('[cloudAuthState] Write error in Supabase:', wr.error.message);
+                }
+            }
         }
     };
 
@@ -148,6 +166,8 @@ async function useCloudAuthState(supabase, channelId, encryptionKey) {
     const creds = rawCreds || initAuthCreds();
 
     const saveCreds = async () => {
+        // NOTE: Baileys mutates the creds object in-place when credentials rotate.
+        // We always serialize creds directly (not a snapshot) so the latest state is persisted.
         const serialized = JSON.stringify(creds, BufferJSON.replacer);
         const encrypted = encrypt(serialized, encryptionKey);
         

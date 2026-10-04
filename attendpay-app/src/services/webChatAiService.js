@@ -10,6 +10,7 @@
 import { supabase } from '../supabaseClient';
 
 const DEFAULT_GEMINI_KEY = 'REMOVED_FOR_SECURITY';
+const DEFAULT_GROQ_KEY = process.env.REACT_APP_GROQ_API_KEY;
 const GEMINI_MODELS = [
   'gemini-flash-lite-latest',
   'gemini-3.5-flash-lite',
@@ -395,7 +396,7 @@ export async function getOrCreateWebConversation(user, company) {
   try {
     const { data: existing, error: findErr } = await supabase
       .from('ai_conversations')
-      .select('*')
+      .select('id, platform, session_id, company_id, customer_name, status, lead_status, context_state, created_at, last_message_at')
       .eq('platform', 'web')
       .eq('session_id', sessionId)
       .order('created_at', { ascending: false })
@@ -425,7 +426,7 @@ export async function getOrCreateWebConversation(user, company) {
           role: 'technical_support'
         }
       }])
-      .select()
+      .select('id, platform, session_id, company_id, customer_name, status, lead_status, context_state, created_at, last_message_at')
       .single();
 
     if (createErr) throw createErr;
@@ -449,7 +450,7 @@ export async function getWebConversationHistory(conversationId) {
   try {
     const { data, error } = await supabase
       .from('ai_messages')
-      .select('*')
+      .select('id, conversation_id, sender_type, message_text, tokens_used, created_at')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true })
       .limit(60);
@@ -614,6 +615,97 @@ async function callGeminiFlash({ systemPrompt, messages }) {
   }
 
   throw new Error('All Gemini AI models were unable to respond.');
+}
+
+async function callAiEngine({ systemPrompt, messages, companyId }) {
+  // 1. Primary Engine: Ultra-fast Groq API (~300ms, natively fluent in Arabic)
+  const groqKey = process.env.REACT_APP_GROQ_API_KEY || DEFAULT_GROQ_KEY;
+  if (groqKey) {
+    const groqModels = ['qwen/qwen3.8-27b', 'allam-2-7b', 'openai/gpt-oss-120b'];
+    const formattedMessages = [
+      { role: 'system', content: systemPrompt },
+      ...messages.map(m => ({
+        role: m.sender_type === 'user' ? 'user' : 'assistant',
+        content: m.message_text || m.text || ''
+      }))
+    ];
+
+    for (const model of groqModels) {
+      try {
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${groqKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: formattedMessages,
+            temperature: 0.4,
+            max_tokens: 1024
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          let text = data.choices?.[0]?.message?.content;
+          if (text && text.trim()) {
+            text = text.replace(/<ACTION>[\s\S]*?<\/ACTION>/g, '').trim();
+            return {
+              text: text.trim(),
+              tokensUsed: data.usage?.total_tokens || 350
+            };
+          }
+        }
+      } catch (e) {
+        console.warn(`[WebChatAI] Groq model ${model} failed, trying next:`, e.message);
+      }
+    }
+  }
+
+  // 2. Secondary Engine: Supabase Edge Function (Dedicated ai-support-agent)
+  try {
+    const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://zmhoafjugclgnomfebge.supabase.co';
+    const anonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+    const res = await fetch(`${supabaseUrl}/functions/v1/ai-support-agent`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${anonKey}`
+      },
+      body: JSON.stringify({
+        company_id: companyId,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...messages.map(m => ({
+            role: m.sender_type === 'user' ? 'user' : 'assistant',
+            content: m.message_text || m.text || ''
+          }))
+        ]
+      })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      let text = data.choices?.[0]?.message?.content;
+      if (text && text.trim()) {
+        text = text.replace(/<ACTION>[\s\S]*?<\/ACTION>/g, '').trim();
+        return {
+          text: text.trim(),
+          tokensUsed: 350
+        };
+      }
+    }
+  } catch (e) {
+    console.warn('[WebChatAI] Edge Function fallback failed:', e.message);
+  }
+
+  // 3. Tertiary Engine: Google Gemini (if key configured)
+  const geminiKey = process.env.REACT_APP_GEMINI_API_KEY;
+  if (geminiKey && geminiKey !== 'REMOVED_FOR_SECURITY') {
+    return await callGeminiFlash({ systemPrompt, messages });
+  }
+
+  throw new Error('All AI engines were unable to respond.');
 }
 
 /**
@@ -781,9 +873,10 @@ ${databaseContext}
   const recentHistory = [...history.slice(-4), { sender_type: 'user', message_text: cleanText }];
 
   try {
-    const aiResult = await callGeminiFlash({
+    const aiResult = await callAiEngine({
       systemPrompt,
-      messages: recentHistory
+      messages: recentHistory,
+      companyId
     });
 
     if (conversationId && !conversationId.startsWith('fallback-')) {

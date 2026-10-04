@@ -113,7 +113,7 @@ class ErrorBoundary extends React.Component {
               </button>
             </div>
 
-            {process.env.NODE_ENV !== 'production' && this.state.error && (
+            {this.state.error && (
               <details
                 style={{
                   marginTop: '24px',

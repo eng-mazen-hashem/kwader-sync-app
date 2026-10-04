@@ -29,7 +29,7 @@ const Login = () => {
     const [selectedCountry, setSelectedCountry] = useState(COUNTRIES.find(c => c.code === 'SA'));
 
     const [loading, setLoading] = useState(false);
-    const [rememberMe, setRememberMe] = useState(false);
+    const [rememberMe, setRememberMe] = useState(true);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
     const [showCountryList, setShowCountryList] = useState(false);
@@ -91,7 +91,7 @@ const Login = () => {
                 
                 setSuccess(isRtl ? 'تم تفعيل حسابك بنجاح! جاري التوجيه...' : 'Account activated successfully! Redirecting...');
                 setTimeout(() => {
-                    navigate('/');
+                    navigate('/dashboard', { replace: true });
                 }, 2000);
             } else if (verificationType === 'recovery') {
                 const { error } = await supabase.auth.verifyOtp({
@@ -133,7 +133,7 @@ const Login = () => {
 
             setSuccess(isRtl ? 'تم تحديث كلمة المرور بنجاح! جاري الدخول...' : 'Password updated successfully! Logging in...');
             setTimeout(() => {
-                navigate('/');
+                navigate('/dashboard', { replace: true });
             }, 2000);
         } catch (err) {
             setOtpError(err.message || (isRtl ? 'حدث خطأ أثناء تحديث كلمة المرور.' : 'An error occurred while updating the password.'));
@@ -202,7 +202,7 @@ const Login = () => {
                     : 'Password recovery link has been sent to your email.');
             } else if (isLogin) {
                 await signIn(email, password, rememberMe);
-                navigate('/');
+                navigate('/dashboard', { replace: true });
             } else {
                 if (!companyName.trim()) throw new Error(t.errorEmptyCompany);
                 if (!selectedCountry) throw new Error(t.errorEmptyCountry);
@@ -219,7 +219,7 @@ const Login = () => {
                         : 'Account created successfully! Please enter the verification code.');
                 } else {
                     setSuccess(t.successAccountCreated);
-                    setTimeout(() => navigate('/'), 2000);
+                    setTimeout(() => navigate('/dashboard', { replace: true }), 2000);
                 }
             }
         } catch (err) {

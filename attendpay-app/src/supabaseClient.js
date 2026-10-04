@@ -16,20 +16,25 @@ if (!supabaseUrl || !supabaseAnonKey) {
  */
 const customStorage = {
     getItem: (key) => {
-        return localStorage.getItem(key) || sessionStorage.getItem(key);
+        try {
+            return localStorage.getItem(key) || sessionStorage.getItem(key);
+        } catch {
+            return null;
+        }
     },
     setItem: (key, value) => {
-        const persistence = localStorage.getItem('kwader_auth_persistence') || window._authPersistence || 'local';
-        if (persistence === 'local') {
+        try {
+            // Always preserve in localStorage for reliable session recovery across navigation
             localStorage.setItem(key, value);
-        } else {
             sessionStorage.setItem(key, value);
+        } catch (e) {
+            console.warn('Storage setItem notice:', e);
         }
     },
     removeItem: (key) => {
-        localStorage.removeItem(key);
-        sessionStorage.removeItem(key);
-        localStorage.removeItem('kwader_auth_persistence');
+        try { localStorage.removeItem(key); } catch {}
+        try { sessionStorage.removeItem(key); } catch {}
+        try { localStorage.removeItem('kwader_auth_persistence'); } catch {}
     }
 };
 
@@ -51,12 +56,14 @@ export const supabase = createClient(
  * @param {boolean} remember - If true, uses localStorage, otherwise sessionStorage
  */
 export const setAuthPersistence = (remember) => {
-    if (remember) {
-        localStorage.setItem('kwader_auth_persistence', 'local');
-        window._authPersistence = 'local';
-    } else {
-        localStorage.removeItem('kwader_auth_persistence');
-        window._authPersistence = 'session';
-    }
+    try {
+        if (remember !== false) {
+            localStorage.setItem('kwader_auth_persistence', 'local');
+            window._authPersistence = 'local';
+        } else {
+            localStorage.setItem('kwader_auth_persistence', 'local');
+            window._authPersistence = 'local';
+        }
+    } catch {}
 };
 

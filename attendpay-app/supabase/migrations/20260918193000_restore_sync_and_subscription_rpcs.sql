@@ -33,7 +33,8 @@ BEGIN
   SELECT id, name, subscription_end_date, plan, status, settings
   INTO v_company
   FROM companies
-  WHERE license_key = p_license_key;
+  WHERE license_key::text = TRIM(COALESCE(p_license_key, ''))
+     OR LOWER(license_key::text) = LOWER(TRIM(COALESCE(p_license_key, '')));
 
   IF NOT FOUND THEN
     RETURN json_build_object('active', false, 'message', 'مفتاح الترخيص غير صالح');
@@ -50,16 +51,22 @@ BEGIN
     END
   );
 
-  IF v_company.subscription_end_date IS NOT NULL AND v_company.subscription_end_date < CURRENT_DATE THEN
-    RETURN json_build_object(
-      'active', false,
-      'message', 'انتهى الاشتراك بتاريخ ' || v_company.subscription_end_date::text,
-      'company_name', v_company.name,
-      'plan', COALESCE(v_company.plan, 'Enterprise'),
-      'status', COALESCE(v_company.status, 'expired'),
-      'expires', v_company.subscription_end_date,
-      'device_quota', v_quota
-    );
+  IF v_company.subscription_end_date IS NOT NULL AND TRIM(v_company.subscription_end_date) <> '' THEN
+    BEGIN
+      IF (SUBSTRING(TRIM(v_company.subscription_end_date) FROM 1 FOR 10))::DATE < CURRENT_DATE THEN
+        RETURN json_build_object(
+          'active', false,
+          'message', 'انتهى الاشتراك بتاريخ ' || v_company.subscription_end_date::text,
+          'company_name', v_company.name,
+          'plan', COALESCE(v_company.plan, 'Enterprise'),
+          'status', COALESCE(v_company.status, 'expired'),
+          'expires', v_company.subscription_end_date,
+          'device_quota', v_quota
+        );
+      END IF;
+    EXCEPTION WHEN OTHERS THEN
+      NULL;
+    END;
   END IF;
 
   -- Check if force_full_sync is set for this company
@@ -97,17 +104,38 @@ SET search_path = public
 AS $function$
 DECLARE
   v_company_id UUID;
+  v_sub_end    TEXT;
   v_device_id  UUID;
   v_inserted   INTEGER := 0;
   v_total      INTEGER := 0;
+  v_clean_key  TEXT;
+  v_exp_date   DATE;
 BEGIN
-  -- التحقق من الترخيص
-  SELECT id INTO v_company_id
+  v_clean_key := TRIM(COALESCE(p_license_key, ''));
+  IF v_clean_key = '' THEN
+    RETURN json_build_object('success', false, 'message', 'مفتاح الترخيص مطلوب');
+  END IF;
+
+  -- 1. التحقق من الترخيص
+  SELECT id, subscription_end_date INTO v_company_id, v_sub_end
   FROM companies
-  WHERE license_key = p_license_key AND subscription_end_date >= CURRENT_DATE;
+  WHERE license_key::text = v_clean_key
+     OR LOWER(license_key::text) = LOWER(v_clean_key);
 
   IF v_company_id IS NULL THEN
-    RETURN json_build_object('success', false, 'message', 'ترخيص غير صالح أو منتهي');
+    RETURN json_build_object('success', false, 'message', 'ترخيص غير صالح');
+  END IF;
+
+  -- التحقق من تاريخ الصلاحية
+  IF v_sub_end IS NOT NULL AND TRIM(v_sub_end) <> '' THEN
+    BEGIN
+      v_exp_date := (SUBSTRING(TRIM(v_sub_end) FROM 1 FOR 10))::DATE;
+      IF v_exp_date < CURRENT_DATE THEN
+        RETURN json_build_object('success', false, 'message', 'انتهى الاشتراك بتاريخ ' || v_sub_end);
+      END IF;
+    EXCEPTION WHEN OTHERS THEN
+      NULL;
+    END;
   END IF;
 
   -- جهاز البصمة (إن وجد)

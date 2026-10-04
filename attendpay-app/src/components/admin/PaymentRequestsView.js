@@ -168,8 +168,9 @@ export function PaymentRequestsView({
         try {
             const { data, error } = await supabase
                 .from("quick_payments")
-                .select("*")
-                .order("created_at", { ascending: false });
+                .select("id, client_name, project_name, amount, created_at, status, transaction_ref, payment_method, payment_receipt_url, confirmed_at, notes")
+                .order("created_at", { ascending: false })
+                .limit(100);
             if (error) throw error;
             setQuickPayments(data || []);
         } catch (err) {

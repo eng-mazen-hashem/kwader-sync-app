@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Mail, Phone, MessageCircle, MapPin, CheckCircle2
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '../supabaseClient';
+import { useSEO } from '../utils/useSEO';
 
 
 
@@ -36,6 +37,16 @@ const ContactUs = () => {
   const { language } = useLocale();
   const isRtl = language === 'ar';
   const navigate = useNavigate();
+
+  useSEO({
+    title: isRtl ? 'اتصل بنا | تواصل مع فريق مبيعات ودعم كوادر KWADER' : 'Contact Us | Reach Kwader Sales & Support Team',
+    description: isRtl
+      ? 'تواصل مع فريق كوادر (KWADER) لطلب عرض توضيحي حي، الاستفسار عن خطط الأسعار، أو الحصول على دعم فني متخصص.'
+      : 'Get in touch with the KWADER team for enterprise demos, pricing inquiries, partnerships, or immediate customer support.',
+    canonical: 'https://kwader.app/contact',
+    lang: language,
+  });
+
   const [form, setForm] = useState({ name: '', email: '', company: '', type: 'general', message: '' });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);

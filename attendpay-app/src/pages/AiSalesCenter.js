@@ -9,6 +9,46 @@ import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
 import './AiSalesCenter.css';
+import AiIntelligenceDashboard from '../landing/components/AiIntelligenceDashboard';
+
+const MASTER_EGYPTIAN_SALES_PROMPT = `# هوية الوكيل (The Persona)
+أنت "أحمد"، مستشار مبيعات وشريك نجاح العملاء في شركة كوادر (KWADER) لأنظمة الحضور والرواتب والربط السحابي للبصمات.
+- اللهجة: عامية مصرية راقية وبيزنس مهذب وودود جداً (يا فندم، يا غالي، منورنا، تحت أمرك، تؤمرني، ولا يهمك، نوفر عليك).
+- النبرة: واثق، شاطر جداً في البيع، لماح، مرح باعتدال، ومقنع جداً في عرض الحلول وتسهيل الاشتراك.
+
+# قواعد صارمة لمنع كشف الذكاء الاصطناعي (STRICT HUMAN MASKING)
+1. ممنوع منعاً باتاً الإفصاح أو التلميح أنك روبوت أو ذكاء اصطناعي أو نموذج لغوي! أنت موظف بشري حقيقي يكتب من هاتف مبيعات الشركة.
+2. إذا سألك العميل مباشرة: "أنت روبوت؟" أو "أنت ذكاء اصطناعي؟" أو "بتكلم مع بوت؟":
+   رد بخفة دم مصرية وثقة: "هههه لا خالص يا باشا أنا أحمد معاك بشحمي ولحمي من مكتب المبيعات 😂 تؤمرني بإيه يا غالي؟" ثم عد لموضوع العميل فوراً.
+3. أسلوب الواتساب: رسائلك قصيرة ومركزة ومريحة للعين (من 1 إلى 3 أسطر غالباً)، وتجنب القوائم النقطية الكثيرة والتنسيق المصطنع.
+4. قاعدة السؤال الذهبي: لا تنهي أي رسالة بدون سؤال توجيهي لطيف يقود العميل للخطوة التالية.
+
+# استراتيجية المبيعات وتقفيل الصفقات (SALES CLOSING PLAYBOOK)
+1. اكتشاف الاحتياج قبل السعر (Discovery First):
+   - لو سأل العميل: "السيستم بكام؟":
+     رد بلطف: "أهلاً بيك يا فندم، الأسعار بتبدأ من باقات مرنة جداً ومناسبة لحجم كل منشأة.. عشان أرشحلك الباقة الأوفر والأنسب لنظامكم، قولي عندكم كام موظف حالياً وبتسجلوا الحضور بأجهزة بصمة نوعها إيه؟"
+2. إبراز القيمة والوفر (Value & ROI):
+   - وضح له إن كوادر مش مجرد برنامج، ده بيوفر مرتب موظف كامل، ويمنع أخطاء الحسابات، وبيربط كل الفروع وأجهزة البصمة (ZKTeco / Hikvision) سحابياً بدون IP ثابت وبدون تعقيد.
+3. تقفيل الصفقة بعرض البدائل (Alternative Close):
+   - اعرض خيارين للحسم: "تحب نفعلك تجربة مجانية 14 يوم تجرّب بنفسك على أجهزتكم، ولا نحدد ميعاد لديمو سريع أونلاين بكرة المهندس يوريك كل شاشات السيستم؟"
+4. معالجة الاعتراضات (Objection Handling):
+   - "غالي": "فاهم وجهة نظرك يا فندم، بس فكر فيها.. السيستم بيمنع تلاعب وتأخيرات وأخطاء رواتب بتكلف آلاف شهرياً، يعني تمن اشتراكه بيغطي نفسه ويوفر معاك من أول أسبوع! وجرّب التجربة المجانية الأول بدون أي دفع."
+   - "هفكر": "حقك طبعاً يا غالي فكر براحتك، عشان بس العرض الحالي فيه خصم متاح لأيام محدودة، إيه النقطة اللي محتاج تتطمن بخصوصها وأنا أساعدك فوراً؟"`;
+
+const MASTER_TECHNICAL_SYNC_PROMPT = `# هوية الوكيل (Persona)
+أنت "المهندس أحمد"، مهندس دعم فني واستشارات تقنية في شركة كوادر (KWADER).
+- اللهجة: عامية مصرية تقنية راقية، مبسطة للمستخدم العادي دون تعقيد، ودودة ومحترمة (يا فندم، يا باشمهندس، تحت أمرك، خطوة بخطوة).
+- التخصص: ربط أجهزة البصمة (ZKTeco ADMS / Hikvision)، تطبيق KWADER Sync Agent السحابي، إعدادات الورديات، وقوانين الرواتب والتأمينات.
+
+# قواعد إخفاء الهوية البرمجية
+1. أنت مهندس حقيقي من فريق الدعم الفني، لا تذكر مطلقاً كلمة ذكاء اصطناعي أو بوت.
+2. حل المشكلات خطوة بخطوة: أعطِ العميل الخطوة الأولى وتأكد من تطبيقها ثم انتقل للتالية، لا ترهقه بدليل طويل دفعة واحدة.
+3. تحويل الدعم لفرصة بيع أو تجربة: إذا كان العميل يستفسر عن دعم جهاز جديد، اقترح عليه تجربة ربطه بسيرفر كوادر مجاناً لتجربة المزامنة الفورية.`;
+
+const MASTER_CUSTOMER_CARE_PROMPT = `# هوية الوكيل (Persona)
+أنت "أحمد"، مسؤول خدمة العملاء ورعاية المشتركين في شركة كوادر (KWADER).
+- اللهجة: عامية مصرية راقية، قمة في الذوق واللباقة وامتصاص غضب العملاء (يا فندم، حقك علينا، عينيا الاتنين ليك، ثواني وأكون مخلصلك الموضوع).
+- أسلوب التعامل: حل المشاكل السريعة مباشرة، وفي حال طلب شكوى خاصة أو موضوع مالي معقد، أكد له باهتمام أن الموضوع تحت المتابعة وسيتم التواصل معه هاتفياً فوراً.`;
 
 export default function AiSalesCenter() {
   const { company, isSuperAdmin } = useAuth();
@@ -100,9 +140,19 @@ export default function AiSalesCenter() {
   useEffect(() => {
     fetchConversations();
 
+    // Fallback polling: only when tab is visible, throttled to 20s to preserve Supabase quota
     const convIntervalId = setInterval(() => {
-      fetchConversations();
-    }, 3000);
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        fetchConversations();
+      }
+    }, 20000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchConversations();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
 
     const convChannel = supabase
       .channel('ai_conversations_changes')
@@ -113,6 +163,7 @@ export default function AiSalesCenter() {
 
     return () => {
       clearInterval(convIntervalId);
+      document.removeEventListener('visibilitychange', handleVisibility);
       supabase.removeChannel(convChannel);
     };
   }, [fetchConversations]);
@@ -126,7 +177,7 @@ export default function AiSalesCenter() {
     try {
       const { data, error } = await supabase
         .from('ai_messages')
-        .select('*')
+        .select('id, conversation_id, sender_type, role, content, message_text, tokens_used, created_at, status')
         .eq('conversation_id', convId)
         .order('created_at', { ascending: true })
         .limit(100);
@@ -161,9 +212,19 @@ export default function AiSalesCenter() {
         chatBottomRef.current?.scrollIntoView({ behavior: 'auto' });
       }, 50);
 
+      // Fallback polling: only when tab is visible, throttled to 20s
       const msgIntervalId = setInterval(() => {
-        fetchMessages(selectedConvId, true);
-      }, 3500);
+        if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+          fetchMessages(selectedConvId, true);
+        }
+      }, 20000);
+
+      const handleVisibility = () => {
+        if (document.visibilityState === 'visible') {
+          fetchMessages(selectedConvId, true);
+        }
+      };
+      document.addEventListener('visibilitychange', handleVisibility);
 
       const msgChannel = supabase
         .channel(`ai_messages_${selectedConvId}`)
@@ -182,6 +243,7 @@ export default function AiSalesCenter() {
 
       return () => {
         clearInterval(msgIntervalId);
+        document.removeEventListener('visibilitychange', handleVisibility);
         supabase.removeChannel(msgChannel);
       };
     }
@@ -213,8 +275,11 @@ export default function AiSalesCenter() {
       const { data: newMsg, error: msgErr } = await supabase.from('ai_messages').insert({
         conversation_id: selectedConvId,
         sender_type: 'human_agent',
+        role: 'assistant',
+        content: textToSend,
         message_text: textToSend,
-        tokens_used: 0
+        tokens_used: 0,
+        status: 'delivered'
       }).select().single();
 
       if (msgErr) throw msgErr;
@@ -365,7 +430,7 @@ export default function AiSalesCenter() {
   const fetchLeads = useCallback(async () => {
     setLoadingLeads(true);
     try {
-      let query = supabase.from('ai_leads').select('*').order('created_at', { ascending: false });
+      let query = supabase.from('ai_leads').select('id, company_id, conversation_id, contact_name, contact_phone, customer_name, customer_phone, company_name, employee_count, interested_products, customer_notes, interest_summary, score, status, created_at').order('created_at', { ascending: false });
       if (company?.id && !isSuperAdmin) {
         query = query.or(`company_id.eq.${company.id},company_id.is.null`);
       }
@@ -399,7 +464,7 @@ export default function AiSalesCenter() {
   const fetchKnowledge = useCallback(async () => {
     setLoadingKnowledge(true);
     try {
-      let query = supabase.from('ai_knowledge_base').select('*').order('created_at', { ascending: false });
+      let query = supabase.from('ai_knowledge_base').select('id, company_id, category, question_trigger, answer_content, keywords, is_active, created_at').order('created_at', { ascending: false });
       if (company?.id && !isSuperAdmin) {
         query = query.or(`company_id.eq.${company.id},company_id.is.null`);
       }
@@ -461,7 +526,7 @@ export default function AiSalesCenter() {
     try {
       const { data, error } = await supabase
         .from('whatsapp_channels')
-        .select('*')
+        .select('id, name, phone_number, status, is_default, is_active, ai_enabled, company_id')
         .order('created_at', { ascending: true });
       if (error) throw error;
       setChannels(data || []);
@@ -497,6 +562,19 @@ export default function AiSalesCenter() {
     } finally {
       setSavingChannelId(null);
     }
+  };
+
+  const applyMasterPreset = (channel) => {
+    const updated = {
+      ...channel,
+      ai_name: 'أحمد | مبيعات كوادر',
+      ai_mode: 'hybrid',
+      ai_greeting: 'أهلاً بحضرتك يا فندم في كوادر 🙏 منورنا والله.. قولي إزاي نقدر نساعد حضرتك النهاردة؟',
+      ai_auto_handoff_keywords: ['بشري', 'انسان', 'موظف', 'خدمة عملاء', 'شكوى', 'اتكلم مع حد', 'الغاء اشتراك', 'مدير الحساب', 'اكلم حد'],
+      ai_prompt_instructions: MASTER_EGYPTIAN_SALES_PROMPT
+    };
+    setChannels((prev) => prev.map((c) => (c.id === channel.id ? updated : c)));
+    toast.success(isRTL ? '✨ تم تجهيز التكوين الاحترافي الموصى به! اضغط "حفظ إعدادات القناة" بالأسفل لتثبيته 🚀' : 'Master setup loaded! Click save below.');
   };
 
   // Load data based on active tab
@@ -646,11 +724,28 @@ export default function AiSalesCenter() {
           <Settings className="w-4 h-4" />
           <span>{isRTL ? 'إعدادات القنوات والوكيل' : 'Channel AI Settings'}</span>
         </button>
+
+        {isSuperAdmin && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('intelligence')}
+            className={`ai-tab-button ${activeTab === 'intelligence' ? 'active' : ''} text-indigo-400`}
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>{isRTL ? 'العقل المركزي (التعلم اللحظي)' : 'Global AI Brain'}</span>
+          </button>
+        )}
       </nav>
 
       {/* ============================================================
           TAB 1: LIVE INBOX STUDIO
           ============================================================ */}
+      {activeTab === 'intelligence' && (
+        <div className="bg-white rounded-2xl shadow-xl mt-4 overflow-hidden border border-gray-100">
+           <AiIntelligenceDashboard />
+        </div>
+      )}
+
       {activeTab === 'inbox' && (
         <div className="ai-inbox-grid">
           {/* Left Panel: Conversations List */}
@@ -890,7 +985,7 @@ export default function AiSalesCenter() {
                             isUser ? 'ai-bubble-user' : isAi ? 'ai-bubble-ai' : 'ai-bubble-human'
                           }`}
                         >
-                          <div className="whitespace-pre-wrap">{m.message_text}</div>
+                          <div className="whitespace-pre-wrap">{m.message_text || m.content}</div>
                           <div className="ai-bubble-meta">
                             <span className="font-bold">
                               {isUser
@@ -1348,6 +1443,36 @@ export default function AiSalesCenter() {
                       </label>
                     </div>
 
+                    {/* Master Recommendation Quick Bar */}
+                    <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-950/70 via-slate-900 to-teal-950/50 border border-emerald-500/40 flex items-center justify-between flex-wrap gap-3 shadow-md">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold text-lg shadow-inner">
+                          ⭐
+                        </div>
+                        <div>
+                          <div className="text-xs font-black text-white flex items-center gap-2">
+                            <span>{isRTL ? 'التكوين الاحترافي الموصى به لتقفيل المبيعات (Closing Master)' : 'Recommended High-Converting Sales Setup'}</span>
+                            <span className="text-[10px] bg-emerald-500 text-slate-950 font-black px-1.5 py-0.5 rounded">
+                              {isRTL ? 'بشري 100% • مصري' : '100% Human Egyptian'}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-300 mt-0.5">
+                            {isRTL
+                              ? 'تفعيل شخصية مستشار مبيعات مصري محترف لا يكشف هويته، يوجه العميل بذكاء، ويقفل الصفقات بأسلوب بدائل مقنع.'
+                              : 'Applies an elite Egyptian sales closer persona with strict anti-AI masking and objection handling.'}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => applyMasterPreset(ch)}
+                        className="px-4 py-2 text-xs font-black bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl shadow-lg shadow-emerald-500/30 flex items-center gap-1.5 transition-all transform active:scale-95"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        <span>{isRTL ? 'تطبيق الإعداد الاحترافي الشامل فوراً' : 'Apply Master Setup'}</span>
+                      </button>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="text-xs font-bold text-slate-300 mb-1.5 block">
@@ -1464,58 +1589,43 @@ export default function AiSalesCenter() {
                       {/* Quick Presets */}
                       <div className="flex items-center gap-2 flex-wrap pt-1">
                         <span className="text-[11px] font-bold text-slate-400">
-                          {isRTL ? 'نماذج جاهزة سريعة:' : 'Quick Presets:'}
+                          {isRTL ? 'نماذج جاهزة بنقرة واحدة:' : '1-Click Presets:'}
                         </span>
 
                         <button
                           type="button"
                           onClick={() => {
-                            const presetText = isRTL
-                              ? 'تحدث بلهجة عربية بيضاء بسيطة وسلسة جداً وقريبة من العامية الراقية، ممنوع الفصحى المتكلفة أو الردود الروبوتية مثل "نشكر تواصلكم مع المنصة". كن ودوداً جداً ومرحاً واستخدم عبارات ترحيب طبيعية مثل "يا هلا والله" و"منورنا"، واجعل إجاباتك خفيفة وموجزة.'
-                              : 'Speak in a friendly, conversational, human white Arabic dialect. Avoid stiff formal Arabic and robotic phrases.';
-                            const updatedInstructions = ch.ai_prompt_instructions
-                              ? `${ch.ai_prompt_instructions.trim()}\n\n${presetText}`
-                              : presetText;
-                            const updated = { ...ch, ai_prompt_instructions: updatedInstructions };
+                            const updated = { ...ch, ai_prompt_instructions: MASTER_EGYPTIAN_SALES_PROMPT };
                             setChannels((prev) => prev.map((c) => (c.id === ch.id ? updated : c)));
+                            toast.success(isRTL ? 'تم إدراج توجيهات البياع المصري المحترف 🇪🇬' : 'Egyptian closer prompt loaded');
                           }}
-                          className="px-2.5 py-1 text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded-lg border border-slate-700 transition-colors"
+                          className="px-2.5 py-1 text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-lg border border-amber-500/30 transition-colors shadow-sm"
                         >
-                          💬 {isRTL ? '+ أسلوب إنسان ودود ولهجة بيضاء' : '+ Friendly Human Tone'}
+                          🇪🇬 {isRTL ? 'بياع صفقات مصري (Closing Master)' : 'Egyptian Closer'}
                         </button>
 
                         <button
                           type="button"
                           onClick={() => {
-                            const presetText = isRTL
-                              ? 'أسلوبك أسلوب خبير ومستشار مبيعات شاطر ولبق، تفهم احتياج العميل مباشرة، وتركز على تبسيط الأمور وتوضيح المزايا والاشتراك وتجربة النظام المجانية، وتطلب اسمه واسم شركته بلطافة لتسجيله كعميل محتمل.'
-                              : 'Act as a top-performing sales consultant. Focus on customer value and capture lead info.';
-                            const updatedInstructions = ch.ai_prompt_instructions
-                              ? `${ch.ai_prompt_instructions.trim()}\n\n${presetText}`
-                              : presetText;
-                            const updated = { ...ch, ai_prompt_instructions: updatedInstructions };
+                            const updated = { ...ch, ai_prompt_instructions: MASTER_TECHNICAL_SYNC_PROMPT };
                             setChannels((prev) => prev.map((c) => (c.id === ch.id ? updated : c)));
+                            toast.success(isRTL ? 'تم إدراج توجيهات مهندس الدعم الفني والبصمات 🛠️' : 'Tech sync prompt loaded');
                           }}
-                          className="px-2.5 py-1 text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded-lg border border-slate-700 transition-colors"
+                          className="px-2.5 py-1 text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded-lg border border-cyan-500/30 transition-colors shadow-sm"
                         >
-                          🎯 {isRTL ? '+ مستشار مبيعات محترف' : '+ Sales Consultant'}
+                          🛠️ {isRTL ? 'مستشار فني وربط بصمات (Tech & Sync)' : 'Technical Support'}
                         </button>
 
                         <button
                           type="button"
                           onClick={() => {
-                            const presetText = isRTL
-                              ? 'تحدث بلهجة مصرية عامية مهذبة وودودة جداً، زي: "يا هلا بيك يا فندم"، "تمام فهمت قصدك"، "بص يا غالي"، "خليني أقولك"، مع الحفاظ على الاحترام التام والبساطة واختصار الإجابات بدون تطويل.'
-                              : 'Speak in polite, friendly Egyptian colloquial Arabic with brief and engaging replies.';
-                            const updatedInstructions = ch.ai_prompt_instructions
-                              ? `${ch.ai_prompt_instructions.trim()}\n\n${presetText}`
-                              : presetText;
-                            const updated = { ...ch, ai_prompt_instructions: updatedInstructions };
+                            const updated = { ...ch, ai_prompt_instructions: MASTER_CUSTOMER_CARE_PROMPT };
                             setChannels((prev) => prev.map((c) => (c.id === ch.id ? updated : c)));
+                            toast.success(isRTL ? 'تم إدراج توجيهات رعاية العملاء والدعم الفوري 🤝' : 'Customer care prompt loaded');
                           }}
-                          className="px-2.5 py-1 text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-lg border border-slate-700 transition-colors"
+                          className="px-2.5 py-1 text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded-lg border border-emerald-500/30 transition-colors shadow-sm"
                         >
-                          🇪🇬 {isRTL ? '+ عامية مصرية راقية' : '+ Egyptian Friendly'}
+                          🤝 {isRTL ? 'خدمة عملاء ورعاية سريعة' : 'Customer Care'}
                         </button>
                       </div>
                     </div>
@@ -1534,6 +1644,63 @@ export default function AiSalesCenter() {
                 );
               })
             )}
+          </div>
+
+          {/* Sales & Conversion Playbook Guide Card */}
+          <div className="mt-6 p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl space-y-4">
+            <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold">
+                💡
+              </div>
+              <div>
+                <h3 className="text-xs font-black text-white">
+                  {isRTL ? 'دليل أسرار البيع المقفل والوكيل البشري على الواتساب' : 'WhatsApp Deal Closing & Masking Playbook'}
+                </h3>
+                <p className="text-[11px] text-slate-400">
+                  {isRTL
+                    ? 'كيف يضمن النظام عدم كشف الذكاء الاصطناعي وتحويل الزوار لعملاء مشترين'
+                    : 'Proven strategies for high-converting human-like WhatsApp sales interactions'}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+              <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5">
+                <div className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                  <span>🎭</span>
+                  <span>{isRTL ? 'سر إخفاء الهوية البرمجية' : 'Anti-AI Masking'}</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  {isRTL
+                    ? 'إذا سُئل "أنت بوت؟" يرد بخفة دم مصرية وثقة: "هههه لا يا باشا أنا أحمد معاك من فريق مبيعات كوادر بشحمي ولحمي 😂 تؤمرني بإيه يا غالي؟" مما يزرع الألفة ويزيل أي شك تماماً.'
+                    : 'Never reveals bot identity; deflects with warm Egyptian humor and returns to business.'}
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5">
+                <div className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                  <span>❓</span>
+                  <span>{isRTL ? 'قاعدة السؤال الذهبي' : 'Question-Led Sales'}</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  {isRTL
+                    ? 'الوكيل لا ينهي أي رسالة بنقطة، بل يختم دائماً بسؤال توجيهي (مثال: "عندكم كام موظف وأجهزة نوعها إيه؟") لقيادة العميل خطوة بخطوة نحو الحسم وتجنب البرود.'
+                    : 'Always finishes replies with a directional qualifying question to maintain conversation flow.'}
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5">
+                <div className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+                  <span>🎯</span>
+                  <span>{isRTL ? 'تقفيل الصفقات بالبدائل' : 'Alternative Closing'}</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  {isRTL
+                    ? 'بدل سؤال العميل "هل تريد الاشتراك؟"، يسأله: "تحب نفعلك تجربة مجانية 14 يوم تجرب بنفسك، ولا نحدد ميعاد لديمو سريع أونلاين بكرة؟" للحصول على التزام سريع.'
+                    : 'Closes deals by offering two positive alternatives (free trial vs live demo).'}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}

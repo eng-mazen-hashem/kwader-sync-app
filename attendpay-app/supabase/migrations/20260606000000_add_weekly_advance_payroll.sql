@@ -20,13 +20,13 @@ CREATE INDEX IF NOT EXISTS idx_payrolls_run_type_company
   ON payrolls(company_id, run_type, start_date, end_date);
 
 -- 3. Check constraint لقيم run_type
-ALTER TABLE payrolls
-  ADD CONSTRAINT IF NOT EXISTS payrolls_run_type_check
+ALTER TABLE payrolls DROP CONSTRAINT IF EXISTS payrolls_run_type_check;
+ALTER TABLE payrolls ADD CONSTRAINT payrolls_run_type_check
   CHECK (run_type IN ('regular', 'weekly_advance', 'monthly_final'));
 
 -- 4. الـ advance_rate يجب أن يكون بين 0 و 100
-ALTER TABLE payrolls
-  ADD CONSTRAINT IF NOT EXISTS payrolls_advance_rate_check
+ALTER TABLE payrolls DROP CONSTRAINT IF EXISTS payrolls_advance_rate_check;
+ALTER TABLE payrolls ADD CONSTRAINT payrolls_advance_rate_check
   CHECK (advance_rate >= 0 AND advance_rate <= 100);
 
 -- 5. تحديث السجلات القديمة لتكون 'regular'

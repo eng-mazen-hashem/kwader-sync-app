@@ -1,3 +1,52 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+
+# Public marketing and content pages
+Allow: /
+Allow: /about
+Allow: /careers
+Allow: /contact
+Allow: /passport-onboarding
+Allow: /pricing
+Allow: /features
+Allow: /terms
+Allow: /privacy
+Allow: /cookie-policy
+Allow: /gdpr
+Allow: /security
+Allow: /integrations
+Allow: /changelog
+Allow: /roadmap
+Allow: /startups
+Allow: /smbs
+Allow: /enterprise
+Allow: /agencies
+Allow: /remote-teams
+Allow: /multi-country
+Allow: /documentation
+Allow: /blog
+Allow: /hr-templates
+Allow: /case-studies
+Allow: /api-reference
+
+# Protect internal authenticated dashboard routes to conserve crawl budget and ensure privacy
+Disallow: /dashboard
+Disallow: /me/
+Disallow: /super-admin
+Disallow: /reseller
+Disallow: /employees
+Disallow: /attendance
+Disallow: /payroll
+Disallow: /loans
+Disallow: /shifts
+Disallow: /rules
+Disallow: /settings
+Disallow: /structure
+Disallow: /team
+Disallow: /salary-slip/
+Disallow: /onboarding
+Disallow: /reset-password
+Disallow: /subscribe
+
+# Sitemap Location
+Sitemap: https://kwader.app/sitemap.xml

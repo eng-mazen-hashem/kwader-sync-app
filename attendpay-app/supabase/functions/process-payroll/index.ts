@@ -72,6 +72,9 @@ function getPeriodRatio(start: Date, end: Date, totalDays: number): number {
   if (isFullCalendarMonth) {
     return (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth()) + 1;
   }
+  if (totalDays >= 28 && totalDays <= 31) {
+    return 1.0;
+  }
   return totalDays / 30;
 }
 
@@ -118,7 +121,7 @@ serve(async (req: Request) => {
     // ═══════════════════════════════════════════════════════════════════════
     // تحديد نوع المسيرة
     // ═══════════════════════════════════════════════════════════════════════
-    const isFinalMonthly = isFullCalendarMonth(periodStart, periodEnd);
+    const isFinalMonthly = isFullCalendarMonth(periodStart, periodEnd) || (periodTotalDays >= 28 && periodTotalDays <= 31);
 
     // ═══════════════════════════════════════════════════════════════════════
     // جلب إعدادات الشركة (advance_rate)
@@ -379,6 +382,8 @@ serve(async (req: Request) => {
       let ruleDeductions = 0;
       let ruleBonuses    = 0;
       let daysPresent    = 0;
+      let missingRegularHrs = 0;
+
       const breakdown: any[] = [];
 
       const attMap: Record<string, any> = {};
@@ -408,6 +413,7 @@ serve(async (req: Request) => {
               is_deduction: false,
             });
           } else {
+            ruleDeductions += round2(dayAmount);
             breakdown.push({
               date: dateStr,
               rule_name: 'إجازة غير مدفوعة الأجر',
@@ -417,134 +423,136 @@ serve(async (req: Request) => {
             });
           }
         } else if (isWorkDay && !isLeaveDay) {
-          if (att) {
-            const lateMins  = num(att.late_minutes);
-            const earlyMins = num(att.early_leave_minutes);
+          if (!att || att.status === 'absent') {
+            missingRegularHrs += dailyShiftHours;
+          } else {
             let workHrs     = num(att.work_hours);
             const isMissingPunch = att.status === 'missing_checkout' || att.status === 'missing_checkin';
 
             if (isMissingPunch && shift?.deduct_half_on_missing) {
-              const halfShiftHrs = round2(dailyShiftHours / 2);
-              workHrs = halfShiftHrs;
+              const halfDayAmount = round2(dailyRate / 2);
+              ruleDeductions += halfDayAmount;
+              breakdown.push({
+                date: dateStr,
+                rule_name: `خصم نصف الشفت (${att.status === 'missing_checkin' ? 'بصمة دخول مفقودة' : 'بصمة انصراف مفقودة'})`,
+                action_type: 'deduct_half_shift',
+                amount: halfDayAmount,
+                is_deduction: true,
+              });
+              workHrs = dailyShiftHours;
             }
 
-            if (att.status === 'present' || att.status === 'late' || att.status === 'early_leave' || isMissingPunch) {
-              if (!isMissingPunch) {
-                daysPresent++;
-              } else if (workHrs > 0) {
-                daysPresent += shift?.deduct_half_on_missing ? 0.5 : 1;
-              }
-              totalWorkHrs += workHrs;
+            if (!isMissingPunch) {
+              daysPresent++;
+            } else {
+              daysPresent += shift?.deduct_half_on_missing ? 0.5 : 1;
+            }
+            totalWorkHrs += workHrs;
 
-              // Separate regular shift hours from overtime hours according to HR labor law standards
-              const regularHrs = Math.min(workHrs, dailyShiftHours);
-              totalRegularWorkHrs += regularHrs;
+            // Separate regular shift hours from overtime hours according to HR labor law standards
+            const regularHrs = Math.min(workHrs, dailyShiftHours);
+            totalRegularWorkHrs += regularHrs;
 
-              if (workHrs > dailyShiftHours) {
-                const otHours = round2(workHrs - dailyShiftHours);
-                const otRate = num(shift?.overtime_rate || 1.5);
-                const otTierStart = num(shift?.overtime_rate_start_hours || 0);
+            missingRegularHrs += Math.max(0, dailyShiftHours - regularHrs);
 
-                let weightedOtHours = 0;
-                if (otTierStart <= 0) {
-                  weightedOtHours = otHours * otRate;
-                } else {
-                  const tier1 = Math.min(otHours, otTierStart);
-                  const tier2 = Math.max(0, otHours - otTierStart);
-                  weightedOtHours = tier1 * 1.0 + tier2 * otRate;
-                }
+            if (workHrs > dailyShiftHours) {
+              const otHours = round2(workHrs - dailyShiftHours);
+              const otRate = num(shift?.overtime_rate || 1.5);
+              const otTierStart = num(shift?.overtime_rate_start_hours || 0);
 
-                const dayOtPay = round2(weightedOtHours * hourlyRate);
-                if (dayOtPay > 0) {
-                  totalOvertimeHrs += otHours;
-                  totalOvertimePay += dayOtPay;
-                  breakdown.push({
-                    date: dateStr,
-                    rule_name: `ساعات عمل إضافية (${otHours}س بمعدل ${otRate}x)`,
-                    action_type: 'overtime_pay',
-                    amount: dayOtPay,
-                    hours: otHours,
-                    rate: otRate,
-                    is_deduction: false,
-                  });
-                }
+              let weightedOtHours = 0;
+              if (otTierStart <= 0) {
+                weightedOtHours = otHours * otRate;
+              } else {
+                const tier1 = Math.min(otHours, otTierStart);
+                const tier2 = Math.max(0, otHours - otTierStart);
+                weightedOtHours = tier1 * 1.0 + tier2 * otRate;
               }
 
-              if (isMissingPunch && shift?.deduct_half_on_missing) {
+              const dayOtPay = round2(weightedOtHours * hourlyRate);
+              if (dayOtPay > 0) {
+                totalOvertimeHrs += otHours;
+                totalOvertimePay += dayOtPay;
                 breakdown.push({
                   date: dateStr,
-                  rule_name: `خصم نصف الشفت (${att.status === 'missing_checkin' ? 'بصمة دخول مفقودة' : 'بصمة انصراف مفقودة'})`,
-                  action_type: 'deduct_half_shift',
-                  amount: round2(dailyRate / 2),
-                  is_deduction: true,
+                  rule_name: `ساعات عمل إضافية (${otHours}س بمعدل ${otRate}x)`,
+                  action_type: 'overtime_pay',
+                  amount: dayOtPay,
+                  hours: otHours,
+                  rate: otRate,
+                  is_deduction: false,
                 });
               }
             }
+          }
 
-            for (const rule of rules) {
-              const isLate   = att.status === 'late' || lateMins > 0;
-              const isAbsent = att.status === 'absent';
-              const isEarly  = earlyMins > 0;
+          const lateMins  = att ? num(att.late_minutes) : 0;
+          const earlyMins = att ? num(att.early_leave_minutes) : 0;
+          const attStatus = att ? att.status : 'absent';
 
-              let fired = false;
-              if (rule.trigger_event === 'late_arrival'    && isLate)   fired = true;
-              if (rule.trigger_event === 'absence'         && isAbsent) fired = true;
-              if (rule.trigger_event === 'early_departure' && isEarly)  fired = true;
-              if (!fired) continue;
+          for (const rule of rules) {
+            const isLate   = attStatus === 'late' || lateMins > 0;
+            const isAbsent = attStatus === 'absent';
+            const isEarly  = earlyMins > 0;
 
-              const conds: any[] = rule.conditions || [];
-              let metCount = 0;
-              for (const c of conds) {
-                let tv = 0;
-                if (c.field === 'minutes_late')  tv = lateMins;
-                if (c.field === 'minutes_early') tv = earlyMins;
-                const cv  = parseFloat(c.value)  || 0;
-                const cv2 = parseFloat(c.value2) || 0;
-                let met = false;
-                switch (c.operator) {
-                  case 'gt':      met = tv >  cv; break;
-                  case 'gte':     met = tv >= cv; break;
-                  case 'lt':      met = tv <  cv; break;
-                  case 'lte':     met = tv <= cv; break;
-                  case 'eq':      met = tv === cv; break;
-                  case 'between': met = tv >= cv && tv <= cv2; break;
-                }
-                if (met) metCount++;
+            let fired = false;
+            if (rule.trigger_event === 'late_arrival'    && isLate)   fired = true;
+            if (rule.trigger_event === 'absence'         && isAbsent) fired = true;
+            if (rule.trigger_event === 'early_departure' && isEarly)  fired = true;
+            if (!fired) continue;
+
+            const conds: any[] = rule.conditions || [];
+            let metCount = 0;
+            for (const c of conds) {
+              let tv = 0;
+              if (c.field === 'minutes_late')  tv = lateMins;
+              if (c.field === 'minutes_early') tv = earlyMins;
+              const cv  = parseFloat(c.value)  || 0;
+              const cv2 = parseFloat(c.value2) || 0;
+              let met = false;
+              switch (c.operator) {
+                case 'gt':      met = tv >  cv; break;
+                case 'gte':     met = tv >= cv; break;
+                case 'lt':      met = tv <  cv; break;
+                case 'lte':     met = tv <= cv; break;
+                case 'eq':      met = tv === cv; break;
+                case 'between': met = tv >= cv && tv <= cv2; break;
               }
+              if (met) metCount++;
+            }
 
-              const passed =
-                conds.length === 0 ||
-                (rule.logic_mode === 'ALL' && metCount === conds.length) ||
-                (rule.logic_mode === 'ANY' && metCount > 0);
-              if (!passed) continue;
+            const passed =
+              conds.length === 0 ||
+              (rule.logic_mode === 'ALL' && metCount === conds.length) ||
+              (rule.logic_mode === 'ANY' && metCount > 0);
+            if (!passed) continue;
 
-              for (const act of rule.actions || []) {
-                let amount = 0;
-                const isDeduction = (act.type as string).startsWith('deduct');
-                switch (act.type) {
-                  case 'deduct_fixed':
-                  case 'add_bonus':
-                    amount = parseFloat(act.value) || 0; break;
-                  case 'deduct_percentage':
-                  case 'add_percentage':
-                    amount = (bs * (parseFloat(act.value) || 0)) / 100; break;
-                  case 'deduct_daily_rate':
-                    amount = dailyRate * (parseFloat(act.value) || 0); break;
-                  case 'deduct_per_minute':
-                  case 'add_per_minute': {
-                    const mins = rule.trigger_event === 'late_arrival' ? lateMins : earlyMins;
-                    amount = mins * minuteRate * (parseFloat(act.value) || 1); break;
-                  }
+            for (const act of rule.actions || []) {
+              let amount = 0;
+              const isDeduction = (act.type as string).startsWith('deduct');
+              switch (act.type) {
+                case 'deduct_fixed':
+                case 'add_bonus':
+                  amount = parseFloat(act.value) || 0; break;
+                case 'deduct_percentage':
+                case 'add_percentage':
+                  amount = (bs * (parseFloat(act.value) || 0)) / 100; break;
+                case 'deduct_daily_rate':
+                  amount = dailyRate * (parseFloat(act.value) || 0); break;
+                case 'deduct_per_minute':
+                case 'add_per_minute': {
+                  const mins = rule.trigger_event === 'late_arrival' ? lateMins : earlyMins;
+                  amount = mins * minuteRate * (parseFloat(act.value) || 1); break;
                 }
-                if (amount <= 0) continue;
-                if (isDeduction) ruleDeductions += amount;
-                else             ruleBonuses    += amount;
-                breakdown.push({
-                  date: dateStr, rule_name: rule.name,
-                  action_type: act.type, amount: round2(amount),
-                  is_deduction: isDeduction,
-                });
               }
+              if (amount <= 0) continue;
+              if (isDeduction) ruleDeductions += amount;
+              else             ruleBonuses    += amount;
+              breakdown.push({
+                date: dateStr, rule_name: rule.name,
+                action_type: act.type, amount: round2(amount),
+                is_deduction: isDeduction,
+              });
             }
           }
         }
@@ -558,19 +566,12 @@ serve(async (req: Request) => {
         : 0;
 
       // ── استقطاع ساعات وأيام عدم الحضور (الفرق بين الراتب التعاقدي والفعلي) ─
-      const unworkedAmount = round2(period_bs - earnedBase);
+      const unworkedAmount = round2(missingRegularHrs * hourlyRate);
       if (currentRunType !== 'weekly_advance' && unworkedAmount > 0) {
-        const unworkedDays = Math.max(0, scheduledDays - daysPresent);
-        const unworkedHours = round2(scheduledHours - totalRegularWorkHrs);
-        const subParts: string[] = [];
-        if (unworkedDays > 0) subParts.push(`${unworkedDays} يوم غياب`);
-        if (unworkedHours > 0) subParts.push(`${unworkedHours} ساعة غير مكتملة`);
-        const subDesc = subParts.length > 0 ? ` (${subParts.join(' · ')})` : '';
-
         ruleDeductions += unworkedAmount;
         breakdown.push({
           date: start_date,
-          rule_name: `استقطاع ساعات وأيام عدم الحضور${subDesc}`,
+          rule_name: `استقطاع ساعات عدم الحضور (${round2(missingRegularHrs)} ساعة)`,
           action_type: 'deduct_unworked_hours',
           amount: unworkedAmount,
           is_deduction: true,
@@ -582,8 +583,11 @@ serve(async (req: Request) => {
       let loanDeduction = 0;
 
       for (const l of empLoansArr) {
+        // Do not deduct loans during weekly advances, they will be deducted in the monthly final.
+        if (currentRunType === 'weekly_advance') continue;
+
         // If it's a weekly run, or a 1-month loan (short-term), deduct the entire remaining amount in full
-        const isShortTerm = num(l.repayment_months) <= 1 || currentRunType === 'weekly_advance';
+        const isShortTerm = num(l.repayment_months) <= 1;
         const deductAmt = isShortTerm 
           ? num(l.remaining_amount)
           : Math.min(

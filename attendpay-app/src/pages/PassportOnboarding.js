@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, CheckCircle, Briefcase, MapPin, DollarSign, Star, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useSEO } from '../utils/useSEO';
 
 const skillsList = [
   'CNC Laser Operator',
@@ -14,6 +15,13 @@ const skillsList = [
 ];
 
 export default function PassportOnboarding() {
+  useSEO({
+    title: 'أنشئ جواز مهاراتك الرقمي مجاناً | منصة كوادر KWADER',
+    description: 'وثّق مهاراتك الفنية وخبراتك العملية بجواز كفاءة رقمي معتمد يربطك بأفضل فرص العمل في المصانع والشركات الكبرى.',
+    canonical: 'https://kwader.app/passport-onboarding',
+    lang: 'ar',
+  });
+
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     profession: '',

@@ -1,8 +1,8 @@
-﻿-- Migration: 20260805200000_fix_timezone_shift_bug.sql
+-- Migration: 20260805200000_fix_timezone_shift_bug.sql
 -- Description: Fix timezone offset shifting bug and before insert union bug in raw attendance trigger
 
 CREATE OR REPLACE FUNCTION process_raw_attendance_trigger()
-RETURNS TRIGGER AS $body
+RETURNS TRIGGER AS $body$
 DECLARE
     v_employee_id uuid;
     v_shift record;
@@ -348,4 +348,4 @@ BEGIN
     NEW.is_processed := true;
     RETURN NEW;
 END;
-$body LANGUAGE plpgsql;
+$body$ LANGUAGE plpgsql;

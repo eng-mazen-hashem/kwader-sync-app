@@ -242,7 +242,7 @@ const MobileDashboard = () => {
             // Fetch last 3 notifications
             const { data: notifs } = await supabase
                 .from('employee_notifications')
-                .select('*')
+                .select('id, title, message, created_at, read_at')
                 .eq('employee_id', employee.id)
                 .order('created_at', { ascending: false })
                 .limit(3);

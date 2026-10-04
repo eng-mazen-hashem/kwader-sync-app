@@ -6,6 +6,7 @@ import {
     Gavel, Scale, FileText, Globe, CheckCircle2, ExternalLink, CreditCard, RefreshCw
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useSEO } from '../utils/useSEO';
 
 /* ─── Data ─────────────────────────────────────────────────────────────────── */
 const SECTIONS = {
@@ -306,6 +307,15 @@ const TermsOfService = () => {
     const isRtl = language === 'ar';
     const sections = SECTIONS[isRtl ? 'ar' : 'en'];
     const [activeSection, setActiveSection] = useState(sections[0].id);
+
+    useSEO({
+        title: isRtl ? 'شروط الخدمة والاستخدام | نظام كوادر KWADER' : 'Terms of Service | KWADER HR Platform',
+        description: isRtl
+            ? 'اطلع على الشروط والأحكام الخاصة باستخدام نظام كوادر السحابي لإدارة الموارد البشرية والرواتب، وسياسات الترخيص والاستخدام.'
+            : 'Read the terms of service, subscription policies, and usage guidelines for KWADER HR platform.',
+        canonical: 'https://kwader.app/terms',
+        lang: language,
+    });
 
     useEffect(() => {
         const handler = () => {

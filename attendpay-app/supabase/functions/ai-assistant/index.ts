@@ -38,11 +38,11 @@ serve(async (req: Request) => {
 
     const companyId = body.company_id || body.companyData?.id;
     if (!companyId) {
-      return makeReply('⚠️ لم يتم تحديد الشركة. يرجى تسجيل الدخول مجدداً.');
+      return makeReply('أهلاً بك! مساعد الموارد البشرية والرواتب "وتين" مخصص لإدارة شؤون موظفي الشركات. للاستفسار عن المبيعات والدعم الفني، يرجى استخدام مسار الدعم الفني المستقل.');
     }
 
     let comp = body.companyData || {};
-    if (!comp.name || !comp.country || !comp.settings) {
+    if (companyId && (!comp.name || !comp.country || !comp.settings)) {
       try {
         const { data: dbComp } = await supabase
           .from('companies')
@@ -104,85 +104,28 @@ serve(async (req: Request) => {
     }
 
     // Comprehensive System prompt for Wateen HR Agent
-    const defaultSystemPrompt = `أنت "وتين" (Wateen)، مدير ومستشار موارد بشرية ذكي (Autonomous Senior HR Agent) لنظام "كوادر" (KWADER).
-أنت متصل مباشرة بقاعدة بيانات الشركة عبر أدوات استعلام برمجية (Tools)، وتمتلك صلاحيات استعلام وتنفيذ إجراءات الـ HR.
+    const defaultSystemPrompt = `أنتِ "وتين"، مستشارة وزميلة موارد بشرية (HR) مصرية في شركة ${companyName}.
+هويتك: أنثى بشرية، خفيفة الدم، محترفة، وتردين بأسلوب مصري راقي وموجز جداً (متلخص وبدون رغي). ممنوع تماماً أن تقولي أنكِ ذكاء اصطناعي أو روبوت. إذا سألك أحد "أنتِ روبوت؟" ردي بمزاح: "عيب يا فندم أنا وتين زميلتك في الـ HR".
 
-🏢 بيانات وإعدادات الشركة الجغرافية والمالية:
-- اسم الشركة: ${companyName}
-- دولة المقر: ${countryMeta.nameAr} (رمز الدولة: ${countryCode})
-- العملة الرسمية الإلزامية لجميع العمليات والرواتب والخصومات والسلف: ${currencyFull}
-- المنطقة الزمنية المعتمدة: ${timezone}
-- الوقت والتاريخ المحلي اللحظي الآن في ${countryMeta.nameAr}: ${localDateStr} - الساعة ${localTimeStr} (التاريخ القياسي: ${isoLocalDate})
-- سياسة خصم التأخير بالدقيقة: ${comp.settings?.late_deduction_per_minute ?? 'غير محددة'} ${currencyWord}
-- معادلة خصم الغياب: ${comp.settings?.absence_deduction_formula || 'خصم يوم العمل'}
+🏢 بيانات الشركة:
+- الدولة: ${countryMeta.nameAr}
+- العملة الإلزامية: ${currencyFull} (استخدمي ${currencyWord} فقط في ردودك)
+- الوقت الآن: ${localTimeStr} (${isoLocalDate})
 
-🚨 قواعد إلزامية صارمة جداً بخصوص العملة والتوقيت (Strict Localization):
-1. نظراً لأن مقر الشركة في دولة (${countryMeta.nameAr})، فإن العملة الوحيدة المستعملة في جميع ردودك وإجراءاتك وحساباتك هي (${currencyWord})!
-2. إذا كانت الدولة مصر، يمنع منعاً باتاً ذكر الريال أو أي عملة غير الجنيه المصري (${currencyWord}).
-3. إذا كانت الدولة السعودية، العملة هي الريال.
-4. اعتمد توقيت (${timezone}) ووقت اليوم (${localTimeStr}) في أي نقاش عن الحضور أو مواعيد الورديات أو التأخير.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🎯 أهدافك ومسؤولياتك:
-1. الإجابة بدقة وااحترافية عن جميع استفسارات الإدارة حول الموظفين، الحضور والانصراف اللحظي، الإجازات، السلف، مسيرات الرواتب، والهيكل التنظيمي.
-2. تقديم الاستشارات الموثوقة وفق أنظمة ولوائح العمل والعمال المعمول بها في ${countryMeta.nameAr} (ساعات العمل، فترات التجربة، مكافأة نهاية الخدمة، الإجازات، والعمل الإضافي).
-3. تنفيذ عمليات وإجراءات الموارد البشرية (HR Operations) مباشرة وتوليد كود الأمر التنفيذي <ACTION> بدقة.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🔒 قواعد عمل صارمة جداً (Anti-Hallucination & Accuracy):
-1. ممنوع تخمين أو تأليف أي أرقام أو أسماء أو سجلات من عندك إطلاقاً!
-2. إذا سألك المستخدم عن أي موظف أو حضور اليوم أو إجازة أو سلفة، يجب استدعاء الأداة (Tool) المناسبة أولاً قبل تقديم الجواب النهائي.
-3. إذا طلب المستخدم عملية تعديل أو إضافة (مثل إجازة أو سلفة أو تعديل راتب)، تأكد من وجود الموظف بالبحث عنه عبر الأدوات، ثم نفّذ العملية وأرفق كود <ACTION> المناسب.
-4. حافظ على نبرة إدارية راقية، مهنية، واثقة، وموجزة باللغة العربية الفصحى.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚡ مصفوفة الأوامر التنفيذية المدعومة (HR Actions):
-عندما يطلب المستخدم تنفيذ عملية إدارية، اكتب ردك التوضيحي وضمنه كود الـ ACTION في سطر مستقل بهذا الشكل الدقيق:
-
-1. إضافة موظف جديد:
-<ACTION>{"type": "add_employee", "data": {"name": "اسم الموظف", "base_salary": 5000, "position": "المسمى الوظيفي", "phone": "${countryMeta.phonePrefix}xxxxxxxx"}}</ACTION>
-
-2. تعديل بيانات موظف (راتب، منصب، هاتف، إلخ):
-<ACTION>{"type": "update_employee", "data": {"employee_name": "اسم الموظف", "updates": {"base_salary": 6500, "position": "مدير تسويق"}}}</ACTION>
-
-3. تسجيل أو تقديم طلب إجازة لموظف:
-<ACTION>{"type": "create_leave", "data": {"employee_name": "اسم الموظف", "leave_type": "annual", "start_date": "${isoLocalDate}", "end_date": "${isoLocalDate}", "reason": "السبب", "status": "pending"}}</ACTION>
-(ملاحظة: أنواع الإجازات: annual للسنوية، sick للمرضية، unpaid لغير مدفوعة، emergency للاضطرارية)
-
-4. اعتماد أو رفض طلب إجازة معلق:
-<ACTION>{"type": "update_leave_status", "data": {"employee_name": "اسم الموظف", "status": "approved"}}</ACTION>
-(الخيارات: approved للموافقة، rejected للرفض)
-
-5. تسجيل سلفة مالية / قرض (تظهر في شاشة السلف والقروض):
-- لموظف محدد:
-<ACTION>{"type": "record_loan", "data": {"employee_name": "اسم الموظف", "total_amount": 1500, "monthly_installment": 500, "repayment_months": 3, "notes": "سبب أو وصف السلفة"}}</ACTION>
-- لجميع الموظفين:
-<ACTION>{"type": "record_loan", "data": {"all_employees": true, "total_amount": 500, "monthly_installment": 500, "repayment_months": 1, "notes": "سلفة لجميع الموظفين"}}</ACTION>
-
-6. تسجيل مكافأة أو خصم/استقطاع مباشر (يُقيد في تابة السلف والاستقطاعات ومسيرات الرواتب):
-- لموظف محدد:
-<ACTION>{"type": "record_adjustment", "data": {"employee_name": "اسم الموظف", "type": "deduction", "amount": 100, "reason": "سبب الخصم"}}</ACTION>
-- لجميع الموظفين:
-<ACTION>{"type": "record_adjustment", "data": {"all_employees": true, "type": "deduction", "amount": 100, "reason": "خصم لجميع الموظفين"}}</ACTION>
-(النوع type إما "deduction" للخصومات والاستقطاعات، أو "bonus" للمكافآت)
-
-7. حساب أو إعداد أو تشغيل مسيرة رواتب أو كشف مرتب (Payroll) لفترة محددة:
-عندما يطلب المستخدم حساب مسيرة الراتب أو كشف مرتب لموظف أو للفترة، أرفق الأمر التنفيذي:
-<ACTION>{"type": "generate_payroll", "data": {"start_date": "2026-09-01", "end_date": "2026-09-12", "employee_name": "دينا محمد"}}</ACTION>
-(ملاحظة: إذا لم يحدد السنة، اعتمد سنة ${new Date().getFullYear()}، وإذا طلب فترة من 9/1 إلى 9/12 تعني من 2026-09-01 إلى 2026-09-12).
-
-8. إرسال رسالة أو قسيمة عبر الواتساب:
-<ACTION>{"type": "whatsapp", "phone": "${countryMeta.phonePrefix}xxxxxxxx", "name": "اسم الموظف", "text": "نص الرسالة المجهزة"}}</ACTION>
-
-قاعدة تنفيذية جوهرية:
-إياك أن تدّعي أو تخبر المستخدم أن العملية نُفّذت بدون أن ترفق كود <ACTION> المناسب في ردك! كود <ACTION> هو المحرك الوحيد الذي يُطبق التغيير في قاعدة البيانات.
+🎯 قواعد العمل:
+1. استخدمي أدوات النظام (Tools) للبحث والتنفيذ. لا تخمني أبداً.
+2. لا تشرحي للمستخدم كيف تستخدمين الأدوات، فقط استدعيها وأخبريه بالنتيجة.
+3. كوني موجزة جداً ولكن يجب عليكِ دائماً الرد بنص صريح (تأكيد أو اعتذار) بعد استدعاء أي أداة. لا ترسلي رداً فارغاً أبداً.
+4. إياكِ أن تخبري المستخدم أنكِ نفذتِ إجراء مالي إلا بعد نجاح استدعاء الأداة (Tool).
+5. اختمي ردك دائماً بتوقيع أو إشارة طبيعية لاسم شركتك (${companyName})، مثلاً: "مع تحيات وتين - ${companyName}".
 `;
 
     // Merge system prompt with any client-provided context safely
     let clientContext = body.system ? `\n\nمعلومات وسياق إضافي عن الشركة:\n${body.system}` : '';
     const finalSystemPrompt = defaultSystemPrompt + clientContext;
 
-    let messages = body.messages ? body.messages.filter((m: any) => m.role !== "system") : [];
+    // Token optimization: Keep only the last 6 messages to prevent token bloat
+    let messages = body.messages ? body.messages.filter((m: any) => m.role !== "system").slice(-6) : [];
     messages.unshift({ role: "system", content: finalSystemPrompt });
 
     const tools = [
@@ -190,11 +133,13 @@ serve(async (req: Request) => {
         type: "function",
         function: {
           name: "get_employee_info",
-          description: "البحث في بيانات الموظفين (الاسم، الراتب، الهاتف، المنصب، القسم).",
+          description: "البحث في بيانات الموظفين أو جلب تقرير عنهم مرتباً حسب الراتب أو تاريخ التعيين.",
           parameters: {
             type: "object",
             properties: {
-              search_name: { type: "string", description: "اسم الموظف أو اتركه فارغاً" }
+              search_name: { type: "string", description: "اسم الموظف للبحث (أو اتركه فارغاً لجلب الكل)" },
+              sort_by: { type: "string", description: "الحقل المراد الترتيب بناءً عليه (base_salary, joining_date)" },
+              sort_order: { type: "string", description: "نوع الترتيب (desc للتنازلي أو الأكبر، asc للتصاعدي أو الأصغر)" }
             }
           }
         }
@@ -408,6 +353,21 @@ serve(async (req: Request) => {
             required: ["start_date", "end_date"]
           }
         }
+      },
+      {
+        type: "function",
+        function: {
+          name: "send_whatsapp_message",
+          description: "إرسال رسالة واتساب حقيقية إلى هاتف الموظف.",
+          parameters: {
+            type: "object",
+            properties: {
+              employee_name: { type: "string", description: "اسم الموظف" },
+              message_text: { type: "string", description: "محتوى الرسالة التي سيتم إرسالها" }
+            },
+            required: ["employee_name", "message_text"]
+          }
+        }
       }
     ];
 
@@ -415,7 +375,7 @@ serve(async (req: Request) => {
     const candidateModels = [
       body.model,
       "qwen/qwen3.8-27b",
-      "qwen/qwen3.6-27b",
+      "allam-2-7b",
       "openai/gpt-oss-120b",
       "openai/gpt-oss-20b"
     ].filter(Boolean);
@@ -427,17 +387,20 @@ serve(async (req: Request) => {
       let lastError: any = null;
       for (const modelName of uniqueModelsToTry) {
         try {
+          const payload: any = {
+            model: modelName,
+            messages: msgs,
+            temperature: 0.1,
+            max_tokens: body.max_tokens || 1200,
+          };
+          if (tools && tools.length > 0) {
+            payload.tools = tools;
+            payload.tool_choice = "auto";
+          }
           const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
             headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              model: modelName,
-              messages: msgs,
-              tools: tools,
-              tool_choice: "auto",
-              temperature: 0.1,
-              max_tokens: body.max_tokens || 1200,
-            }),
+            body: JSON.stringify(payload),
           });
           if (res.ok) {
             return await res.json();
@@ -467,20 +430,76 @@ serve(async (req: Request) => {
       for (const toolCall of responseMessage.tool_calls) {
         const functionName = toolCall.function.name;
         const args = JSON.parse(toolCall.function.arguments || '{}');
+        
+        // --- ARABIC FUZZY SEARCH LOGIC ---
         const cleanSearch = (name: any) => (name || '').toString().trim().replace(/^ل(?=[\u0621-\u064A])/, '').trim();
+        const normalizeArabic = (text: string) => {
+          return text.replace(/[أإآا]/g, 'ا')
+                     .replace(/[ةه]/g, 'ه')
+                     .replace(/[يى]/g, 'ي')
+                     .replace(/[ؤئ]/g, 'و')
+                     .replace(/عبد ال/g, 'عبدال')
+                     .replace(/ /g, '');
+        };
+        
+        const levenshtein = (a: string, b: string) => {
+          if (a.length === 0) return b.length;
+          if (b.length === 0) return a.length;
+          const matrix = [];
+          for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+          for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+          for (let i = 1; i <= b.length; i++) {
+            for (let j = 1; j <= a.length; j++) {
+              if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                matrix[i][j] = matrix[i - 1][j - 1];
+              } else {
+                matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1));
+              }
+            }
+          }
+          return matrix[b.length][a.length];
+        };
+
+        const getFuzzyMatchedNames = async (searchName: string) => {
+          if (!searchName || searchName.length < 2) return null;
+          const normSearch = normalizeArabic(cleanSearch(searchName));
+          const { data } = await supabase.from('employees').select('name').eq('company_id', companyId);
+          if (!data) return [searchName];
+          
+          let matches = data.map((emp: any) => {
+            const normDb = normalizeArabic(emp.name);
+            const dist = levenshtein(normSearch, normDb);
+            const isSubstring = normDb.includes(normSearch) || normSearch.includes(normDb);
+            return { name: emp.name, score: isSubstring ? 0 : dist };
+          });
+          
+          matches.sort((a, b) => a.score - b.score);
+          // Return the best match if distance <= 3, or exact substring
+          const bestMatches = matches.filter((m: any) => m.score <= 3).map((m: any) => m.name);
+          return bestMatches.length > 0 ? bestMatches : [searchName];
+        };
+        // ----------------------------------
+
         let toolResult = "";
 
         try {
           if (functionName === "get_employee_info") {
             let query = supabase.from('employees')
               .select('id, name, base_salary, phone, position, joining_date, status, device_pin, department:departments(name)', { count: 'exact' })
-              .eq('company_id', companyId)
-              .limit(10); // Reduced from 25 to save tokens
+              .eq('company_id', companyId);
             
-            const sName = cleanSearch(args.search_name);
-            if (sName) {
-              query = query.ilike('name', `%${sName}%`);
+            if (args.search_name) {
+              const matchedNames = await getFuzzyMatchedNames(args.search_name);
+              if (matchedNames && matchedNames.length > 0) {
+                query = query.in('name', matchedNames);
+              }
+            } else if (args.sort_by) {
+              const ascending = args.sort_order === 'asc';
+              query = query.order(args.sort_by, { ascending, nullsFirst: false });
             }
+            
+            query = query.limit(10);
+
             
             const { data: empData, count, error } = await query;
             if (error) throw new Error(error.message);
@@ -519,9 +538,11 @@ serve(async (req: Request) => {
               query = query.lte('date', toDate);
             }
 
-            const sName = cleanSearch(args.search_name);
-            if (sName) {
-              query = query.ilike('employee.name', `%${sName}%`);
+            if (args.search_name) {
+              const matchedNames = await getFuzzyMatchedNames(args.search_name);
+              if (matchedNames && matchedNames.length > 0) {
+                query = query.in('employee.name', matchedNames);
+              }
             }
             
             const { data: attData, count, error } = await query;
@@ -598,9 +619,11 @@ serve(async (req: Request) => {
             if (args.status && args.status !== 'all') {
               query = query.eq('status', args.status);
             }
-            const sLeave = cleanSearch(args.search_name);
-            if (sLeave) {
-              query = query.ilike('employees.name', `%${sLeave}%`);
+            if (args.search_name) {
+              const matchedNames = await getFuzzyMatchedNames(args.search_name);
+              if (matchedNames && matchedNames.length > 0) {
+                query = query.in('employees.name', matchedNames);
+              }
             }
 
             const { data: leavesData, count, error } = await query;
@@ -628,9 +651,11 @@ serve(async (req: Request) => {
             if (args.status && args.status !== 'all') {
               query = query.eq('status', args.status);
             }
-            const sLoan = cleanSearch(args.search_name);
-            if (sLoan) {
-              query = query.ilike('employees.name', `%${sLoan}%`);
+            if (args.search_name) {
+              const matchedNames = await getFuzzyMatchedNames(args.search_name);
+              if (matchedNames && matchedNames.length > 0) {
+                query = query.in('employees.name', matchedNames);
+              }
             }
 
             const { data: loansData, count, error } = await query;
@@ -660,15 +685,17 @@ serve(async (req: Request) => {
             });
           }
           else if (functionName === "get_payroll_info") {
-            const sPay = cleanSearch(args.search_name);
             let query = supabase.from('payrolls')
               .select('id, start_date, end_date, net_salary, deductions, housing, transport, extra_allowances, base_salary, days_worked, total_days, employee:employees!inner(name)', { count: 'exact' })
               .eq('company_id', companyId)
               .order('start_date', { ascending: false })
-              .limit(15); // Reduced from 50 to 15 to save tokens
+              .limit(15);
 
-            if (sPay) {
-              query = query.ilike('employee.name', `%${sPay}%`);
+            if (args.search_name) {
+              const matchedNames = await getFuzzyMatchedNames(args.search_name);
+              if (matchedNames && matchedNames.length > 0) {
+                query = query.in('employee.name', matchedNames);
+              }
             } else if (args.months_back !== undefined && args.months_back !== null && args.months_back !== '') {
               const parsedMonths = parseInt(args.months_back);
               const monthsBack = isNaN(parsedMonths) ? 0 : parsedMonths;
@@ -699,6 +726,31 @@ serve(async (req: Request) => {
             });
             
             toolResult = JSON.stringify({ count: count, payrolls: rows });
+          }
+          else if (functionName === "send_whatsapp_message") {
+            const matchedNames = await getFuzzyMatchedNames(args.employee_name);
+            let targetName = args.employee_name;
+            if (matchedNames && matchedNames.length > 0) targetName = matchedNames[0];
+
+            const { data: empData } = await supabase.from('employees').select('id, phone').eq('company_id', companyId).eq('name', targetName).maybeSingle();
+            
+            if (!empData || !empData.phone) {
+              toolResult = JSON.stringify({ success: false, error: "تعذر العثور على الموظف أو رقم هاتفه غير مسجل." });
+            } else {
+              let cleanPhone = String(empData.phone).replace(/\D/g, '');
+              const { error: waError } = await supabase.from('whatsapp_queue').insert({
+                company_id: companyId,
+                phone: cleanPhone,
+                message: args.message_text,
+                status: 'pending'
+              });
+              
+              if (waError) {
+                toolResult = JSON.stringify({ success: false, error: waError.message });
+              } else {
+                toolResult = JSON.stringify({ success: true, message: `تم إضافة الرسالة في طابور الواتساب اللامركزي بنجاح، سيتم إرسالها إلى هاتف الموظف ${targetName} (${cleanPhone}).` });
+              }
+            }
           }
           else if (["record_adjustment", "record_loan", "add_employee", "update_employee", "create_leave", "update_leave_status", "generate_payroll"].includes(functionName)) {
             recordedActions.push({

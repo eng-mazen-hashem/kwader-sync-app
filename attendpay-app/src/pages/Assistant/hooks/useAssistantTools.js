@@ -475,7 +475,7 @@ export const useAssistantTools = (company, reloadData, setMessages) => {
                 try {
                     const { data: payrolls } = await supabase
                         .from('payrolls')
-                        .select('*')
+                        .select('id, breakdown, base_salary, housing, transport')
                         .eq('company_id', company.id)
                         .eq('employee_id', emp.id)
                         .order('start_date', { ascending: false })

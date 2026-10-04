@@ -6,18 +6,23 @@ const {
 } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const QRCode = require('qrcode');
-const { pullSessionFromGithub, pushSessionToGithub } = require('./githubSync');
+const { useCloudAuthState } = require('./cloudAuthState');
+const { pushSessionToGithub } = require('./githubSync');
 
 /**
- * Creates and manages a Baileys WhatsApp client instance backed by GitHub Session Sync.
+ * Creates and manages a Baileys WhatsApp client instance.
  * 
- * Session is stored locally in auth_info_baileys/ and synced to/from GitHub
- * to enable seamless leader failover across different machines.
+ * Session storage strategy (in priority order):
+ *  1. Supabase Cloud (whatsapp_session_keys table) — primary, enables cross-device failover
+ *  2. Local files (auth_info_baileys/) — fallback when Supabase session is empty/new
+ *
+ * This means when a new leader node is elected on ANY machine, it can restore
+ * the session directly from Supabase without needing GitHub sync or local files.
  *
  * @param {Object} options
  * @param {string} options.channelId - Channel UUID
  * @param {import('@supabase/supabase-js').SupabaseClient} options.supabase - Supabase Client
- * @param {string} options.encryptionKey - AES-256 Secret (kept for API compatibility)
+ * @param {string} options.encryptionKey - AES-256 Secret for session encryption
  * @param {Function} [options.onQr] - Callback when QR is generated (dataUrl, rawQr)
  * @param {Function} [options.onConnected] - Callback when WhatsApp connection is open
  * @param {Function} [options.onDisconnected] - Callback when disconnected (reason)
@@ -28,6 +33,7 @@ async function initWhatsAppClient(options) {
     const {
         channelId,
         supabase,
+        encryptionKey,
         onQr,
         onConnected,
         onDisconnected,
@@ -45,19 +51,67 @@ async function initWhatsAppClient(options) {
     }));
     console.log(`[WhatsAppClient] Using Baileys v${version.join('.')} (Latest: ${isLatest})`);
 
-    // --- Step 1: Pull latest session from GitHub before starting ---
-    // This is the core of the failover mechanism: the new leader inherits the session.
-    await pullSessionFromGithub();
+    // --- Step 1: Load auth state ---
+    // Try Supabase Cloud first (enables cross-device failover).
+    // Fall back to local files if cloud has no session yet (first-time setup).
+    let state, saveCreds, usingCloudSession = false;
 
-    // --- Step 2: Hydrate local auth state ---
-    const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
+    try {
+        if (encryptionKey) {
+            console.log('[WhatsAppClient] Loading session from Supabase Cloud...');
+            const cloudAuth = await useCloudAuthState(supabase, channelId, encryptionKey);
+            
+            // Check if cloud session has valid credentials
+            if (cloudAuth.state.creds && cloudAuth.state.creds.me) {
+                state = cloudAuth.state;
+                saveCreds = cloudAuth.saveCreds;
+                usingCloudSession = true;
+                console.log(`[WhatsAppClient] ✅ Cloud session loaded for: +${cloudAuth.state.creds.me.id?.split(':')[0] || cloudAuth.state.creds.me.id}`);
+            } else {
+                console.log('[WhatsAppClient] Cloud session empty. Checking local files...');
+                // Try local file session as fallback
+                try {
+                    const localAuth = await useMultiFileAuthState(`auth_info_baileys_${channelId}`);
+                    if (localAuth.state.creds && localAuth.state.creds.me) {
+                        state = localAuth.state;
+                        console.log('[WhatsAppClient] ✅ Local file session found. Will save to cloud on connect.');
+                        // Save local session to cloud so future leaders can use it
+                        saveCreds = async () => {
+                            await localAuth.saveCreds();
+                            await cloudAuth.saveCreds.call({ creds: localAuth.state.creds }, cloudAuth.state.creds = localAuth.state.creds);
+                        };
+                    } else {
+                        // No valid session anywhere — use cloud auth (will trigger QR)
+                        state = cloudAuth.state;
+                        saveCreds = cloudAuth.saveCreds;
+                        console.log('[WhatsAppClient] No existing session found. QR code will be generated.');
+                    }
+                } catch (localErr) {
+                    console.log('[WhatsAppClient] Local session load failed:', localErr.message);
+                    state = cloudAuth.state;
+                    saveCreds = cloudAuth.saveCreds;
+                }
+            }
+        } else {
+            throw new Error('No encryption key');
+        }
+    } catch (cloudErr) {
+        console.warn('[WhatsAppClient] Cloud auth unavailable:', cloudErr.message, '— falling back to local files.');
+        try {
+            const localAuth = await useMultiFileAuthState(`auth_info_baileys_${channelId}`);
+            state = localAuth.state;
+            saveCreds = localAuth.saveCreds;
+        } catch (localErr) {
+            console.error('[WhatsAppClient] CRITICAL: Both cloud and local auth failed:', localErr.message);
+            throw localErr;
+        }
+    }
 
     let isConnectedState = false;
     let shouldReconnect = true;
 
-    // FIX: Track the periodic sync interval outside onConnected to prevent
-    // memory leak from creating multiple intervals on reconnect cycles.
-    let githubSyncIntervalId = null;
+    // Track the periodic sync interval to prevent memory leaks on reconnect cycles
+    let periodicSyncIntervalId = null;
 
     const sock = makeWASocket({
         version,
@@ -126,18 +180,42 @@ async function initWhatsAppClient(options) {
                 })
                 .eq('id', channelId);
 
-            // Push session to GitHub immediately so all standby nodes have the latest keys
+            // If we loaded from local files, push to cloud now for cross-device failover
+            if (!usingCloudSession && encryptionKey) {
+                console.log('[WhatsAppClient] Migrating local session to Supabase Cloud for failover support...');
+                try {
+                    const cloudAuth = await useCloudAuthState(supabase, channelId, encryptionKey);
+                    // The creds.update event will trigger saveCreds automatically going forward
+                    // Force a save of current creds to cloud
+                    const { BufferJSON } = require('@whiskeysockets/baileys');
+                    const { encrypt } = require('./encryption');
+                    const serialized = JSON.stringify(state.creds, BufferJSON.replacer);
+                    const encrypted = encrypt(serialized, encryptionKey);
+                    await supabase.from('whatsapp_session_keys').upsert({
+                        channel_id: channelId,
+                        key_type: 'creds',
+                        key_id: 'default',
+                        key_data: encrypted,
+                        updated_at: new Date().toISOString()
+                    }, { onConflict: 'channel_id,key_type,key_id' });
+                    usingCloudSession = true;
+                    console.log('[WhatsAppClient] ✅ Session migrated to Supabase Cloud successfully.');
+                } catch (e) {
+                    console.warn('[WhatsAppClient] Could not migrate session to cloud:', e.message);
+                }
+            }
+
+            // Push to GitHub as backup (non-blocking, failures are OK)
             pushSessionToGithub();
 
             // FIX: Clear any existing sync interval before creating a new one.
-            // Without this, reconnect cycles create multiple intervals → memory leak + duplicate pushes.
-            if (githubSyncIntervalId) {
-                clearInterval(githubSyncIntervalId);
+            if (periodicSyncIntervalId) {
+                clearInterval(periodicSyncIntervalId);
             }
-            // Push every 30 minutes to capture Signal pre-key rotations
-            githubSyncIntervalId = setInterval(() => {
+            // Push to GitHub every 30 minutes to capture Signal pre-key rotations
+            periodicSyncIntervalId = setInterval(() => {
                 if (isConnectedState) {
-                    console.log('[WhatsAppClient] ⏱️ Periodic session sync to GitHub...');
+                    console.log('[WhatsAppClient] ⏱️ Periodic session backup to GitHub...');
                     pushSessionToGithub();
                 }
             }, 30 * 60 * 1000);
@@ -153,15 +231,24 @@ async function initWhatsAppClient(options) {
 
             console.log(`[WhatsAppClient] ⚠️ Connection closed. Code: ${statusCode} | LoggedOut: ${isLoggedOut}`);
 
-            // Clear sync interval on disconnect to avoid pushing stale state
-            if (githubSyncIntervalId) {
-                clearInterval(githubSyncIntervalId);
-                githubSyncIntervalId = null;
+            // Clear sync interval on disconnect
+            if (periodicSyncIntervalId) {
+                clearInterval(periodicSyncIntervalId);
+                periodicSyncIntervalId = null;
             }
 
             if (isLoggedOut) {
                 console.warn('[WhatsAppClient] 🔴 Device was logged out. QR re-scan required.');
                 shouldReconnect = false;
+
+                // Clear cloud session to force fresh QR on next connect
+                try {
+                    await supabase
+                        .from('whatsapp_session_keys')
+                        .delete()
+                        .eq('channel_id', channelId);
+                    console.log('[WhatsAppClient] Cloud session cleared after logout.');
+                } catch (e) {}
 
                 await supabase
                     .from('whatsapp_channels')
@@ -199,9 +286,9 @@ async function initWhatsAppClient(options) {
         disconnect: () => {
             shouldReconnect = false;
             // Clear periodic sync before destroying socket
-            if (githubSyncIntervalId) {
-                clearInterval(githubSyncIntervalId);
-                githubSyncIntervalId = null;
+            if (periodicSyncIntervalId) {
+                clearInterval(periodicSyncIntervalId);
+                periodicSyncIntervalId = null;
             }
             try {
                 sock.ev.removeAllListeners();

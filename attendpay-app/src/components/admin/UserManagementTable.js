@@ -886,11 +886,20 @@ export function UserManagementTable({
   const [passwordUser, setPasswordUser] = useState(null);
   const pageSize = 7;
   const serverMode = typeof onQueryChange === "function";
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Debounce search input by 300ms to preserve quota and avoid rapid database queries
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   useEffect(() => {
     if (!serverMode) return;
     onQueryChange({
-      search,
+      search: debouncedSearch,
       plan: planFilter,
       status: statusFilter,
       sortField,
@@ -898,7 +907,7 @@ export function UserManagementTable({
       page,
       pageSize,
     });
-  }, [onQueryChange, page, pageSize, planFilter, search, serverMode, sortDir, sortField, statusFilter]);
+  }, [onQueryChange, page, pageSize, planFilter, debouncedSearch, serverMode, sortDir, sortField, statusFilter]);
 
   const handleSort = (field) => {
     if (sortField === field) setSortDir(d => d === "asc" ? "desc" : "asc");

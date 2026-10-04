@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { useLocale } from '../context/LocaleContext';
 import { ArrowLeft, ArrowRight, ExternalLink, Users, Target, Globe, Zap, Heart, TrendingUp, Award, MapPin, ChevronRight } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useSEO } from '../utils/useSEO';
 
 const STATS = [
   { value: '150+', labelAr: 'شركة تثق بنا', labelEn: 'Companies trust us' },
@@ -65,6 +66,16 @@ const AboutUs = () => {
   const { language } = useLocale();
   const isRtl = language === 'ar';
   const navigate = useNavigate();
+
+  useSEO({
+    title: isRtl ? 'من نحن | قصة ورؤية نظام كوادر KWADER' : 'About Us | Our Story & Vision - KWADER HR',
+    description: isRtl
+      ? 'تعرف على قصة نظام كوادر (KWADER)، فريق العمل، ورؤيتنا في إعادة ابتكار إدارة الموارد البشرية والرواتب في العالم العربي.'
+      : 'Learn about the mission, team, and values behind KWADER - transforming HR & payroll automation across MENA.',
+    canonical: 'https://kwader.app/about',
+    lang: language,
+  });
+
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   return (

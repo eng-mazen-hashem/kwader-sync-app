@@ -20,7 +20,7 @@ END $$;
 
 -- 2. Update process_raw_attendance_trigger
 CREATE OR REPLACE FUNCTION process_raw_attendance_trigger()
-RETURNS TRIGGER AS $body
+RETURNS TRIGGER AS $body$
 DECLARE
     v_employee_id uuid;
     v_shift record;
@@ -405,4 +405,4 @@ BEGIN
     NEW.is_processed := true;
     RETURN NEW;
 END;
-$body LANGUAGE plpgsql;
+$body$ LANGUAGE plpgsql;

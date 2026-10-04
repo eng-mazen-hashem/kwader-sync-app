@@ -21,10 +21,11 @@ class LeaseManager {
         this.supabase = options.supabase;
         this.channelId = options.channelId;
         this.nodeId = options.nodeId || this.getOrCreateNodeId();
-        this.leaseDurationSeconds = options.leaseDurationSeconds || 15;
-        this.heartbeatIntervalMs = options.heartbeatIntervalMs || 5000;
+        this.leaseDurationSeconds = options.leaseDurationSeconds || 30;
+        this.heartbeatIntervalMs = options.heartbeatIntervalMs || 10000;
         this.onBecameLeader = options.onBecameLeader;
         this.onStepDown = options.onStepDown;
+        this.getActiveSessionsCount = options.getActiveSessionsCount || (() => 0);
 
         this.role = 'standby'; // 'standby' | 'leader'
         this.currentEpoch = null;
@@ -83,11 +84,21 @@ class LeaseManager {
         // 1. Subscribe to Supabase Realtime channel updates
         this.setupRealtimeSubscription();
 
-        // 2. Initial attempt to acquire lease
-        await this.attemptAcquireLease();
-
-        // 3. Fallback election polling (with jitter to prevent thundering herd)
-        this.scheduleNextElectionCheck();
+        // 2. Initial attempt to acquire lease (with Load Balancing Jitter)
+        const activeSessions = this.getActiveSessionsCount();
+        const initialDelay = (activeSessions * 2500) + Math.floor(Math.random() * 1000);
+        
+        if (initialDelay > 0) {
+            console.log(`[LeaseManager] Load balancing: Node has ${activeSessions} active sessions. Delaying initial election by ${initialDelay}ms to allow empty nodes to win.`);
+        }
+        
+        setTimeout(async () => {
+            if (!this.isShuttingDown) {
+                await this.attemptAcquireLease();
+                // 3. Fallback election polling
+                this.scheduleNextElectionCheck();
+            }
+        }, initialDelay);
 
         // 4. Hook process exit signals for graceful handover
         this.setupExitHooks();
@@ -103,11 +114,16 @@ class LeaseManager {
     scheduleNextElectionCheck() {
         if (this.isShuttingDown || this.role === 'leader') return;
 
-        // Dynamic jitter: healthier nodes poll faster (e.g., 5s-7s vs 8s-10s)
+        // Dynamic jitter: healthier nodes poll faster
         const health = this.calculateHealthScore();
-        const baseInterval = 6000;
+        const baseInterval = 12000;
+        
+        // Fair Load Balancing: Heavily loaded nodes wait longer, giving empty nodes the chance to win the race.
+        const activeSessions = this.getActiveSessionsCount();
+        const loadPenalty = activeSessions * 3000; // +3 seconds per active session
         const jitter = Math.floor(Math.random() * 2000) + (100 - health) * 30;
-        const delay = baseInterval + jitter;
+        
+        const delay = baseInterval + jitter + loadPenalty;
 
         clearTimeout(this.electionPollTimer);
         this.electionPollTimer = setTimeout(async () => {

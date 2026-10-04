@@ -406,9 +406,9 @@ export function AuthProvider({ children }) {
 
 // -------------------------------------------------------------------------
 
-    const signIn = async (email, password, remember = false) => {
+    const signIn = async (email, password, remember = true) => {
         const { setAuthPersistence } = await import('../supabaseClient');
-        setAuthPersistence(remember);
+        setAuthPersistence(remember !== false);
 
         const { data, error } = await supabase.auth.signInWithPassword({
             email: email.trim(),
@@ -425,6 +425,10 @@ export function AuthProvider({ children }) {
         if (!data?.session) {
             throw new Error('يرجى تأكيد بريدك الإلكتروني.');
         }
+
+        // Guarantee that user, company, role and permissions are 100% synchronized in React state before resolving
+        await syncAuthState(data.session, true);
+
         return data;
     };
 
