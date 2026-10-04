@@ -49,4 +49,4 @@ Disallow: /reset-password
 Disallow: /subscribe
 
 # Sitemap Location
-Sitemap: https://kwader.app/sitemap.xml
+Sitemap: https://kwader-system.web.app/sitemap.xml

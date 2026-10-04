@@ -26,22 +26,22 @@ const LandingPageContent = () => {
     ar: {
       title: "نظام كوادر (KWADER) | أفضل برنامج لإدارة الموارد البشرية والرواتب وبصمة الحضور",
       description: "نظام كوادر (KWADER) لإدارة الموارد البشرية وشؤون الموظفين، أتمتة مسير الرواتب ومزامنة بصمة الحضور والواتساب للشركات في الخليج ومصر. ابدأ تجربتك المجانية 35 يوماً.",
-      canonical: "https://kwader.app/",
+      canonical: "https://kwader-system.web.app/",
     },
     en: {
       title: "KWADER HR | Cloud HR, Biometric Attendance & Automated Payroll",
       description: "The all-in-one HR platform that automates attendance, runs error-free payroll in seconds, and reclaims 40 hours monthly. Start your 35-day free trial.",
-      canonical: "https://kwader.app/?lang=en",
+      canonical: "https://kwader-system.web.app/?lang=en",
     },
     de: {
       title: "KWADER HR | Cloud-Personalverwaltung & Gehaltsabrechnung",
       description: "Die All-in-One-HR-Plattform für Zeiterfassung, automatisierte Gehaltsabrechnung und Mitarbeiterverwaltung. Jetzt 35 Tage kostenlos testen.",
-      canonical: "https://kwader.app/?lang=de",
+      canonical: "https://kwader-system.web.app/?lang=de",
     },
     es: {
       title: "KWADER HR | Plataforma de RRHH, Asistencia Biométrica y Nómina",
       description: "Automatice nóminas, asistencia de empleados y gestión de personal sin errores. Comience su prueba gratuita de 35 días hoy mismo.",
-      canonical: "https://kwader.app/?lang=es",
+      canonical: "https://kwader-system.web.app/?lang=es",
     }
   };
 

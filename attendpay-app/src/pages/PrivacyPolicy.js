@@ -355,7 +355,7 @@ const PrivacyPolicy = () => {
         description: isRtl
             ? 'تعرف على التزامنا بأمن وسرية بياناتك وبيانات موظفيك، ومعايير التشفير والامتثال لقوانين حماية البيانات في نظام كوادر.'
             : 'Learn about our rigorous security standards, encryption practices, and data privacy commitments at KWADER HR.',
-        canonical: 'https://kwader.app/privacy',
+        canonical: 'https://kwader-system.web.app/privacy',
         lang: language,
     });
 

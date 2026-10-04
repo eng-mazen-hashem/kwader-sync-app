@@ -313,7 +313,7 @@ const TermsOfService = () => {
         description: isRtl
             ? 'اطلع على الشروط والأحكام الخاصة باستخدام نظام كوادر السحابي لإدارة الموارد البشرية والرواتب، وسياسات الترخيص والاستخدام.'
             : 'Read the terms of service, subscription policies, and usage guidelines for KWADER HR platform.',
-        canonical: 'https://kwader.app/terms',
+        canonical: 'https://kwader-system.web.app/terms',
         lang: language,
     });
 

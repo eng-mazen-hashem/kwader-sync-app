@@ -43,7 +43,7 @@ const ContactUs = () => {
     description: isRtl
       ? 'تواصل مع فريق كوادر (KWADER) لطلب عرض توضيحي حي، الاستفسار عن خطط الأسعار، أو الحصول على دعم فني متخصص.'
       : 'Get in touch with the KWADER team for enterprise demos, pricing inquiries, partnerships, or immediate customer support.',
-    canonical: 'https://kwader.app/contact',
+    canonical: 'https://kwader-system.web.app/contact',
     lang: language,
   });
 

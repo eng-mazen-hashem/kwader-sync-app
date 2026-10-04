@@ -6,14 +6,14 @@ const { createClient } = require('@supabase/supabase-js');
 
 const REPO = 'eng-mazen-hashem/kwader-sync-app';
 const TAG = 'v1.4.0'; // Upload to the active release tag so all client agents can reach it
-const VERSION = '2.6.0';
-const ZIP_PATH = path.join(__dirname, 'bin', 'whatsapp-node-v2.6.0.zip');
-const ASSET_NAME = 'whatsapp-node-v2.6.0.zip';
+const VERSION = '2.11.1';
+const ZIP_PATH = path.join(__dirname, 'bin', `whatsapp-node-v${VERSION}.zip`);
+const ASSET_NAME = `whatsapp-node-v${VERSION}.zip`;
 
 const GITHUB_TOKEN = ['g', 'h', 'p', '_', '3B9H86YY', 'NqICRIYo', 'KTfPY3HG', 'X7yKM615Wc2Q'].join('');
 
-const SUPABASE_URL = 'https://whuopqnhmsevlilkcfre.supabase.co';
-const SUPABASE_KEY = Buffer.from('c2Jfc2VjcmV0X0tCeW1oQ25RRW1WOTMyQ0J3R0tTVWdfcUZHZDJYTmo=', 'base64').toString('utf-8');
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://zmhoafjugclgnomfebge.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'SUPABASE_SERVICE_KEY';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 function githubApi(endpoint, method = 'GET', data = null, headers = {}) {

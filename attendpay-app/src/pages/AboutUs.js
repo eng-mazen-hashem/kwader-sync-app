@@ -72,7 +72,7 @@ const AboutUs = () => {
     description: isRtl
       ? 'تعرف على قصة نظام كوادر (KWADER)، فريق العمل، ورؤيتنا في إعادة ابتكار إدارة الموارد البشرية والرواتب في العالم العربي.'
       : 'Learn about the mission, team, and values behind KWADER - transforming HR & payroll automation across MENA.',
-    canonical: 'https://kwader.app/about',
+    canonical: 'https://kwader-system.web.app/about',
     lang: language,
   });
 

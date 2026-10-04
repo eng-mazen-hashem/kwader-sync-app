@@ -109,7 +109,7 @@ function uploadReleaseAsset(uploadUrl, fileName, filePath) {
 
 async function main() {
     console.log('🚀 Starting KWADER Sync Agent Release Deployment...\n');
-    const version = '1.4.9';
+    const version = '1.6.4';
     const tagName = `v${version}`;
 
     const setupFile = path.join(__dirname, 'installer', `KWADER_Sync_Setup_v${version}.exe`);
@@ -128,7 +128,7 @@ async function main() {
     console.log(`   Size    : ${sizeMb} MB (${fileBuffer.length} bytes)`);
     console.log(`   SHA-256 : ${sha256}\n`);
 
-    // ── 1. Create or Update Release v1.4.8 ────────────────────────────────────
+    // ── 1. Create or Update Release v1.5.9 ────────────────────────────────────
     console.log(`🔍 Checking if release "${tagName}" exists on GitHub...`);
     let release = null;
     try {
@@ -151,7 +151,7 @@ async function main() {
         tag_name: tagName,
         target_commitish: 'master',
         name: `KWADER Sync v${version}`,
-        body: `## KWADER Sync Agent v${version}\n\n### What's New:\n- 🚀 **High-Speed LZMA Solid Compression**: 50% smaller download size for ultra-fast OTA updates\n- 🛡️ **Extended 15-Minute Download Window**: Completely prevents premature download timeouts on slow connections\n- ⚡ **Silent OTA Elevation**: Fixed silent background installer execution with proper UAC elevation\n- 🔄 **Decentralized WhatsApp Engine v2.7.1**: Zero black windows GUI subsystem, automatic leader heartbeat and failover\n\n**SHA-256:** \`${sha256}\``,
+        body: `## KWADER Sync Agent v${version}\n\n### What's New:\n- 🔄 **Decentralized WhatsApp Cluster v2.8.0**: Seamless cloud-backed multi-device session sharing (Zero QR re-scans on leader election).\n- ⚡ **Immediate Dual-Check OTA**: Checking for updates in UI instantly verifies and pulls both desktop agent and WhatsApp node updates.\n- 🛡️ **Zero Console Popups**: GUI PE Subsystem fully enforced on all bundled worker binaries.\n- 🚀 **High-Speed LZMA Solid Compression**: 50% smaller download size for ultra-fast OTA updates.\n\n**SHA-256:** \`${sha256}\``,
         draft: false,
         prerelease: false,
     });

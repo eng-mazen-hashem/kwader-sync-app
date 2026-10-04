@@ -41,8 +41,8 @@ except Exception:
     Image = None
 
 APP_TITLE = 'KWADER Sync'
-APP_VERSION = '1.4.9'
-APP_BUILD = '990'
+APP_VERSION = '1.6.4'
+APP_BUILD = '1009'
 APP_ID = 'sync-agent'
 WINDOWS_APP_ID = 'com.kwader.sync.agent'
 ORG_NAME = 'KWADER'
@@ -150,6 +150,8 @@ class WhatsappNodeManager:
         self.log_file = None
         self.monitor_thread = None
         self._stop_monitor = threading.Event()
+        self.crash_count = 0
+        self.last_start_time = 0
 
     def start(self):
         self._stop_monitor.clear()
@@ -165,6 +167,18 @@ class WhatsappNodeManager:
     def _start_process(self):
         if self.process and self.process.poll() is None:
             return
+        
+        try:
+            flags = getattr(subprocess, 'CREATE_NO_WINDOW', 0x08000000)
+            subprocess.run(
+                ["taskkill", "/F", "/IM", "whatsapp-node.exe", "/T"],
+                creationflags=flags,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False
+            )
+        except Exception:
+            pass
         
         bundled_exe = resource_path('bin', 'whatsapp-node.exe')
         user_node_exe = DATA_DIR / 'bin' / 'whatsapp-node.exe'
@@ -207,19 +221,46 @@ class WhatsappNodeManager:
             env['GITHUB_TOKEN'] = os.getenv('GITHUB_TOKEN') or _gh_def
             env['GITHUB_SESSION_REPO'] = os.getenv('GITHUB_SESSION_REPO') or 'eng-mazen-hashem/whatsapp-kwader'
             
-            # Dynamically resolve and pass the WhatsApp Channel ID for the client
+            # Dynamically resolve and pass the WhatsApp Channel ID and clean Node ID for the client
             try:
                 settings = load_settings()
                 license_key = settings.get('licenseKey')
                 if license_key and SUPABASE:
-                    res = SUPABASE.table('companies').select('whatsapp_channel_id').eq('license_key', license_key).limit(1).execute()
+                    res = SUPABASE.table('companies').select('name, whatsapp_channel_id').eq('license_key', license_key).limit(1).execute()
                     if getattr(res, 'data', None) and len(res.data) > 0:
                         channel_id = res.data[0].get('whatsapp_channel_id')
                         if channel_id:
                             env['DEFAULT_CHANNEL_ID'] = channel_id
                             log_agent(f"Resolved company WhatsApp Channel ID: {channel_id}")
+                        real_name = res.data[0].get('name')
+                        if real_name:
+                            set_setting('companyName', real_name)
+                            clean_name = re.sub(r'[^\w\-]', '_', real_name, flags=re.UNICODE)
+                            clean_name = re.sub(r'_+', '_', clean_name).strip('_')
+                            env['NODE_ID'] = f"{clean_name}-{os.environ.get('COMPUTERNAME', 'Windows')}"
+                            
+                        # Override channel if this specific node is manually assigned in DB
+                        cluster_node_id_file = DATA_DIR / 'bin' / '.cluster_node_id'
+                        if cluster_node_id_file.exists():
+                            with open(cluster_node_id_file, 'r', encoding='utf-8') as f:
+                                node_id_val = f.read().strip()
+                            if node_id_val:
+                                assign_res = SUPABASE.table('whatsapp_node_assignments').select('channel_id').eq('node_id', node_id_val).limit(1).execute()
+                                if getattr(assign_res, 'data', None) and len(assign_res.data) > 0:
+                                    assigned_channel = assign_res.data[0].get('channel_id')
+                                    if assigned_channel:
+                                        env['DEFAULT_CHANNEL_ID'] = assigned_channel
+                                        log_agent(f"OVERRIDE: Node {node_id_val} is specifically assigned to channel {assigned_channel}")
+                
+                # If NODE_ID was not set from cloud query, use local companyName if clean
+                if 'NODE_ID' not in env:
+                    comp_name = (settings.get('companyName') or '').strip()
+                    if comp_name and 'الأمل' not in comp_name and 'الامل' not in comp_name:
+                        clean_name = re.sub(r'[^\w\-]', '_', comp_name, flags=re.UNICODE)
+                        clean_name = re.sub(r'_+', '_', clean_name).strip('_')
+                        env['NODE_ID'] = f"{clean_name}-{os.environ.get('COMPUTERNAME', 'Windows')}"
             except Exception as e:
-                log_agent(f"Failed to resolve WhatsApp Channel ID: {e}", level='WARNING')
+                log_agent(f"Failed to resolve WhatsApp Channel ID / Node ID: {e}", level='WARNING')
 
             # Ensure local AppData .env files are strictly synchronized with active Supabase project
             try:
@@ -277,6 +318,7 @@ class WhatsappNodeManager:
                 cwd=str(DATA_DIR)
             )
             log_agent(f"WhatsApp Node process started successfully (PID: {self.process.pid})")
+            self.last_start_time = time.time()
         except Exception as e:
             log_agent(f"Exception launching WhatsApp Node: {e}", level='ERROR')
 
@@ -289,11 +331,39 @@ class WhatsappNodeManager:
                 # If graceful exit (exit 0 = stepdown), wait 15s to let new leader stabilize
                 if exit_code == 0:
                     log_agent("Graceful exit detected. Waiting 15s before restart to allow leader stabilization...")
+                    self.crash_count = 0
                     for _ in range(15):
                         if IS_QUITTING or self._stop_monitor.is_set():
                             return
                         time.sleep(1)
+                else:
+                    uptime = time.time() - self.last_start_time
+                    if uptime < 15:
+                        self.crash_count += 1
+                        log_agent(f"Rapid crash detected (uptime: {uptime:.1f}s). Crash count: {self.crash_count}", level='WARNING')
+                        if self.crash_count >= 3:
+                            self._attempt_rollback()
+                    else:
+                        self.crash_count = 0
+
                 self._start_process()
+
+    def _attempt_rollback(self):
+        old_exe = DATA_DIR / 'bin' / 'whatsapp-node.old.exe'
+        target_exe = DATA_DIR / 'bin' / 'whatsapp-node.exe'
+        if old_exe.exists():
+            log_agent("[OTA-ROLLBACK] Initiating automatic rollback to previous version due to crash loop...", level='ERROR')
+            try:
+                if target_exe.exists():
+                    target_exe.unlink()
+                old_exe.rename(target_exe)
+                log_agent("[OTA-ROLLBACK] Rollback successful!", level='SUCCESS')
+                self.crash_count = 0
+            except Exception as e:
+                log_agent(f"[OTA-ROLLBACK] Rollback failed: {e}", level='ERROR')
+        else:
+            log_agent("[OTA-ROLLBACK] No previous version found for rollback. Entering 60s cooldown.", level='WARNING')
+            time.sleep(60)
 
 
     def stop(self):
@@ -497,18 +567,34 @@ class WhatsappNodeUpdater:
                 if old_exe.exists():
                     try: old_exe.unlink()
                     except: pass
-                try:
-                    target_exe.rename(old_exe)
-                except Exception as rename_err:
-                    log_agent(f"[OTA-UPDATER] Warning renaming target_exe: {rename_err}", level='WARNING')
+                # Retry rename up to 5 times (10 seconds) for Windows AV locks
+                for attempt in range(5):
+                    try:
+                        target_exe.rename(old_exe)
+                        break
+                    except Exception as rename_err:
+                        if attempt == 4:
+                            log_agent(f"[OTA-UPDATER] Warning renaming target_exe: {rename_err}", level='WARNING')
+                        time.sleep(2)
 
-            try:
-                tmp_exe.rename(target_exe)
-            except Exception:
-                import shutil
-                shutil.copy2(tmp_exe, target_exe)
-                try: tmp_exe.unlink()
-                except: pass
+            for attempt in range(5):
+                try:
+                    tmp_exe.rename(target_exe)
+                    break
+                except Exception:
+                    try:
+                        import shutil
+                        shutil.copy2(tmp_exe, target_exe)
+                        tmp_exe.unlink()
+                        break
+                    except Exception as copy_err:
+                        if attempt == 4:
+                            log_agent(f"[OTA-UPDATER] Error copying new executable: {copy_err}", level='ERROR')
+                        time.sleep(2)
+            else:
+                log_agent("[OTA-UPDATER] FATAL: Could not swap executable due to file locks.", level='ERROR')
+                self.manager.start()
+                return False
 
             ensure_gui_subsystem(target_exe)
             self.set_local_metadata(version, calculated_sha256)
@@ -577,16 +663,20 @@ class SyncAppUpdater:
         self._stop_event.set()
 
     def _update_loop(self):
-        if self._stop_event.wait(15):
+        # Initial check 20 seconds after launch
+        if self._stop_event.wait(20):
             return
 
+        import random
         while not IS_QUITTING and not self._stop_event.is_set():
             try:
-                self.check_and_apply_update()
+                self.check_and_apply_update(manual=False)
             except Exception as e:
                 print(f'[SYNC-OTA] Error during update check: {e}')
 
-            if self._stop_event.wait(600): # 10 minutes
+            # Periodic check every 12 hours (43200s) with +/- 30 min jitter
+            interval = 43200 + random.randint(-1800, 1800)
+            if self._stop_event.wait(interval):
                 break
 
     @staticmethod
@@ -602,22 +692,49 @@ class SyncAppUpdater:
         while len(nums) < 3: nums.append(0)
         return tuple(nums)
 
-    def check_and_apply_update(self):
+    def check_and_apply_update(self, manual=False):
         try:
-            # 1. First priority: Check Supabase system_settings
+            # 1. First priority: Check Supabase system_settings in a single unified round-trip
             if SUPABASE:
                 try:
-                    res_ver = SUPABASE.table('system_settings').select('value').eq('key', 'sync_agent_version').maybe_single().execute()
-                    res_url = SUPABASE.table('system_settings').select('value').eq('key', 'sync_agent_download_url').maybe_single().execute()
-                    if res_ver and res_ver.data and res_url and res_url.data:
-                        remote_ver_str = str(res_ver.data.get('value', '')).lstrip('v').strip()
-                        remote_url = str(res_url.data.get('value', '')).strip()
+                    res = SUPABASE.table('system_settings').select('key, value').in_('key', ['sync_agent_version', 'sync_agent_download_url', 'sync_app_release']).execute()
+                    if res and res.data:
+                        data_map = {row['key']: row['value'] for row in res.data if 'key' in row and 'value' in row}
+                        remote_ver_str = None
+                        remote_url = None
+                        
+                        rel_val = data_map.get('sync_app_release')
+                        if isinstance(rel_val, str):
+                            try:
+                                import json as _json
+                                rel_parsed = _json.loads(rel_val)
+                                remote_ver_str = rel_parsed.get('version')
+                                remote_url = rel_parsed.get('download_url')
+                            except Exception:
+                                pass
+                        elif isinstance(rel_val, dict):
+                            remote_ver_str = rel_val.get('version')
+                            remote_url = rel_val.get('download_url')
+
+                        if not remote_ver_str:
+                            remote_ver_str = str(data_map.get('sync_agent_version', '')).lstrip('v').strip()
+                        if not remote_url:
+                            remote_url = str(data_map.get('sync_agent_download_url', '')).strip()
+
                         if remote_ver_str and remote_url and self._parse_semver(remote_ver_str) > self._parse_semver(self.current_version):
                             print(f"[SYNC-OTA] Supabase OTA update available: v{remote_ver_str}")
                             log_to_ui(f'New version v{remote_ver_str} available. Downloading update...', 'info')
-                            return self._download_and_install(remote_ver_str, remote_url)
+                            import threading
+                            threading.Thread(target=self._download_and_install, args=(remote_ver_str, remote_url), daemon=True).start()
+                            return {'success': True, 'update_available': True, 'version': remote_ver_str}
+                        else:
+                            if manual:
+                                log_to_ui(f'أنت تستخدم أحدث إصدار بالفعل (v{self.current_version}).', 'success')
+                            return {'success': True, 'update_available': False, 'version': self.current_version, 'message': f'أنت تستخدم أحدث إصدار بالفعل (v{self.current_version}).'}
                 except Exception as e:
                     print(f'[SYNC-OTA] Supabase check error: {e}')
+                    if manual:
+                        log_to_ui('تعذر فحص تحديثات السيرفر السحابي، جاري التحقق عبر السيرفر الاحتياطي...', 'warning')
 
             # 2. Secondary fallback: Check GitHub Releases list
             import requests
@@ -643,101 +760,181 @@ class SyncAppUpdater:
                         if download_url:
                             print(f"[SYNC-OTA] GitHub release update available: v{clean_ver}")
                             log_to_ui(f'New version v{clean_ver} available. Downloading update...', 'info')
-                            return self._download_and_install(clean_ver, download_url)
-            return False
+                            import threading
+                            threading.Thread(target=self._download_and_install, args=(clean_ver, download_url), daemon=True).start()
+                            return {'success': True, 'update_available': True, 'version': clean_ver}
+            
+            if manual:
+                log_to_ui(f'أنت تستخدم أحدث إصدار بالفعل (v{self.current_version}).', 'success')
+            return {'success': True, 'update_available': False, 'version': self.current_version, 'message': f'أنت تستخدم أحدث إصدار بالفعل (v{self.current_version}).'}
         except Exception as e:
             print(f'[SYNC-OTA] Check failed: {e}')
-            return False
+            if manual:
+                log_to_ui('تعذر الاتصال للتحقق من التحديثات.', 'error')
+            return {'success': False, 'message': str(e)}
 
     def _download_and_install(self, version, url):
-        import requests
-        import subprocess
+        """
+        Download and silently install update.
+        Strategy: try direct Popen first (works when icacls grants user write access),
+        then fallback to VBScript ShellExecute runas (triggers UAC if needed).
+        All steps logged to DATA_DIR/ota_debug.log for troubleshooting.
+        """
+        import requests as _requests
+        import ctypes as _ctypes
+        from datetime import datetime as _dt
+        import traceback as _tb
+
+        log_path = DATA_DIR / 'ota_debug.log'
         tmp_exe = DATA_DIR / 'KWADER_Sync_Update.exe'
-        try:
-            if tmp_exe.exists(): tmp_exe.unlink()
-            with requests.get(url, stream=True, timeout=(30, 900)) as r:
-                r.raise_for_status()
-                with open(tmp_exe, 'wb') as f:
-                    for chunk in r.iter_content(chunk_size=262144):
-                        if chunk: f.write(chunk)
-            
-            log_to_ui(f'Update downloaded. Installing v{version} silently...', 'warning')
-            
-            # Stop WhatsApp Node and ensure all child processes are killed to release file locks
+
+        def _ota_log(msg):
+            ts = _dt.now().strftime('%Y-%m-%d %H:%M:%S')
+            print(f'[SYNC-OTA] {msg}')
             try:
-                if WA_NODE_MANAGER:
-                    WA_NODE_MANAGER.stop()
+                with open(log_path, 'a', encoding='utf-8') as _lf:
+                    _lf.write(f'[{ts}] {msg}\n')
             except Exception:
                 pass
 
+        try:
+            _ota_log(f'=== OTA v{version} started ===')
+            _ota_log(f'URL: {url}')
+            _ota_log(f'Target: {tmp_exe}')
+
+            # ---- Download ----
+            if tmp_exe.exists():
+                try:
+                    tmp_exe.unlink()
+                    _ota_log('Removed previous update file')
+                except Exception as _ue:
+                    _ota_log(f'Could not remove previous file: {_ue}')
+
+            with _requests.get(url, stream=True, timeout=(30, 900)) as _r:
+                _r.raise_for_status()
+                _total = int(_r.headers.get('content-length', 0))
+                _ota_log(f'Content-Length: {_total} bytes ({_total/1024/1024:.1f} MB)')
+                with open(tmp_exe, 'wb') as _f:
+                    for _chunk in _r.iter_content(chunk_size=262144):
+                        if _chunk:
+                            _f.write(_chunk)
+
+            _actual = tmp_exe.stat().st_size
+            _ota_log(f'Downloaded: {_actual} bytes')
+
+            if _actual < 4 * 1024 * 1024:
+                _ota_log(f'ERROR: File too small ({_actual} bytes) - download incomplete!')
+                log_to_ui('Update file incomplete. Will retry next cycle.', 'error')
+                tmp_exe.unlink(missing_ok=True)
+                return False
+
+            log_to_ui(f'Update downloaded. Installing v{version} silently...', 'warning')
+
+            # ---- Stop child processes ----
+            try:
+                if WA_NODE_MANAGER:
+                    WA_NODE_MANAGER.stop()
+                    _ota_log('WA_NODE_MANAGER stopped')
+            except Exception as _we:
+                _ota_log(f'WA_NODE_MANAGER stop: {_we}')
+
+            if os.name != 'nt':
+                _POPEN_ORIG([str(tmp_exe), '/S'])
+                _ota_log('Launched on non-Windows')
+                import time; time.sleep(5); os._exit(0)
+
+            # Ensure no lingering node process remains (pure Win32 ctypes, zero console windows)
             if os.name == 'nt':
                 try:
-                    subprocess.run(['taskkill', '/F', '/IM', 'whatsapp-node.exe', '/T'], capture_output=True, timeout=5)
-                except Exception:
-                    pass
+                    import ctypes
+                    from ctypes import wintypes
+                    TH32CS_SNAPPROCESS = 0x00000002
+                    PROCESS_TERMINATE = 0x0001
+                    class PROCESSENTRY32(ctypes.Structure):
+                        _fields_ = [
+                            ("dwSize", wintypes.DWORD),
+                            ("cntUsage", wintypes.DWORD),
+                            ("th32ProcessID", wintypes.DWORD),
+                            ("th32DefaultHeapID", ctypes.c_size_t),
+                            ("th32ModuleID", wintypes.DWORD),
+                            ("cntThreads", wintypes.DWORD),
+                            ("th32ParentProcessID", wintypes.DWORD),
+                            ("pcPriClassBase", ctypes.c_long),
+                            ("dwFlags", wintypes.DWORD),
+                            ("szExeFile", ctypes.c_char * 260)
+                        ]
+                    k32 = ctypes.windll.kernel32
+                    hSnap = k32.CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
+                    if hSnap != -1:
+                        pe = PROCESSENTRY32()
+                        pe.dwSize = ctypes.sizeof(PROCESSENTRY32)
+                        if k32.Process32First(hSnap, ctypes.byref(pe)):
+                            while True:
+                                name = pe.szExeFile.decode('utf-8', errors='ignore').lower()
+                                if name == 'whatsapp-node.exe':
+                                    hp = k32.OpenProcess(PROCESS_TERMINATE, False, pe.th32ProcessID)
+                                    if hp:
+                                        k32.TerminateProcess(hp, 0)
+                                        k32.CloseHandle(hp)
+                                if not k32.Process32Next(hSnap, ctypes.byref(pe)):
+                                    break
+                        k32.CloseHandle(hSnap)
+                        _ota_log('whatsapp-node terminated cleanly via Win32 ctypes (0 console windows)')
+                except Exception as _ce:
+                    _ota_log(f'ctypes kill: {_ce}')
 
-                launched = False
-                import ctypes
-                try:
-                    # 1. If already running as admin, silent Popen works directly
-                    if ctypes.windll.shell32.IsUserAnAdmin():
-                        subprocess.Popen([str(tmp_exe), '/S'], 
-                            creationflags=subprocess.CREATE_NO_WINDOW | getattr(subprocess, 'DETACHED_PROCESS', 0x00000008)
-                        )
-                        launched = True
-                except Exception as e:
-                    print(f'[SYNC-OTA] Direct Popen check error: {e}')
+            _exe_path = str(tmp_exe)
+            _safe = _exe_path.replace('"', '""')
 
-                if not launched:
-                    # 2. Non-admin: use ShellExecuteW with 'runas' to trigger UAC elevation cleanly without WinError 740
-                    try:
-                        # nShowCmd = 1 (SW_SHOWNORMAL) ensures UAC elevation prompt displays cleanly
-                        ret = ctypes.windll.shell32.ShellExecuteW(None, "runas", str(tmp_exe), "/S", None, 1)
-                        if ret > 32:
-                            launched = True
-                        else:
-                            print(f'[SYNC-OTA] ShellExecute returned {ret}')
-                    except Exception as e:
-                        print(f'[SYNC-OTA] ShellExecuteW failed: {e}')
+            # Write decoupled launcher script using wscript (pure GUI subsystem, no cmd window)
+            # Waits 1.5s so KWADER Sync.exe exits completely and releases all file locks before installer runs
+            _vbs_path = DATA_DIR / 'kwader_ota_launcher.vbs'
+            _vbs = (
+                'WScript.Sleep 1500\n'
+                'Set s = CreateObject("WScript.Shell")\n'
+                f's.Run """{_safe}"" /S", 0, False\n'
+            )
+            _vbs_path.write_text(_vbs, encoding='utf-8')
 
-                if not launched:
-                    # 3. Fallback: PowerShell Start-Process -Verb RunAs
-                    try:
-                        ps_cmd = f"Start-Process -FilePath '{tmp_exe}' -ArgumentList '/S' -Verb RunAs"
-                        subprocess.Popen(['powershell', '-Command', ps_cmd],
-                            creationflags=subprocess.CREATE_NO_WINDOW | getattr(subprocess, 'DETACHED_PROCESS', 0x00000008)
-                        )
-                        launched = True
-                    except Exception as e:
-                        print(f'[SYNC-OTA] PowerShell RunAs failed: {e}')
-            else:
-                subprocess.Popen([str(tmp_exe), '/S'])
-                launched = True
+            import subprocess as _sp
+            _CREATE_NO_WINDOW = 0x08000000
+            _proc = _POPEN_ORIG(
+                ['wscript.exe', '/nologo', str(_vbs_path)],
+                creationflags=_CREATE_NO_WINDOW | _sp.CREATE_NEW_PROCESS_GROUP | _sp.DETACHED_PROCESS
+            )
+            _ota_log(f'OTA launcher spawned via wscript: PID={_proc.pid}')
+            log_to_ui('Update launched. Restarting application...', 'info')
 
-            if launched:
-                log_to_ui('Update launched. Restarting application...', 'info')
-                import time
-                time.sleep(1)
-                # Forcefully terminate the process so the installer can overwrite the executable
-                try:
-                    if 'TRAY_ICON' in globals() and TRAY_ICON:
-                        TRAY_ICON.stop()
-                except Exception:
-                    pass
-                import os
-                os._exit(0)
-                return True
-            else:
-                log_to_ui('Failed to launch silent installer with elevation.', 'error')
-                return False
-        except Exception as e:
-            print(f'[SYNC-OTA] Install failed: {e}')
-            if tmp_exe.exists():
-                try: tmp_exe.unlink()
-                except: pass
+            # Graceful immediate shutdown to release file locks
+            import time
+            time.sleep(0.5)
+            _ota_log('Calling os._exit(0) to release all file locks')
+            try:
+                if 'TRAY_ICON' in globals() and TRAY_ICON:
+                    TRAY_ICON.stop()
+            except Exception:
+                pass
+            os._exit(0)
+            return True
+
+        except Exception as _exc:
+            try:
+                with open(log_path, 'a', encoding='utf-8') as _lf:
+                    _lf.write(f'EXCEPTION: {_exc}\n{_tb.format_exc()}\n')
+            except Exception:
+                pass
+            print(f'[SYNC-OTA] Install failed: {_exc}')
+            try:
+                if tmp_exe.exists():
+                    tmp_exe.unlink()
+            except Exception:
+                pass
             return False
-
 SYNC_UPDATER = SyncAppUpdater(None)
+
+# Save reference to original subprocess.Popen BEFORE suppress_console_windows patches it.
+# Used by OTA code to avoid CREATE_NO_WINDOW|DETACHED_PROCESS interfering with subprocess.run()
+_POPEN_ORIG = subprocess.Popen
 
 
 def suppress_console_windows():
@@ -1027,6 +1224,30 @@ def _perform_sync_inner():
         data = getattr(resp, 'data', None)
         if data and data.get('active'):
             log_to_ui('License verified: {0}'.format(data.get('company_name', 'Company')), 'success')
+            
+            # --- Employee Limit Check ---
+            company_id = data.get('company_id')
+            if company_id:
+                try:
+                    company_settings = data.get('settings', {})
+                    limits = company_settings.get('limits', {})
+                    max_emp = limits.get('max_employees')
+                    if max_emp is None:
+                        plan = data.get('plan', 'Starter')
+                        max_emp = 60 if 'pro' in plan.lower() else (999 if 'enterprise' in plan.lower() else 25)
+                    
+                    emp_resp = SUPABASE.table('employees').select('id', count='exact').eq('company_id', company_id).execute()
+                    current_emp = getattr(emp_resp, 'count', 0)
+                    if current_emp is None:
+                        current_emp = len(getattr(emp_resp, 'data', []))
+                    
+                    if current_emp >= max_emp:
+                        log_to_ui(f'لقد تجاوزت الحد الأقصى للموظفين المسموح به في باقتك ({max_emp} موظف). يرجى التواصل مع الإدارة.', 'error')
+                        return
+                except Exception as limit_exc:
+                    log_to_ui(f'تحذير أثناء فحص الحدود: {limit_exc}', 'warning')
+            # ---------------------------
+
             if data.get('force_full_sync'):
                 log_to_ui('Force full sync command detected from dashboard. Resetting all device watermarks...', 'warning')
                 s = load_settings()
@@ -2095,11 +2316,15 @@ class Api:
         return self.get_host_info()
 
     def check_updates(self):
-        def _bg():
-            log_to_ui('Checking for updates...', 'info')
-            SYNC_UPDATER.check_and_apply_update()
-        threading.Thread(target=_bg, daemon=True).start()
-        return {'status': 'checking'}
+        try:
+            if WA_NODE_UPDATER:
+                try:
+                    threading.Thread(target=WA_NODE_UPDATER.check_and_apply_update, daemon=True).start()
+                except Exception:
+                    pass
+            return SYNC_UPDATER.check_and_apply_update(manual=True)
+        except Exception as e:
+            return {'success': False, 'message': str(e)}
 
     def get_status(self):
         return {
@@ -2166,7 +2391,10 @@ class Api:
                     'deviceQuota': device_quota,
                 })
 
-                log_to_ui(f'تم تأكيد الترخيص للمنشأة: {company_name} (باقة {plan} - سعة {device_quota} أجهزة)', 'success')
+                is_unlimited = bool(device_quota >= 999 or (data and data.get('is_unlimited')))
+                quota_display = 'غير محدود' if is_unlimited else f'{device_quota} أجهزة'
+
+                log_to_ui(f'تم تأكيد الترخيص للمنشأة: {company_name} (باقة {plan} - سعة الأجهزة: {quota_display})', 'success')
                 return {
                     'valid': True,
                     'companyName': company_name,
@@ -2175,6 +2403,8 @@ class Api:
                     'expiry': str(expires),
                     'daysRemaining': days_remaining,
                     'deviceQuota': device_quota,
+                    'deviceQuotaLabel': quota_display,
+                    'isUnlimited': is_unlimited,
                     'message': 'ترخيص صالح ومطابق للسجلات السحابية'
                 }
 
@@ -2393,6 +2623,22 @@ def main():
             except Exception as e:
                 log_agent(f"Watchdog exception: {e}", level='ERROR')
         threading.Thread(target=_deferred_wa_check, daemon=True, name="WANodeWatchdogThread").start()
+        
+        # Auto-heal company name from Supabase if missing or infected with mock data
+        def _heal_company_name():
+            try:
+                time.sleep(2)
+                comp = get_setting('companyName', '')
+                if not comp or 'الأمل' in comp or 'الامل' in comp:
+                    lic = get_setting('licenseKey', '')
+                    if lic:
+                        api = Api()
+                        res = api.refresh_company_from_cloud()
+                        if res and res.get('success'):
+                            log_agent(f"Auto-healed company name to: {res.get('companyName')}")
+            except Exception:
+                pass
+        threading.Thread(target=_heal_company_name, daemon=True, name="AutoHealCompanyThread").start()
         
         if get_setting('autoStart', False):
             threading.Timer(3, start_sync).start()

@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_all
 
-datas = [('.\\web', 'web'), ('.\\bin', 'bin')]
+datas = [('.\\web', 'web'), ('.\\bin\\whatsapp-node.exe', 'bin'), ('.\\bin\\whatsapp-node.version.json', 'bin')]
 binaries = []
 hiddenimports = ['platformdirs', 'json', 'webview', 'hikvision_connector', 'requests', 'urllib3']
 tmp_ret = collect_all('webview')

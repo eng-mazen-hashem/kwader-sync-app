@@ -1,0 +1,459 @@
+[
+  {
+    "id": "d8834b9f-553d-4a94-8456-7ded3b1f809b",
+    "email": "aboomarorbano@gmail.com",
+    "encrypted_password": "$2a$10$x6m1vDolGrs4ScxlHaSyY.fHY2zAIOqvAgpVGNo2MRkQQ146ZRJ8W",
+    "email_confirmed_at": "2026-08-20 18:16:06.694385+00",
+    "raw_app_meta_data": {
+      "provider": "email",
+      "providers": [
+        "email"
+      ]
+    },
+    "raw_user_meta_data": {
+      "sub": "d8834b9f-553d-4a94-8456-7ded3b1f809b",
+      "name": "Abdoalrahman ",
+      "email": "aboomarorbano@gmail.com",
+      "country": "EG",
+      "full_name": "Abdoalrahman ",
+      "company_name": "Abdoalrahman ",
+      "email_verified": true,
+      "phone_verified": false
+    },
+    "created_at": "2026-08-20 18:10:44.782593+00",
+    "updated_at": "2026-08-20 18:16:06.760349+00",
+    "role": "authenticated",
+    "aud": "authenticated"
+  },
+  {
+    "id": "c4fafd32-5879-4601-9222-091bef9ac7c6",
+    "email": "sobhuabobakr@gmail.com",
+    "encrypted_password": "$2a$10$KE8jckPJFk5nbQwDMZ79mexNxbNHLVo/7KB7jUDCF//Wq0aj3zl.S",
+    "email_confirmed_at": "2026-04-20 14:20:51.324169+00",
+    "raw_app_meta_data": {
+      "provider": "email",
+      "providers": [
+        "email"
+      ]
+    },
+    "raw_user_meta_data": {
+      "sub": "c4fafd32-5879-4601-9222-091bef9ac7c6",
+      "email": "sobhuabobakr@gmail.com",
+      "full_name": "Alfanous Manager",
+      "email_verified": true,
+      "phone_verified": false
+    },
+    "created_at": "2026-04-20 14:20:51.267438+00",
+    "updated_at": "2026-04-21 08:20:03.882571+00",
+    "role": "authenticated",
+    "aud": "authenticated"
+  },
+  {
+    "id": "777c5c7f-9ec3-4e82-a95e-71f6f4fa8023",
+    "email": "almadina@gmail.com",
+    "encrypted_password": "$2a$10$wFf.yKrFBtKc5SgxboXuJOLoXo05ZDVrjIvvIvieq.KKbLyfKAIT.",
+    "email_confirmed_at": "2026-03-24 17:57:31.733847+00",
+    "raw_app_meta_data": {
+      "provider": "email",
+      "providers": [
+        "email"
+      ]
+    },
+    "raw_user_meta_data": {
+      "sub": "777c5c7f-9ec3-4e82-a95e-71f6f4fa8023",
+      "email": "almadina@gmail.com",
+      "full_name": "المدينه لخدمات الكمبيوتر",
+      "email_verified": true,
+      "phone_verified": false
+    },
+    "created_at": "2026-03-24 17:57:31.681263+00",
+    "updated_at": "2026-06-17 22:59:27.626015+00",
+    "role": "authenticated",
+    "aud": "authenticated"
+  },
+  {
+    "id": "1a131a10-4c69-4df6-ad5e-53b056a1ec14",
+    "email": "ahmedmostafa@gmail.com",
+    "encrypted_password": "$2a$10$bOz3zmQ1VzC91mwUkN0.WevH1JtFx1aWIAAjc9hyhPHa6aq1/M35.",
+    "email_confirmed_at": "2026-04-03 21:11:15.754814+00",
+    "raw_app_meta_data": {
+      "provider": "email",
+      "providers": [
+        "email"
+      ]
+    },
+    "raw_user_meta_data": {
+      "sub": "1a131a10-4c69-4df6-ad5e-53b056a1ec14",
+      "email": "ahmedmostafa@gmail.com",
+      "full_name": "المجد",
+      "email_verified": true,
+      "phone_verified": false
+    },
+    "created_at": "2026-04-03 21:11:15.709665+00",
+    "updated_at": "2026-04-11 23:27:29.794621+00",
+    "role": "authenticated",
+    "aud": "authenticated"
+  },
+  {
+    "id": "5329007d-5d3c-4c29-8388-cedc378d67af",
+    "email": "barhoma.772@gmail.com",
+    "encrypted_password": "$2a$10$DU5T/A461kOG2cJdlPBicOnyxLBkHI4rNq0AE.m63S0Hmsuus2Adm",
+    "email_confirmed_at": "2026-04-24 15:08:28.111925+00",
+    "raw_app_meta_data": {
+      "provider": "email",
+      "providers": [
+        "email"
+      ]
+    },
+    "raw_user_meta_data": {
+      "sub": "5329007d-5d3c-4c29-8388-cedc378d67af",
+      "email": "barhoma.772@gmail.com",
+      "full_name": "بن لاكازا",
+      "email_verified": true,
+      "phone_verified": false
+    },
+    "created_at": "2026-04-24 15:08:28.049898+00",
+    "updated_at": "2026-09-12 22:25:45.715415+00",
+    "role": "authenticated",
+    "aud": "authenticated"
+  },
+  {
+    "id": "a67bd8bd-c384-4a4e-a5dd-35328c9edbab",
+    "email": "ahmedsary158@gmail.com",
+    "encrypted_password": "$2a$10$3FB.e4W1iZbLXAc2cUMW/O832YLwg4bvDB6Aeb.8Dnmz1fm7jRHHa",
+    "email_confirmed_at": "2026-06-03 11:37:56.903361+00",
+    "raw_app_meta_data": {
+      "provider": "email",
+      "providers": [
+        "email"
+      ]
+    },
+    "raw_user_meta_data": {
+      "sub": "a67bd8bd-c384-4a4e-a5dd-35328c9edbab",
+      "email": "ahmedsary158@gmail.com",
+      "full_name": "ساري الشناوي",
+      "email_verified": true,
+      "phone_verified": false
+    },
+    "created_at": "2026-06-03 11:17:09.303273+00",
+    "updated_at": "2026-09-14 15:25:38.253452+00",
+    "role": "authenticated",
+    "aud": "authenticated"
+  },
+  {
+    "id": "a655893f-dd59-428e-91b4-1594541d0a38",
+    "email": "demo@gmail.com",
+    "encrypted_password": "$2a$10$t60./3dAicJqIICHxzYE2eVyVMRnLFVmNJpUIOUW05Sv7.8ri1MMO",
+    "email_confirmed_at": "2026-09-08 10:44:47.281235+00",
+    "raw_app_meta_data": {
+      "provider": "email",
+      "providers": [
+        "email"
+      ]
+    },
+    "raw_user_meta_data": {
+      "sub": "a655893f-dd59-428e-91b4-1594541d0a38",
+      "name": "Demo",
+      "email": "demo@gmail.com",
+      "full_name": "Demo",
+      "company_name": "Demo",
+      "email_verified": true,
+      "phone_verified": false
+    },
+    "created_at": "2026-09-08 10:44:47.281235+00",
+    "updated_at": "2026-09-14 22:34:10.730188+00",
+    "role": "authenticated",
+    "aud": "authenticated"
+  },
+  {
+    "id": "a742cfa8-f49f-415e-bd81-ff5d9c1c6a38",
+    "email": "haderghander10@gmail.com",
+    "encrypted_password": "$2a$10$.uENvJ9l325C3OevBeR3E.gom7NyzbEYxqevUZZ8.9seVFfhte1MS",
+    "email_confirmed_at": "2026-04-05 12:00:18.079505+00",
+    "raw_app_meta_data": {
+      "provider": "email",
+      "providers": [
+        "email"
+      ]
+    },
+    "raw_user_meta_data": {
+      "sub": "a742cfa8-f49f-415e-bd81-ff5d9c1c6a38",
+      "email": "haderghander10@gmail.com",
+      "full_name": "السنباطي للعقارات",
+      "email_verified": true,
+      "phone_verified": false
+    },
+    "created_at": "2026-04-05 12:00:18.022917+00",
+    "updated_at": "2026-04-05 12:00:18.138845+00",
+    "role": "authenticated",
+    "aud": "authenticated"
+  },
+  {
+    "id": "36de3684-0958-4875-a901-3aabfa30faf8",
+    "email": "mazent@gmail.com",
+    "encrypted_password": "$2a$10$YfURU6W.Dl4xVKKq4F5hduqhH43x9jFXXRWnXGdLBLE1HMDiCRrre",
+    "email_confirmed_at": "2026-05-16 22:22:35.132803+00",
+    "raw_app_meta_data": {
+      "provider": "email",
+      "providers": [
+        "email"
+      ]
+    },
+    "raw_user_meta_data": {
+      "sub": "36de3684-0958-4875-a901-3aabfa30faf8",
+      "email": "mazent@gmail.com",
+      "full_name": "مازن باشا",
+      "email_verified": true,
+      "phone_verified": false
+    },
+    "created_at": "2026-05-16 22:22:35.063165+00",
+    "updated_at": "2026-05-16 22:22:35.218429+00",
+    "role": "authenticated",
+    "aud": "authenticated"
+  },
+  {
+    "id": "507d4c59-3285-4158-b6f0-c82c1cdfeb6e",
+    "email": "mo@gmail.com",
+    "encrypted_password": "$2a$10$BPvEk1vCA7lNuwenGw7vkuhtF9o5qCnhe05f9LW5me0bv0Mzw5Bhy",
+    "email_confirmed_at": "2026-05-14 21:25:36.648923+00",
+    "raw_app_meta_data": {
+      "provider": "email",
+      "providers": [
+        "email"
+      ]
+    },
+    "raw_user_meta_data": {
+      "sub": "507d4c59-3285-4158-b6f0-c82c1cdfeb6e",
+      "email": "mo@gmail.com",
+      "full_name": "محمد",
+      "email_verified": true,
+      "phone_verified": false
+    },
+    "created_at": "2026-05-14 21:25:36.617519+00",
+    "updated_at": "2026-05-14 21:30:44.955784+00",
+    "role": "authenticated",
+    "aud": "authenticated"
+  },
+  {
+    "id": "223567cb-4552-4a3e-ab80-54f20f9002f2",
+    "email": "asq@gmail.com",
+    "encrypted_password": "$2a$10$Po6zWKRqk2pZErdMLHf3Wu/9cmnefC687XRd2c0Nfe/GE/d83fuSe",
+    "email_confirmed_at": "2026-05-16 22:34:45.430511+00",
+    "raw_app_meta_data": {
+      "provider": "email",
+      "providers": [
+        "email"
+      ]
+    },
+    "raw_user_meta_data": {
+      "sub": "223567cb-4552-4a3e-ab80-54f20f9002f2",
+      "email": "asq@gmail.com",
+      "full_name": "uhu",
+      "email_verified": true,
+      "phone_verified": false
+    },
+    "created_at": "2026-05-16 22:34:45.403819+00",
+    "updated_at": "2026-05-16 22:34:45.454027+00",
+    "role": "authenticated",
+    "aud": "authenticated"
+  },
+  {
+    "id": "48c6dd9b-2a02-4af0-8af3-e2b23b0ff312",
+    "email": "eng.mazenhashem@gmail.com",
+    "encrypted_password": "$2a$10$Zi6oEWGCLu9EXYvSFDWoi.Xs3AAKPnFBKIqkSXnFs2Y2S9QNJK1ny",
+    "email_confirmed_at": "2026-04-03 18:39:29.689922+00",
+    "raw_app_meta_data": {
+      "provider": "email",
+      "providers": [
+        "email"
+      ]
+    },
+    "raw_user_meta_data": {
+      "sub": "48c6dd9b-2a02-4af0-8af3-e2b23b0ff312",
+      "email": "eng.mazenhashem@gmail.com",
+      "full_name": "ss",
+      "email_verified": true,
+      "phone_verified": false,
+      "sa_read_notifications": [
+        "company-587ae180-bb8c-4505-9b19-dbf085503865",
+        "company-31c8fd38-f576-4a6d-8a7b-c8867309b37f",
+        "company-aa7f0b6f-927a-403a-b820-633cda2e60d1",
+        "company-4b5fa36c-d0fa-4404-98a3-835c6f1924f6",
+        "company-5230b085-da76-4992-b0ba-ecab8c24d952",
+        "company-2668b23a-b363-4d52-9d73-4ebd90025aec",
+        "company-e24927e2-690b-48cd-8af4-20eeebc16604",
+        "company-127294a0-1438-42fb-a4f9-3e92d6b4b493",
+        "company-8803f83c-22c9-4d40-a1af-c417d31cbc59",
+        "company-27320dbf-0df9-4fbd-9df5-2e36d0107053",
+        "company-cc8dda7c-9c65-456e-83ea-b94de1fbcffd",
+        "expiring-127294a0-1438-42fb-a4f9-3e92d6b4b493",
+        "company-e5ad5264-d151-4749-95dd-f55cca58b4e3",
+        "company-b418b37d-ad47-413d-ad26-1c58d9f17b1b",
+        "company-f2bdab9a-4498-442e-a510-0ef23b307d61",
+        "company-88d4c96c-9489-482d-a8c9-c1f017674af7",
+        "company-a1c4f5a9-fe9c-4cc6-be28-a4ef44b4b361",
+        "ticket-646c0c87-543f-492b-9bee-6c8b7ab3768c"
+      ],
+      "sa_deleted_notifications": [
+        "ticket-35773f83-85a5-4591-af00-0bc511f03f32",
+        "company-49239510-f710-4a35-ab8d-3a01b2571bbd",
+        "company-4331e801-2a52-4b75-97ff-c686487a9ac8",
+        "ticket-2f3a3549-fbc6-4a70-ba5d-13856d81552c"
+      ]
+    },
+    "created_at": "2026-04-03 18:39:29.662746+00",
+    "updated_at": "2026-09-15 12:27:38.027301+00",
+    "role": "authenticated",
+    "aud": "authenticated"
+  },
+  {
+    "id": "a9083ed1-e689-48c3-811a-5b054ff34d8e",
+    "email": "da@gmail.com",
+    "encrypted_password": "$2a$10$CxfS2NiA53mZXcXXlCgvVuVCbpexOLe5h04exhf2lLRI5FuyaDdvK",
+    "email_confirmed_at": "2026-05-26 19:22:05.47696+00",
+    "raw_app_meta_data": {
+      "provider": "email",
+      "providers": [
+        "email"
+      ]
+    },
+    "raw_user_meta_data": {
+      "sub": "a9083ed1-e689-48c3-811a-5b054ff34d8e",
+      "email": "da@gmail.com",
+      "full_name": "محمود",
+      "email_verified": true,
+      "phone_verified": false
+    },
+    "created_at": "2026-05-26 19:22:05.390904+00",
+    "updated_at": "2026-05-26 19:22:05.547443+00",
+    "role": "authenticated",
+    "aud": "authenticated"
+  },
+  {
+    "id": "4584dd9c-1971-4d1e-bce6-1109de625cfb",
+    "email": "randobaby@gmail.com",
+    "encrypted_password": "$2a$10$TobgO3wkQPZ0h1G16dmmXePEHODMy7XUbEoFJYxSdCYRUsPOoJtJW",
+    "email_confirmed_at": "2026-06-08 18:49:18.217953+00",
+    "raw_app_meta_data": {
+      "provider": "email",
+      "providers": [
+        "email"
+      ]
+    },
+    "raw_user_meta_data": {
+      "sub": "4584dd9c-1971-4d1e-bce6-1109de625cfb",
+      "name": "Rand Baby",
+      "email": "randobaby@gmail.com",
+      "country": "EG",
+      "full_name": "Rand Baby",
+      "company_name": "Rand Baby",
+      "email_verified": true,
+      "phone_verified": false
+    },
+    "created_at": "2026-06-08 18:48:59.379491+00",
+    "updated_at": "2026-06-17 22:11:14.659839+00",
+    "role": "authenticated",
+    "aud": "authenticated"
+  },
+  {
+    "id": "1c755226-4279-4883-8757-c8c7b366d97d",
+    "email": "alaaocean35@gmail.com",
+    "encrypted_password": "$2a$10$b5mHpHQ.2qbqxPy4LBHZb.6JjVWeDjZKT6ufR1WxpIMLrw5qVr8Ru",
+    "email_confirmed_at": null,
+    "raw_app_meta_data": {
+      "provider": "email",
+      "providers": [
+        "email"
+      ]
+    },
+    "raw_user_meta_data": {
+      "sub": "1c755226-4279-4883-8757-c8c7b366d97d",
+      "name": "ocean",
+      "email": "alaaocean35@gmail.com",
+      "country": "EG",
+      "full_name": "ocean",
+      "company_name": "ocean",
+      "email_verified": false,
+      "phone_verified": false
+    },
+    "created_at": "2026-08-13 21:28:49.127686+00",
+    "updated_at": "2026-08-13 21:28:50.673308+00",
+    "role": "authenticated",
+    "aud": "authenticated"
+  },
+  {
+    "id": "c4a45cf2-1ad2-4df1-ba61-6fcca05ee619",
+    "email": "riadasal44@gmail.com",
+    "encrypted_password": "$2a$10$fGElOMCtakGPHxbiqVFT7.djZ51K7Ke.J6ded7M6AV/SqOSreXY3m",
+    "email_confirmed_at": "2026-09-04 15:33:00.556658+00",
+    "raw_app_meta_data": {
+      "provider": "email",
+      "providers": [
+        "email"
+      ]
+    },
+    "raw_user_meta_data": {
+      "sub": "c4a45cf2-1ad2-4df1-ba61-6fcca05ee619",
+      "name": "Redline",
+      "email": "riadasal44@gmail.com",
+      "country": "EG",
+      "full_name": "Redline",
+      "company_name": "Redline",
+      "email_verified": true,
+      "phone_verified": false
+    },
+    "created_at": "2026-09-04 15:32:00.402134+00",
+    "updated_at": "2026-09-13 23:32:24.815798+00",
+    "role": "authenticated",
+    "aud": "authenticated"
+  },
+  {
+    "id": "7fbe37f6-921a-4766-b330-c9eb79a6d6fd",
+    "email": "redlinesimulator12@gmail.com",
+    "encrypted_password": "$2a$10$861PSRVfcZtoxBwwi1biNenwDIV79qvURiTgQEnCMqNagXAtZI4iO",
+    "email_confirmed_at": "2026-09-04 16:54:28.367987+00",
+    "raw_app_meta_data": {
+      "provider": "email",
+      "providers": [
+        "email"
+      ]
+    },
+    "raw_user_meta_data": {
+      "sub": "7fbe37f6-921a-4766-b330-c9eb79a6d6fd",
+      "email": "redlinesimulator12@gmail.com",
+      "full_name": "Redline",
+      "email_verified": true,
+      "phone_verified": false
+    },
+    "created_at": "2026-09-04 16:47:13.054068+00",
+    "updated_at": "2026-09-13 23:29:45.656305+00",
+    "role": "authenticated",
+    "aud": "authenticated"
+  },
+  {
+    "id": "c796614a-5575-496e-8bd1-c2bac7e83d75",
+    "email": "aymansokr12@icloud.com",
+    "encrypted_password": "$2a$10$pwbUDFPjWXUUUT3zeeTGyOv0weAl4RNDJux00q/L8LmU/a4i94zkC",
+    "email_confirmed_at": "2026-09-03 11:18:04.163062+00",
+    "raw_app_meta_data": {
+      "provider": "email",
+      "providers": [
+        "email"
+      ]
+    },
+    "raw_user_meta_data": {
+      "sub": "c796614a-5575-496e-8bd1-c2bac7e83d75",
+      "name": "شركة سكر للاثاث",
+      "email": "aymansokr12@icloud.com",
+      "country": "EG",
+      "full_name": "شركة سكر للاثاث",
+      "company_name": "شركة سكر للاثاث",
+      "email_verified": true,
+      "phone_verified": false
+    },
+    "created_at": "2026-09-03 11:16:02.418369+00",
+    "updated_at": "2026-09-13 05:18:10.194033+00",
+    "role": "authenticated",
+    "aud": "authenticated"
+  }
+]

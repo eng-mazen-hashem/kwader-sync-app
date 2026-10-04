@@ -124,7 +124,7 @@ const Careers = () => {
     description: isRtl
       ? 'استكشف الفرص الوظيفية في شركة كوادر (KWADER). نبحث عن مواهب استثنائية في الهندسة، التصميم، المبيعات والمنتج.'
       : 'Explore career opportunities at KWADER. We are hiring engineers, designers, sales and product leaders across MENA and remotely.',
-    canonical: 'https://kwader.app/careers',
+    canonical: 'https://kwader-system.web.app/careers',
     lang: language,
   });
 

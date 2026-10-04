@@ -18,7 +18,7 @@ export default function PassportOnboarding() {
   useSEO({
     title: 'أنشئ جواز مهاراتك الرقمي مجاناً | منصة كوادر KWADER',
     description: 'وثّق مهاراتك الفنية وخبراتك العملية بجواز كفاءة رقمي معتمد يربطك بأفضل فرص العمل في المصانع والشركات الكبرى.',
-    canonical: 'https://kwader.app/passport-onboarding',
+    canonical: 'https://kwader-system.web.app/passport-onboarding',
     lang: 'ar',
   });
 

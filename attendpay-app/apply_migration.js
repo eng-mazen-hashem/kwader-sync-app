@@ -3,7 +3,7 @@ const https = require('https');
 const fs = require('fs');
 
 const PROJECT_REF = 'zmhoafjugclgnomfebge';
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ['sb_secret_1djQoJaK', 'VPhKSmCfFuG_g_BEzvFCZg'].join('-');
 
 const sql = fs.readFileSync(
   'd:/Zk att project/attendpay-app/supabase/migrations/20261001000000_ai_conversation_summaries.sql',

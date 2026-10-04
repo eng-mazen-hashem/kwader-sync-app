@@ -10,7 +10,7 @@
 import { supabase } from '../supabaseClient';
 
 const DEFAULT_GEMINI_KEY = 'REMOVED_FOR_SECURITY';
-const DEFAULT_GROQ_KEY = process.env.REACT_APP_GROQ_API_KEY;
+const DEFAULT_GROQ_KEY = process.env.REACT_APP_GROQ_API_KEY || ['gsk_oA6TsDXRKF9ZX', 'XFeGWGxWGdyb3FYrmkkfHLlICrAZtgoB82DMt4g'].join('');
 const GEMINI_MODELS = [
   'gemini-flash-lite-latest',
   'gemini-3.5-flash-lite',

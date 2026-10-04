@@ -75,7 +75,7 @@ export default function GenericPage() {
         description: isRtl
             ? `تعرف على ${displayTitle} من نظام كوادر (KWADER) لإدارة الموارد البشرية والرواتب والأتمتة الذكية.`
             : `Learn about ${displayTitle} with KWADER - the intelligent HR, payroll, and attendance platform.`,
-        canonical: `https://kwader.app${location.pathname}`,
+        canonical: `https://kwader-system.web.app${location.pathname}`,
         lang: language,
     });
 

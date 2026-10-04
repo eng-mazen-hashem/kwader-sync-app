@@ -4,10 +4,10 @@
 
   <!-- Homepage / Landing -->
   <url>
-    <loc>https://kwader.app/</loc>
-    <xhtml:link rel="alternate" hreflang="ar" href="https://kwader.app/"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://kwader.app/?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://kwader.app/"/>
+    <loc>https://kwader-system.web.app/</loc>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://kwader-system.web.app/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kwader-system.web.app/?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kwader-system.web.app/"/>
     <lastmod>2026-10-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
@@ -15,133 +15,133 @@
 
   <!-- Product & Solutions -->
   <url>
-    <loc>https://kwader.app/about</loc>
+    <loc>https://kwader-system.web.app/about</loc>
     <lastmod>2026-10-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://kwader.app/passport-onboarding</loc>
+    <loc>https://kwader-system.web.app/passport-onboarding</loc>
     <lastmod>2026-10-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
-    <loc>https://kwader.app/careers</loc>
+    <loc>https://kwader-system.web.app/careers</loc>
     <lastmod>2026-10-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
 
   <url>
-    <loc>https://kwader.app/contact</loc>
+    <loc>https://kwader-system.web.app/contact</loc>
     <lastmod>2026-10-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://kwader.app/integrations</loc>
+    <loc>https://kwader-system.web.app/integrations</loc>
     <lastmod>2026-10-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://kwader.app/security</loc>
+    <loc>https://kwader-system.web.app/security</loc>
     <lastmod>2026-10-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
 
   <url>
-    <loc>https://kwader.app/documentation</loc>
+    <loc>https://kwader-system.web.app/documentation</loc>
     <lastmod>2026-10-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://kwader.app/blog</loc>
+    <loc>https://kwader-system.web.app/blog</loc>
     <lastmod>2026-10-04</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
-    <loc>https://kwader.app/hr-templates</loc>
+    <loc>https://kwader-system.web.app/hr-templates</loc>
     <lastmod>2026-10-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://kwader.app/case-studies</loc>
+    <loc>https://kwader-system.web.app/case-studies</loc>
     <lastmod>2026-10-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://kwader.app/api-reference</loc>
+    <loc>https://kwader-system.web.app/api-reference</loc>
     <lastmod>2026-10-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
 
   <url>
-    <loc>https://kwader.app/changelog</loc>
+    <loc>https://kwader-system.web.app/changelog</loc>
     <lastmod>2026-10-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
 
   <url>
-    <loc>https://kwader.app/roadmap</loc>
+    <loc>https://kwader-system.web.app/roadmap</loc>
     <lastmod>2026-10-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
   <url>
-    <loc>https://kwader.app/startups</loc>
+    <loc>https://kwader-system.web.app/startups</loc>
     <lastmod>2026-10-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
 
   <url>
-    <loc>https://kwader.app/smbs</loc>
+    <loc>https://kwader-system.web.app/smbs</loc>
     <lastmod>2026-10-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
 
   <url>
-    <loc>https://kwader.app/enterprise</loc>
+    <loc>https://kwader-system.web.app/enterprise</loc>
     <lastmod>2026-10-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://kwader.app/agencies</loc>
+    <loc>https://kwader-system.web.app/agencies</loc>
     <lastmod>2026-10-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
 
   <url>
-    <loc>https://kwader.app/remote-teams</loc>
+    <loc>https://kwader-system.web.app/remote-teams</loc>
     <lastmod>2026-10-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
 
   <url>
-    <loc>https://kwader.app/multi-country</loc>
+    <loc>https://kwader-system.web.app/multi-country</loc>
     <lastmod>2026-10-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -149,28 +149,28 @@
 
   <!-- Legal -->
   <url>
-    <loc>https://kwader.app/terms</loc>
+    <loc>https://kwader-system.web.app/terms</loc>
     <lastmod>2026-10-04</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
 
   <url>
-    <loc>https://kwader.app/privacy</loc>
+    <loc>https://kwader-system.web.app/privacy</loc>
     <lastmod>2026-10-04</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
 
   <url>
-    <loc>https://kwader.app/cookie-policy</loc>
+    <loc>https://kwader-system.web.app/cookie-policy</loc>
     <lastmod>2026-10-04</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
 
   <url>
-    <loc>https://kwader.app/gdpr</loc>
+    <loc>https://kwader-system.web.app/gdpr</loc>
     <lastmod>2026-10-04</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
