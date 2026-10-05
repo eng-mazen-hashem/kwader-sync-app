@@ -3772,7 +3772,11 @@ echo $response;
                         return (
                           <div className="space-y-3 flex flex-col items-center">
                             <div className="p-3 bg-white rounded-2xl border border-gray-200 shadow-sm inline-block">
-                              <QRCode value={liveQrChannel.qr_code} size={210} />
+                              {liveQrChannel.qr_code.startsWith('data:image') ? (
+                                <img src={liveQrChannel.qr_code} alt="QR Code" width={210} height={210} />
+                              ) : (
+                                <QRCode value={liveQrChannel.qr_code} size={210} />
+                              )}
                             </div>
                             <div className="flex items-center gap-2 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
                               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
