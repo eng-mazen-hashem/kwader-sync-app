@@ -1690,7 +1690,7 @@ echo $response;
               const isConnected = Boolean(channel.status === "connected" && (isNodeAlive || isDefaultLeaderActive) && channel.phone_number);
               // ✅ إصلاح: isQrPending يجب أن يكون فقط إذا كانت الحالة "qr_pending" تحديداً
               // وليس إذا كانت "disconnected" لتجنب عرض بطاقة "مفصول" بلون أصفر مضلل
-              const isQrPending = !isConnected && channel.status === "qr_pending";
+              const isQrPending = !isConnected && (channel.status === "qr_pending" || channel.status === "waiting_for_qr");
 
               const isLeader = Boolean(
                 isConnected &&
@@ -3301,7 +3301,7 @@ echo $response;
                     const lastSeenDate = node.last_seen ? new Date(node.last_seen) : null;
                     const secondsAgo = lastSeenDate ? Math.max(0, Math.round((Date.now() - lastSeenDate.getTime()) / 1000)) : null;
                     const isAlive = secondsAgo !== null && secondsAgo < 180 && node.status !== "offline";
-                    const isLeaderNode = isAlive && isLeaderAlive && (clusterLock?.node_id === node.node_id);
+                    const isLeaderNode = isAlive && node.is_leader;
 
                     return (
                       <div
