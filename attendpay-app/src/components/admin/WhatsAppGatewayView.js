@@ -5,7 +5,7 @@ import {
   Building2, Loader2, Radio, Search, Network, Server,
   Activity, ShieldCheck, Zap, RefreshCcw, Shield, ChevronDown,
   Laptop, Cpu, Info, ShieldAlert, Clock, CheckCircle2,
-  AlertCircle, MessageSquareText, ChevronLeft, ExternalLink, Filter, X, CheckCheck
+  AlertCircle, MessageSquareText, ChevronLeft, ExternalLink, Filter, X, CheckCheck, Crown
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
@@ -254,6 +254,8 @@ export function WhatsAppGatewayView() {
   const [allowMultiChannel, setAllowMultiChannel] = useState(false);
   const [savingPolicy, setSavingPolicy] = useState(false);
   const [autoDistributing, setAutoDistributing] = useState(false);
+  const [settingLeader, setSettingLeader] = useState(false);
+  const [selectedTargetLeader, setSelectedTargetLeader] = useState("");
 
   // Queue & Message Log States
   const [queueMessages, setQueueMessages] = useState([]);
@@ -391,7 +393,7 @@ export function WhatsAppGatewayView() {
       if (assignData) {
         const map = {};
         assignData.forEach((a) => {
-          map[a.hostname] = a.target_channel_id;
+          map[a.node_id] = a.channel_id;
         });
         setNodeAssignments(map);
       }
@@ -733,7 +735,7 @@ export function WhatsAppGatewayView() {
               if (data) {
                 const map = {};
                 data.forEach((a) => {
-                  map[a.hostname] = a.target_channel_id;
+                  map[a.node_id] = a.channel_id;
                 });
                 setNodeAssignments(map);
               }
@@ -763,11 +765,11 @@ export function WhatsAppGatewayView() {
         .from("whatsapp_node_assignments")
         .upsert(
           {
-            hostname: hostname,
-            target_channel_id: targetChannelId || null,
+            node_id: hostname,
+            channel_id: targetChannelId || null,
             updated_at: new Date().toISOString(),
           },
-          { onConflict: "hostname" }
+          { onConflict: "node_id" }
         );
       if (error) throw error;
 
@@ -1209,24 +1211,32 @@ export function WhatsAppGatewayView() {
     setFailingOver(true);
     try {
       const activeLeaderNode = clusterLock?.node_id || "manual_admin";
-      const { error } = await supabase.rpc("release_whatsapp_lock", {
+      
+      // 1. Release legacy lock
+      await supabase.rpc("release_whatsapp_lock", {
         p_node_id: activeLeaderNode,
         p_lock_key: "whatsapp_lock",
         p_reason: "admin_forced_failover_test"
       });
 
-      if (error) {
-        await supabase
-          .from("system_settings")
-          .upsert({
-            key: "whatsapp_lock",
-            value: {
-              node_id: null,
-              released_at: new Date().toISOString(),
-              reason: "admin_forced_failover_test"
-            },
-            updated_at: new Date().toISOString()
-          }, { onConflict: "key" });
+      // 2. Release new channel lease (V2)
+      const defaultChannel = channels.find(c => c.is_default);
+      if (defaultChannel) {
+        const channelHolder = defaultChannel.active_leader_id || defaultChannel.active_node_id || activeLeaderNode;
+        await supabase.rpc("release_whatsapp_lease", {
+          p_node_id: channelHolder,
+          p_channel_id: defaultChannel.id,
+          p_reason: "admin_forced_failover_test"
+        });
+        
+        // Force clear to guarantee election starts immediately
+        await supabase.from("whatsapp_channels")
+          .update({
+            active_node_id: null,
+            active_leader_id: null,
+            lease_expires_at: null
+          })
+          .eq("id", defaultChannel.id);
       }
 
       toast.success("⚡ تم إرسال أمر تنحي القائد! العقد الاحتياطية ستستحوذ فوراً في غضون أجزاء من الثانية.");
@@ -1239,7 +1249,7 @@ export function WhatsAppGatewayView() {
   };
 
   const handleForceFailover = () => {
-    toast("هل تريد فرض تنحي القائد الحالي واختبار الاستحواذ التلقائي؟", {
+    toast("هل تريد فرض تنحي القائد الحالي وااختبار الاستحواذ التلقائي؟", {
       description: "سيتم تحرير قفل الإرسال ونقله فورياً إلى إحدى المحطات الاحتياطية المتصلة.",
       action: {
         label: "تأكيد التنحي",
@@ -1249,6 +1259,140 @@ export function WhatsAppGatewayView() {
         label: "إلغاء"
       }
     });
+  };
+
+  const handlePromoteToLeader = async (targetNodeId) => {
+    if (!targetNodeId) {
+      toast.error("يرجى اختيار الجهاز المراد تعيينه كقائد أولاً");
+      return;
+    }
+    const targetNode = nodes.find((n) => n.node_id === targetNodeId);
+    const nodeLabel = targetNode ? (targetNode.hostname ? `${targetNode.hostname} (${targetNode.node_id})` : targetNode.node_id) : targetNodeId;
+
+    toast(`تأكيد تعيين الجهاز القائد`, {
+      description: `هل أنت متأكد من ترقية الجهاز [${nodeLabel}] ليصبح القائد النشط فوراً ومنحه التحكم بمتصفح الواتساب وجلسة الإرسال؟`,
+      action: {
+        label: "تأكيد التعيين",
+        onClick: async () => {
+          setSettingLeader(true);
+          try {
+            const nowIso = new Date().toISOString();
+            // 1. Update system_settings lock
+            const { error: lockErr } = await supabase
+              .from("system_settings")
+              .upsert({
+                key: "whatsapp_lock",
+                value: {
+                  node_id: targetNodeId,
+                  last_heartbeat: nowIso,
+                  acquired_at: nowIso,
+                  health_score: targetNode?.health_score || 100,
+                  assigned_by_admin: true
+                },
+                updated_at: nowIso
+              }, { onConflict: "key" });
+
+            if (lockErr) throw lockErr;
+
+            // 2. Update default whatsapp channel active leader if present
+            await supabase
+              .from("whatsapp_channels")
+              .update({
+                active_node_id: targetNodeId,
+                active_leader_id: targetNodeId,
+                forced_leader_node_id: targetNodeId,
+                last_heartbeat: nowIso,
+                updated_at: nowIso
+              })
+              .eq("is_default", true);
+
+            // 3. Update whatsapp_nodes table leader flags
+            await supabase
+              .from("whatsapp_nodes")
+              .update({ is_leader: false, role: "standby", status: "standby" })
+              .neq("node_id", targetNodeId);
+
+            await supabase
+              .from("whatsapp_nodes")
+              .update({ is_leader: true, role: "leader", status: "leader" })
+              .eq("node_id", targetNodeId);
+
+            toast.success(`👑 تم تعيين الجهاز [${nodeLabel}] كقائد نشط للشبكة بنجاح!`);
+            setTimeout(fetchData, 800);
+          } catch (err) {
+            toast.error("فشل تعيين الجهاز القائد: " + err.message);
+          } finally {
+            setSettingLeader(false);
+          }
+        }
+      },
+      cancel: {
+        label: "إلغاء"
+      }
+    });
+  };
+
+  const handleEnableAutoMode = async () => {
+    setSettingLeader(true);
+    try {
+      const activeLeaderNode = clusterLock?.node_id || "manual_admin";
+      
+      // 1. Send RPC to release legacy lock (allows cooperative failover)
+      await supabase.rpc("release_whatsapp_lock", {
+        p_node_id: activeLeaderNode,
+        p_lock_key: "whatsapp_lock",
+        p_reason: "admin_switched_to_auto"
+      });
+
+      // 2. Overwrite system_settings to explicitly clear assigned_by_admin
+      await supabase
+        .from("system_settings")
+        .upsert({
+          key: "whatsapp_lock",
+          value: {
+            node_id: null,
+            released_at: new Date().toISOString(),
+            reason: "admin_switched_to_auto",
+            assigned_by_admin: false
+          },
+          updated_at: new Date().toISOString()
+        }, { onConflict: "key" });
+
+      // 3. Release new channel lease (V2)
+      const defaultChannel = channels.find(c => c.is_default);
+      if (defaultChannel) {
+        const channelHolder = defaultChannel.active_leader_id || defaultChannel.active_node_id || activeLeaderNode;
+        await supabase.rpc("release_whatsapp_lease", {
+          p_node_id: channelHolder,
+          p_channel_id: defaultChannel.id,
+          p_reason: "admin_switched_to_auto"
+        });
+        
+        // Force clear to guarantee election starts immediately
+        await supabase.from("whatsapp_channels")
+          .update({
+            active_node_id: null,
+            active_leader_id: null,
+            forced_leader_node_id: null,
+            lease_expires_at: null
+          })
+          .eq("id", defaultChannel.id);
+      }
+
+      // 4. Reset nodes state in DB to force a clean re-election
+      await supabase
+        .from("whatsapp_nodes")
+        .update({ is_leader: false, role: "standby", status: "standby" })
+        .eq("is_leader", true);
+
+      toast.success("🤖 تم تفعيل الوضع التلقائي الذكي! الشبكة ستختار الأسرع والأقل استهلاكاً للرام.");
+      setTimeout(fetchData, 1000);
+    } catch (err) {
+      toast.error("فشل تفعيل الوضع التلقائي: " + err.message);
+    } finally {
+      setSettingLeader(false);
+      setSelectedTargetLeader("");
+    }
   };
 
   // -------------------------------------------------------------------------
@@ -2913,6 +3057,106 @@ echo $response;
               </div>
             </div>
 
+            {/* 👑 MANUAL LEADER SELECTION & ROLE CONTROL PANEL */}
+            <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-amber-950 border border-amber-500/30 rounded-2xl overflow-hidden shadow-lg space-y-0">
+              {/* Header */}
+              <div className="px-6 py-5 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="space-y-1 max-w-xl">
+                  <div className="flex items-center gap-2">
+                    <span className="p-1.5 bg-amber-500 text-slate-950 rounded-xl shadow-xs">👑</span>
+                    <h4 className="font-black text-white text-lg">
+                      إدارة الجهاز القائد والوضع التلقائي (Leader Control)
+                    </h4>
+                  </div>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    تحكم في الجهاز المسؤول عن إرسال الرسائل. يمكنك تحديد جهاز معين، أو ترك النظام في <strong className="text-emerald-400">الوضع التلقائي</strong> ليختار الأسرع والأقل استهلاكاً للذاكرة (RAM).
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0 bg-slate-950/50 p-2.5 rounded-2xl border border-white/10 shadow-inner">
+                  <div className="flex flex-col text-right">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">وضع الإدارة الحالي</span>
+                    {clusterLock?.assigned_by_admin ? (
+                      <span className="text-xs font-black text-amber-400 flex items-center gap-1">
+                        <ShieldAlert className="w-3.5 h-3.5" /> تحديد يدوي مسبق
+                      </span>
+                    ) : (
+                      <span className="text-xs font-black text-emerald-400 flex items-center gap-1">
+                        <Zap className="w-3.5 h-3.5" /> وضع اختيار تلقائي ذكي
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Controls */}
+              <div className="p-6 flex flex-col lg:flex-row items-stretch lg:items-center gap-5">
+                {/* Auto Mode Button */}
+                <div className="flex-1 lg:flex-none">
+                  <button
+                    type="button"
+                    onClick={handleEnableAutoMode}
+                    disabled={settingLeader || !clusterLock?.assigned_by_admin}
+                    className={`w-full lg:w-auto px-6 py-4 rounded-xl text-sm font-black transition-all flex items-center justify-center gap-3 shadow-lg border ${
+                      !clusterLock?.assigned_by_admin
+                        ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 cursor-default"
+                        : "bg-slate-800 hover:bg-emerald-600 text-white border-emerald-500/50 hover:border-emerald-400 hover:shadow-emerald-500/20 active:scale-95 cursor-pointer"
+                    }`}
+                  >
+                    {settingLeader ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Network className="w-5 h-5" />
+                    )}
+                    <span>🤖 تفعيل الوضع التلقائي الذكي</span>
+                  </button>
+                </div>
+                
+                <div className="hidden lg:block w-px h-12 bg-white/10"></div>
+                <div className="lg:hidden h-px w-full bg-white/10"></div>
+
+                {/* Manual Selection */}
+                <div className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                  <div className="relative flex-1">
+                    <select
+                      value={selectedTargetLeader}
+                      onChange={(e) => setSelectedTargetLeader(e.target.value)}
+                      className="w-full bg-slate-950 text-slate-200 font-bold text-sm rounded-xl px-4 py-4 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-inner cursor-pointer appearance-none"
+                    >
+                      <option value="">-- اختر جهازاً للتعيين اليدوي الإجباري --</option>
+                      {aliveNodes.map((n) => {
+                        const isCurrent = n.node_id === activeLeader?.node_id;
+                        return (
+                          <option key={n.node_id} value={n.node_id}>
+                            {isCurrent ? "👑 [القائد الحالي] " : "💻 "}
+                            {n.hostname || "جهاز محلي"} ({n.node_id}) - الصحة: {n.health_score || 100}% | الرام: {n.memory_rss_mb || "?"}MB
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <ChevronDown className="w-5 h-5 text-slate-500 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handlePromoteToLeader(selectedTargetLeader)}
+                    disabled={settingLeader || !selectedTargetLeader}
+                    className={`px-6 py-4 rounded-xl text-sm font-black transition-all flex items-center justify-center gap-2 shadow-lg shrink-0 ${
+                      !selectedTargetLeader || settingLeader
+                        ? "bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed"
+                        : "bg-amber-500 hover:bg-amber-600 text-slate-950 hover:shadow-amber-500/20 active:scale-95 cursor-pointer"
+                    }`}
+                  >
+                    {settingLeader ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Crown className="w-5 h-5" />
+                    )}
+                    <span>فرض القيادة للمحدد</span>
+                  </button>
+                </div>
+              </div>
+            </div>
             {/* Workload Distribution Banner */}
             <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-indigo-50 border border-emerald-200/80 rounded-2xl p-5 shadow-xs space-y-4">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -2982,7 +3226,8 @@ echo $response;
                 <span className="text-[11px] font-black text-emerald-900">توزيع الأجهزة الحالي:</span>
                 {channels.map((ch) => {
                   const assignedCount = nodes.filter((n) => {
-                    const assigned = nodeAssignments[n.hostname] !== undefined ? nodeAssignments[n.hostname] : n.channel_id;
+                    const baseN = n.node_id ? n.node_id.split('_')[0] : '';
+                    const assigned = nodeAssignments[baseN] !== undefined ? nodeAssignments[baseN] : n.channel_id;
                     return ch.is_default ? (!assigned) : (assigned === ch.id);
                   }).length;
                   return (
@@ -3117,16 +3362,18 @@ echo $response;
                             </div>
 
                             {/* التحكم السحابي في توجيه وتخصيص القناة للجهاز */}
-                            {node.hostname && (
+                            {node.node_id && (() => {
+                              const baseNodeId = node.node_id.split('_')[0];
+                              return (
                               <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-gray-100">
                                 <span className="text-[11px] font-bold text-gray-500 flex items-center gap-1">
                                   <Cpu className="w-3.5 h-3.5 text-indigo-500" />
                                   <span>تخصيص القناة لهذا الجهاز:</span>
                                 </span>
                                 <select
-                                  value={nodeAssignments[node.hostname] || ""}
-                                  onChange={(e) => handleAssignChannelToNode(node.hostname, e.target.value || null)}
-                                  disabled={assigningNode === node.hostname}
+                                  value={nodeAssignments[baseNodeId] || ""}
+                                  onChange={(e) => handleAssignChannelToNode(baseNodeId, e.target.value || null)}
+                                  disabled={assigningNode === baseNodeId}
                                   className="text-xs font-bold bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 rounded-xl px-2.5 py-1 transition-all cursor-pointer shadow-2xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                                 >
                                   <option value="">القناة الافتراضية العامة (تلقائي)</option>
@@ -3136,7 +3383,7 @@ echo $response;
                                     </option>
                                   ))}
                                 </select>
-                                {nodeAssignments[node.hostname] ? (
+                                {nodeAssignments[baseNodeId] ? (
                                   <span className="text-[10px] font-bold px-2.5 py-0.5 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-200 flex items-center gap-1">
                                     <span>🎯 مخصص سحابياً لهذه القناة</span>
                                   </span>
@@ -3145,8 +3392,46 @@ echo $response;
                                     (يخدم القناة العامة كـ Leader أو Standby)
                                   </span>
                                 )}
-                                {assigningNode === node.hostname && (
+                                {assigningNode === baseNodeId && (
                                   <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
+                                )}
+                              </div>
+                              );
+                            })()}
+
+                            {/* أزرار الترقية السريعة والتحكم المباشر في دور القائد */}
+                            {isAlive && (
+                              <div className="flex items-center gap-2 mt-2 pt-2 border-t border-dashed border-gray-200">
+                                {!isLeaderNode ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handlePromoteToLeader(node.node_id)}
+                                    disabled={settingLeader}
+                                    className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer"
+                                    title="ترقية هذا الجهاز ليصبح القائد النشط للشبكة والإرسال"
+                                  >
+                                    {settingLeader ? (
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-700" />
+                                    ) : (
+                                      <Crown className="w-3.5 h-3.5 text-amber-600" />
+                                    )}
+                                    <span>👑 تعيين كـ قائد نشط (Promote)</span>
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={handleForceFailover}
+                                    disabled={failingOver}
+                                    className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer"
+                                    title="إجبار الجهاز القائد الحالي على التنحي واختبار الاستحواذ السريع"
+                                  >
+                                    {failingOver ? (
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600" />
+                                    ) : (
+                                      <RefreshCcw className="w-3.5 h-3.5 text-rose-600" />
+                                    )}
+                                    <span>⚡ إجبار التنحي (Release Lock)</span>
+                                  </button>
                                 )}
                               </div>
                             )}
