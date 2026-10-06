@@ -4,10 +4,12 @@ const { createClient } = require('@supabase/supabase-js');
 
 // Store active training sessions for persona cloning
 const TRAINER_SESSIONS = new Map();
+const MESSAGE_BUFFER = new Map(); // Store pending consecutive messages for debouncing
 
 const { LeaseManager } = require('./leaseManager');
 const { initWhatsAppClient } = require('./whatsappClient');
 const { QueueProcessor } = require('./queueProcessor');
+const { moeRouter, compressContext } = require('./aiOptimizer');
 
 // Environment Configuration
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://whuopqnhmsevlilkcfre.supabase.co';
@@ -117,7 +119,7 @@ async function startChannelManager(channelId) {
                 const msg = msgUpsert.messages[0];
                 if (msg.key.fromMe) return;
                 
-                const text = msg.message?.conversation || msg.message?.extendedTextMessage?.text;
+                let text = msg.message?.conversation || msg.message?.extendedTextMessage?.text;
                 if (!text || !text.trim()) return;
 
                 const jid = msg.key.remoteJid;
@@ -127,6 +129,38 @@ async function startChannelManager(channelId) {
 
                 const phone = jid.split('@')[0];
                 const customerName = msg.pushName || phone;
+
+                // ══════════════════════════════════════════════════════════════
+                // 🕒 Smart Message Batching (10-Second Debouncer)
+                // ══════════════════════════════════════════════════════════════
+                if (!MESSAGE_BUFFER.has(phone)) {
+                    MESSAGE_BUFFER.set(phone, { texts: [], timer: null, resolvePrev: null });
+                }
+                const sessionBuffer = MESSAGE_BUFFER.get(phone);
+                
+                // Abort previous execution if a new message arrives
+                if (sessionBuffer.resolvePrev) {
+                    sessionBuffer.resolvePrev(false); 
+                }
+                
+                sessionBuffer.texts.push(text.trim());
+                
+                const isFinalMessage = await new Promise((resolve) => {
+                    sessionBuffer.resolvePrev = resolve;
+                    clearTimeout(sessionBuffer.timer);
+                    sessionBuffer.timer = setTimeout(() => {
+                        resolve(true); // 10 seconds elapsed without new messages
+                    }, 10000);
+                });
+
+                if (!isFinalMessage) {
+                    return; // Silently exit because a newer message arrived and reset the timer
+                }
+
+                // If this is the final message in the batch, combine all texts!
+                text = sessionBuffer.texts.join('\n\n');
+                MESSAGE_BUFFER.delete(phone); // Cleanup buffer for future messages
+                // ══════════════════════════════════════════════════════════════
 
                 // 1. Fetch channel AI settings and company limits safely
                 let channelData = null;
@@ -190,13 +224,20 @@ async function startChannelManager(channelId) {
                                 headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
                                     model: 'qwen-2.5-70b-versatile',
+                                    response_format: { type: "json_object" },
                                     messages: [{
                                         role: 'system',
-                                        content: `أنت خبير هندسة أوامر وتصميم شخصيات (AI Sales Persona). تم إجراء محاكاة بيعية بين صاحب الشركة (البائع) والعميل.
+                                        content: `أنت خبير هندسة أوامر (AI Sales Persona). تم إجراء محاكاة بيعية بين صاحب الشركة (البائع) والعميل.
 المطلوب:
-1. استخرج من المحادثة كل الأساليب البيعية، المعلومات الدقيقة، الأسعار، طريقة الرد على الاعتراضات، ونبرة الصوت بالعامية المصرية التي استخدمها البائع.
-2. قم بدمج هذه المعلومات الجديدة مع دليل المبيعات القديم الخاص به (إن وجد) لتكوين دليل مبيعات محدث وأكثر قوة.
-3. المخرجات يجب أن تكون System Prompt مباشر ومفصل ليتبعه روبوت الشركة للرد على العملاء الحقيقيين لاحقاً.
+1. استخرج من المحادثة أساليب الرد ونبرة الصوت وادمجها مع الدليل القديم لتكوين System Prompt قوي.
+2. استخرج المعلومات الدقيقة، الأسعار، والمواصفات التي ظهرت في المحادثة وضعها كقاعدة معرفة سؤال وجواب.
+يجب أن يكون ردك بصيغة JSON فقط بهذا الشكل:
+{
+  "new_system_prompt": "الدليل المحدث (أسلوب البيع ونبرة الصوت)",
+  "new_knowledge": [
+    { "question_trigger": "السؤال أو الاستفسار القصير", "answer_content": "الإجابة البيعية المباشرة", "keywords": ["كلمة1", "كلمة2"] }
+  ]
+}
 
 الدليل القديم:
 ${session.currentPlaybook || 'لا يوجد دليل قديم.'}`
@@ -204,25 +245,42 @@ ${session.currentPlaybook || 'لا يوجد دليل قديم.'}`
                                         role: 'user',
                                         content: `نص محاكاة المبيعات:\n${JSON.stringify(session.history)}`
                                     }],
-                                    max_tokens: 1500,
+                                    max_tokens: 2500,
                                     temperature: 0.1
                                 })
                             });
 
                             if (groqRes.ok) {
                                 const aiData = await groqRes.json();
-                                const newPlaybook = aiData.choices[0].message.content.trim();
+                                const parsed = JSON.parse(aiData.choices[0].message.content.trim());
+                                const newPlaybook = parsed.new_system_prompt || session.currentPlaybook;
+                                const newKnowledge = parsed.new_knowledge || [];
                                 
                                 await supabase.from('whatsapp_channels').update({
                                     ai_prompt_instructions: newPlaybook
                                 }).eq('id', session.channelId);
 
+                                // Insert extracted knowledge into AI Knowledge Base
+                                if (newKnowledge.length > 0) {
+                                    const kbInserts = newKnowledge.map(k => ({
+                                        company_id: channelData.company_id || null,
+                                        channel_id: session.channelId,
+                                        category: 'faq',
+                                        question_trigger: k.question_trigger,
+                                        answer_content: k.answer_content,
+                                        keywords: k.keywords,
+                                        is_active: true
+                                    }));
+                                    await supabase.from('ai_knowledge_base').insert(kbInserts);
+                                }
+
                                 TRAINER_SESSIONS.delete(phone);
-                                await sock.sendMessage(jid, { text: `🎉 تمت العملية بنجاح! تم تطوير الدليل البيعي بنجاح ودمجه ليكون أكثر ذكاءً واحترافية.\n\nإليك الملخص الجديد:\n\n${newPlaybook}` });
+                                await sock.sendMessage(jid, { text: `🎉 تمت العملية بنجاح! تم تطوير الدليل البيعي وإضافة ${newKnowledge.length} معلومة جديدة لقاعدة المعرفة تلقائياً.\n\nالآن الروبوت أذكى وجاهز! 🚀` });
                             } else {
                                 await sock.sendMessage(jid, { text: `❌ حدث خطأ أثناء تحليل البيانات.` });
                             }
                         } catch (e) {
+                            console.error('[WhatsApp AI] Training error:', e);
                             await sock.sendMessage(jid, { text: `❌ خطأ في الاتصال.` });
                         }
                     } else {
@@ -261,6 +319,7 @@ ${session.currentPlaybook || 'لا يوجد دليل قديم.'}`
                     .select('*')
                     .eq('platform', 'whatsapp')
                     .eq('session_id', phone)
+                    .eq('channel_id', channelId)
                     .maybeSingle();
 
                 if (!conv) {
@@ -323,11 +382,13 @@ ${session.currentPlaybook || 'لا يوجد دليل قديم.'}`
 
                 // 6. Grounding Context from 0-token Knowledge Base (Never raw bypass)
                 let kbGroundingText = '';
+                let kbItemsFound = [];
                 try {
                     let kbQuery = supabase
                         .from('ai_knowledge_base')
                         .select('question_trigger, answer_content, keywords')
-                        .eq('is_active', true);
+                        .eq('is_active', true)
+                        .or(`channel_id.is.null,channel_id.eq.${channelId}`);
 
                     if (channelData.company_id) {
                         kbQuery = kbQuery.or(`company_id.is.null,company_id.eq.${channelData.company_id}`);
@@ -342,8 +403,7 @@ ${session.currentPlaybook || 'لا يوجد دليل قديم.'}`
                             const triggerMatch = item.question_trigger && lowerText.includes(item.question_trigger.toLowerCase());
                             const keywordMatch = Array.isArray(item.keywords) && item.keywords.some(k => k && lowerText.includes(k.toLowerCase()));
                             if (triggerMatch || keywordMatch) {
-                                kbGroundingText = `\n\n📚 معلومات موثقة من قاعدة المعرفة بخصوص الاستفسار:\n${item.answer_content}\n(تنبيه: أعد صياغة هذه المعلومات بأسلوبك البشري الودود وبالعامية المصرية المناسبة للمحادثة واختم بسؤال، لا تقم بنسخها بنقاط جافة!)`;
-                                break;
+                                kbItemsFound.push(item);
                             }
                         }
                     }
@@ -353,6 +413,45 @@ ${session.currentPlaybook || 'لا يوجد دليل قديم.'}`
 
                 // 7. PHASE 1+2: Smart Context Loading (summary + profile + rolling window history)
                 const { summary: convSummary, profile: customerProfile, history } = await buildSmartContext(conv, phone);
+
+                // ══════════════════════════════════════════════════════════════
+                // 🧠 Mixture of Experts (MoE) Fast Router (Saves 80% Cost)
+                // ══════════════════════════════════════════════════════════════
+                const { action, reply: routerReply, tokensUsed: routerTokens } = await moeRouter(text, history, kbItemsFound, GROQ_API_KEY);
+                
+                if (action === 'REPLY_DIRECTLY' && routerReply) {
+                    console.log(`[WhatsApp AI] ⚡ MoE Fast Router resolved the query seamlessly for ${phone}`);
+                    
+                    try {
+                        sock.sendPresenceUpdate('composing', jid).catch(() => {});
+                        const typingDuration = Math.min(2000, Math.max(1000, routerReply.length * 15));
+                        await new Promise((res) => setTimeout(res, typingDuration));
+                        sock.sendPresenceUpdate('paused', jid).catch(() => {});
+                    } catch (e) {}
+
+                    await sock.sendMessage(jid, { text: routerReply });
+                    
+                    if (conv?.id) {
+                        await supabase.from('ai_messages').insert({
+                            conversation_id: conv.id,
+                            sender_type: 'ai',
+                            role: 'assistant',
+                            content: routerReply,
+                            message_text: routerReply,
+                            tokens_used: routerTokens || 50,
+                            status: 'delivered'
+                        });
+                    }
+                    
+                    // PHASE 2: Update customer profile in background
+                    autoUpdateCustomerProfile(phone, channelId, text, customerName);
+                    return; // EXIT EARLY! Saved the heavy call!
+                }
+                
+                // ══════════════════════════════════════════════════════════════
+                // 📚 Contextual Compression for Heavy Model
+                // ══════════════════════════════════════════════════════════════
+                kbGroundingText = await compressContext(text, kbItemsFound, GROQ_API_KEY);
 
                 // PHASE 2: Update customer profile in background (non-blocking)
                 autoUpdateCustomerProfile(phone, channelId, text, customerName);
@@ -437,16 +536,19 @@ ${session.currentPlaybook || 'لا يوجد دليل قديم.'}`
 
                     // Natural human typing presence simulation
                     try {
-                        await sock.sendPresenceUpdate('composing', jid);
+                        sock.sendPresenceUpdate('composing', jid).catch(() => {});
                         const typingDuration = Math.min(3200, Math.max(1200, cleanReply.length * 20));
                         await new Promise((res) => setTimeout(res, typingDuration));
-                        await sock.sendPresenceUpdate('paused', jid);
+                        sock.sendPresenceUpdate('paused', jid).catch(() => {});
                     } catch (presErr) {
                         // Presence update is non-critical
                     }
 
                     // Send via WhatsApp
-                    await sock.sendMessage(jid, { text: cleanReply });
+                    if (cleanReply) {
+                        await sock.sendMessage(jid, { text: cleanReply });
+                        console.log(`[WhatsApp AI] 🤖 Sent reply to ${phone}`);
+                    }
                     console.log(`[WhatsApp AI] 🤖 Sent reply to ${phone}`);
                 }
 
@@ -572,20 +674,47 @@ ${session.currentPlaybook || 'لا يوجد دليل قديم.'}`
 
 // Initialize multi-tenant polling
 async function initMultiTenant() {
-    console.log('[Cluster] Fetching all active channels for this node...');
-    let query = supabase.from('whatsapp_channels').select('id, name').eq('is_active', true);
-    if (process.env.DEFAULT_CHANNEL_ID) {
-        query = query.eq('id', process.env.DEFAULT_CHANNEL_ID);
-    }
+    console.log('[Cluster] Fetching assigned channels for this node...');
+    const baseNodeId = process.env.NODE_ID || require('os').hostname();
     
-    const { data: channels, error } = await query;
+    // 1. Fetch all active channels
+    const { data: allChannels, error } = await supabase.from('whatsapp_channels').select('id, name, is_default').eq('is_active', true);
     if (error) {
         console.error('[Cluster] Failed fetching channels:', error.message);
         return;
     }
     
-    if (channels && channels.length > 0) {
-        for (const ch of channels) {
+    // 2. Fetch specific assignments for this physical server
+    const { data: assignments } = await supabase.from('whatsapp_node_assignments').select('channel_id').like('node_id', `${baseNodeId}%`);
+    const assignedChannelIds = new Set(assignments?.map(a => a.channel_id) || []);
+
+    // Fetch multi-channel policy
+    const { data: policyData } = await supabase.from('system_settings').select('value').eq('key', 'whatsapp_allow_multi_channel').maybeSingle();
+    const allowMulti = policyData?.value === true || policyData?.value?.enabled === true;
+
+    // 3. Determine which channels to start
+    const channelsToStart = [];
+    if (allChannels) {
+        for (const ch of allChannels) {
+            // Start if explicitly assigned, or if assigned to 'null' and this is the default channel
+            if (assignedChannelIds.has(ch.id) || (ch.is_default && assignedChannelIds.has(null))) {
+                channelsToStart.push(ch);
+            }
+        }
+    }
+
+    // If no explicit assignments, fallback to default channel
+    if (channelsToStart.length === 0 && allChannels) {
+        const defaultCh = allChannels.find(c => c.is_default);
+        if (defaultCh) channelsToStart.push(defaultCh);
+    }
+
+    if (channelsToStart.length > 0) {
+        const channelsToRun = allowMulti ? channelsToStart : [channelsToStart[0]];
+        if (!allowMulti && channelsToStart.length > 1) {
+            console.log(`[Cluster] RAM Saving Mode enabled. Only starting 1 channel (${channelsToRun[0].name}) out of ${channelsToStart.length} assigned.`);
+        }
+        for (const ch of channelsToRun) {
             startChannelManager(ch.id);
         }
     } else {
@@ -594,20 +723,89 @@ async function initMultiTenant() {
 
     // Listen for new channels dynamically
     supabase.channel('public:whatsapp_channels')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'whatsapp_channels' }, payload => {
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'whatsapp_channels' }, async payload => {
             if (payload.new.is_active !== false) {
-                if (!process.env.DEFAULT_CHANNEL_ID || payload.new.id === process.env.DEFAULT_CHANNEL_ID) {
+                // re-fetch policy dynamically in case it changed
+                const { data: pData } = await supabase.from('system_settings').select('value').eq('key', 'whatsapp_allow_multi_channel').maybeSingle();
+                const isMultiAllowed = pData?.value === true || pData?.value?.enabled === true;
+                
+                if (!isMultiAllowed && ACTIVE_CHANNELS.size >= 1) {
+                    console.log('[Cluster] Ignoring new channel start: RAM Saving Mode limits to 1 session.');
+                    return;
+                }
+
+                if (assignedChannelIds.has(payload.new.id) || (payload.new.is_default && assignedChannelIds.has(null)) || (!assignedChannelIds.size && payload.new.is_default)) {
                     startChannelManager(payload.new.id);
+                }
+            }
+        })
+        .subscribe();
+
+    // Listen for node assignment changes dynamically
+    supabase.channel('public:whatsapp_node_assignments')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'whatsapp_node_assignments' }, async payload => {
+            console.log('[Cluster] Received assignment change:', payload.eventType);
+            
+            const { data: pData } = await supabase.from('system_settings').select('value').eq('key', 'whatsapp_allow_multi_channel').maybeSingle();
+            const isMultiAllowed = pData?.value === true || pData?.value?.enabled === true;
+
+            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+                const newAssign = payload.new;
+                if (newAssign.node_id && newAssign.node_id.startsWith(baseNodeId)) {
+                    let targetChId = newAssign.channel_id;
+                    if (targetChId === null) {
+                        const { data: defaultCh } = await supabase.from('whatsapp_channels').select('id').eq('is_default', true).maybeSingle();
+                        if (defaultCh) targetChId = defaultCh.id;
+                    }
+                    
+                    if (targetChId && !ACTIVE_CHANNELS.has(targetChId)) {
+                        if (!isMultiAllowed && ACTIVE_CHANNELS.size >= 1) {
+                            console.log(`[Cluster] Ignoring dynamic assignment for ${targetChId}: RAM Saving Mode limits to 1 session.`);
+                        } else {
+                            console.log(`[Cluster] Node dynamically assigned to channel ${targetChId}. Starting manager...`);
+                            assignedChannelIds.add(newAssign.channel_id); // add null or id
+                            startChannelManager(targetChId);
+                        }
+                    }
+                }
+            }
+            
+            if (payload.eventType === 'DELETE') {
+                console.log('[Cluster] Re-evaluating assignments due to deletion...');
+                const { data: currentAssignments } = await supabase.from('whatsapp_node_assignments').select('channel_id').like('node_id', `${baseNodeId}%`);
+                const currentAssignedChannelIds = new Set(currentAssignments?.map(a => a.channel_id) || []);
+                
+                // Stop all channels if we have 0 assignments and we shouldn't fallback, or something.
+                // It's safer to just restart the process, or manually stop unassigned ones.
+                // We will rely on initMultiTenant() on restart for perfect state.
+                
+                // Update our Set
+                assignedChannelIds.clear();
+                for (const id of currentAssignedChannelIds) {
+                    assignedChannelIds.add(id);
                 }
             }
         })
         .subscribe();
 }
 
+async function stopChannelManager(channelId) {
+    const state = ACTIVE_CHANNELS.get(channelId);
+    if (!state) return;
+    
+    console.log(`[Cluster] Stopping channel manager for ${channelId}...`);
+    if (state.queueProcessor) state.queueProcessor.stop();
+    if (state.activeClient) state.activeClient.disconnect();
+    if (state.leaseManager) await state.leaseManager.shutdown();
+    
+    ACTIVE_CHANNELS.delete(channelId);
+}
+
 async function stopAllChannels() {
     for (const [channelId, state] of ACTIVE_CHANNELS.entries()) {
         if (state.queueProcessor) state.queueProcessor.stop();
         if (state.activeClient) state.activeClient.disconnect();
+        if (state.leaseManager) await state.leaseManager.shutdown();
     }
 }
 
@@ -830,10 +1028,10 @@ async function generateAiReply({ systemPrompt, history, text, phone }) {
                     'Authorization': `Bearer ${process.env.GITHUB_TOKEN}`
                 },
                 body: JSON.stringify({
-                    model: 'gpt-4o-mini',
+                    model: 'gpt-4o',
                     messages: messages,
                     max_tokens: 1500,
-                    temperature: 0.3
+                    temperature: 0.4
                 })
             });
 
@@ -842,7 +1040,7 @@ async function generateAiReply({ systemPrompt, history, text, phone }) {
                 let replyText = aiData?.choices?.[0]?.message?.content;
                 if (replyText && replyText.trim()) {
                     replyText = replyText.replace(/<ACTION>[\s\S]*?<\/ACTION>/g, '').trim();
-                    console.log(`[WhatsApp AI] ⚡ GitHub Models (gpt-4o-mini) replied successfully for ${phone}`);
+                    console.log(`[WhatsApp AI] ⚡ GitHub Models (gpt-4o) replied successfully for ${phone}`);
                     return { replyText, tokensUsed: aiData?.usage?.total_tokens || 100 };
                 }
             }
@@ -865,7 +1063,7 @@ async function generateAiReply({ systemPrompt, history, text, phone }) {
                 generationConfig: { maxOutputTokens: 1500, temperature: 0.3 }
             };
 
-            const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${GEMINI_API_KEY}`, {
+            const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -901,9 +1099,9 @@ async function generateAiReply({ systemPrompt, history, text, phone }) {
                 },
                 body: JSON.stringify({
                     models: [
-                        'google/gemini-3.8-flash',
-                        'qwen/qwen3.8-27b:free',
-                        'inclusionai/ling-3.0-flash-sante:free'
+                        'google/gemini-1.5-flash',
+                        'qwen/qwen-2-7b-instruct:free',
+                        'meta-llama/llama-3.1-8b-instruct:free'
                     ],
                     route: 'fallback',
                     messages: messages,

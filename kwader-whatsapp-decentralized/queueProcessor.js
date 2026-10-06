@@ -166,7 +166,7 @@ class QueueProcessor {
         try {
             // 1. Anti-Ban: Humanized Presence Simulation (composing indicator)
             try {
-                await sock.sendPresenceUpdate('composing', jid);
+                sock.sendPresenceUpdate('composing', jid).catch(()=>{});
             } catch {
                 // Ignore presence errors
             }
@@ -192,7 +192,7 @@ class QueueProcessor {
 
             // Stop composing presence
             try {
-                await sock.sendPresenceUpdate('paused', jid);
+                sock.sendPresenceUpdate('paused', jid).catch(()=>{});
             } catch {}
 
             // 3. Mark message as sent

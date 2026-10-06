@@ -4,8 +4,8 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SER
 
 async function run() {
     const { data, error } = await supabase.rpc('execute_sql', {
-        sql: `SELECT prosrc FROM pg_proc WHERE proname = 'sync_attendance';`
+        sql: `SELECT prosrc FROM pg_proc WHERE proname = 'acquire_whatsapp_lease';`
     });
-    console.log(error ? error : data[0].prosrc);
+    console.log(error ? error : data[0]?.prosrc);
 }
 run();
