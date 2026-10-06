@@ -507,11 +507,13 @@ ${session.currentPlaybook || 'لا يوجد دليل قديم.'}`
                 }
 
                 // 9. Generate AI Reply
-                const { replyText, tokensUsed } = await generateAiReply({
+                const adminPhone = companySettings.admin_phone;
+                const { replyText, tokensUsed, action, actionPayload } = await generateAiReply({
                     systemPrompt,
                     history,
                     text: text.trim(),
-                    phone
+                    phone,
+                    adminPhone
                 });
 
                 if (replyText) {
@@ -549,7 +551,18 @@ ${session.currentPlaybook || 'لا يوجد دليل قديم.'}`
                         await sock.sendMessage(jid, { text: cleanReply });
                         console.log(`[WhatsApp AI] 🤖 Sent reply to ${phone}`);
                     }
-                    console.log(`[WhatsApp AI] 🤖 Sent reply to ${phone}`);
+                    
+                    // Handle Admin Notification Action
+                    if (action === 'NOTIFY_ADMIN' && actionPayload && adminPhone) {
+                        try {
+                            const adminJid = `${adminPhone.replace(/\D/g, '')}@s.whatsapp.net`;
+                            const alertMsg = `🚨 *تنبيه من الوكيل الذكي (استفسار/تدخل)* 🚨\n\n👤 *العميل:* +${phone}\n\n💬 *رسالة العميل الأخيرة:*\n${text.trim()}\n\n🤖 *طلب الوكيل:*\n${actionPayload}\n\n👉 _للرد على العميل، يرجى البحث عن رقمه في المحادثات._`;
+                            await sock.sendMessage(adminJid, { text: alertMsg });
+                            console.log(`[WhatsApp AI] 🔔 Admin notified successfully at ${adminJid}`);
+                        } catch(err) {
+                            console.error(`[WhatsApp AI] ❌ Failed to notify admin:`, err.message);
+                        }
+                    }
                 }
 
                 // 10. Autonomous CRM Lead Detection + PHASE 3 FAQ Cache update
@@ -981,7 +994,7 @@ function getMessageCacheKey(text) {
     return clean.length >= 5 ? clean : null;
 }
 
-async function generateAiReply({ systemPrompt, history, text, phone }) {
+async function generateAiReply({ systemPrompt, history, text, phone, adminPhone }) {
     // Check FAQ cache first (Phase 4)
     const cacheKey = getMessageCacheKey(text);
     if (cacheKey && FAQ_CACHE.has(cacheKey)) {
@@ -995,7 +1008,19 @@ async function generateAiReply({ systemPrompt, history, text, phone }) {
     }
 
     // Add strong sales empathy booster
-    const enhancedSystemPrompt = systemPrompt + "\n\n[Sales Persona Booster]: أنت بائع استشاري (Consultative Seller). كن متعاطفاً جداً مع العميل وافهم مشاعره ومخاوفه قبل البيع. لا تكتفِ بسرد الأسعار، بل افهم احتياجه أولاً ثم اطرح الحل كأنك مستشار مؤتمن يخاف على مصلحته بأسلوب ودود ومقنع جداً ومختصر.";
+    let enhancedSystemPrompt = systemPrompt + "\n\n[Sales Persona Booster]: أنت بائع استشاري (Consultative Seller). كن متعاطفاً جداً مع العميل وافهم مشاعره ومخاوفه قبل البيع. لا تكتفِ بسرد الأسعار، بل افهم احتياجه أولاً ثم اطرح الحل كأنك مستشار مؤتمن يخاف على مصلحته بأسلوب ودود ومقنع جداً ومختصر.";
+
+    if (adminPhone) {
+        enhancedSystemPrompt += `\n\n[الطوارئ والتواصل مع الإدارة]: في الحالات الطارئة، أو عند رغبة العميل في حجز موعد هام، أو إذا سألك عن معلومة لا تعرفها نهائياً وطلب التأكد من الإدارة، استخدم الإجراء التالي لإرسال رسالة فورية للمدير: أضف <ACTION>NOTIFY_ADMIN: ملخص المشكلة أو طلب العميل هنا</ACTION> في نهاية ردك. يجب أن تستخدم هذا الإجراء فقط عند الضرورة.`;
+    }
+
+    const processReply = (rawReply, tokens) => {
+        let actionPayload = null;
+        const actionMatch = rawReply.match(/<ACTION>NOTIFY_ADMIN:\s*([\s\S]*?)<\/ACTION>/i);
+        if (actionMatch) actionPayload = actionMatch[1].trim();
+        const cleanReply = rawReply.replace(/<ACTION>[\s\S]*?<\/ACTION>/g, '').trim();
+        return { replyText: cleanReply, tokensUsed: tokens, action: actionPayload ? 'NOTIFY_ADMIN' : null, actionPayload };
+    };
 
     const messages = [
         { role: 'system', content: enhancedSystemPrompt },
@@ -1024,9 +1049,8 @@ async function generateAiReply({ systemPrompt, history, text, phone }) {
                 const aiData = await res.json();
                 let replyText = aiData?.choices?.[0]?.message?.content;
                 if (replyText && replyText.trim()) {
-                    replyText = replyText.replace(/<ACTION>[\s\S]*?<\/ACTION>/g, '').trim();
                     console.log(`[WhatsApp AI] ⚡ GitHub Models (gpt-4o) replied successfully for ${phone}`);
-                    return { replyText, tokensUsed: aiData?.usage?.total_tokens || 100 };
+                    return processReply(replyText, aiData?.usage?.total_tokens || 100);
                 }
             }
         } catch (err) {
@@ -1058,9 +1082,8 @@ async function generateAiReply({ systemPrompt, history, text, phone }) {
                 const aiData = await geminiRes.json();
                 let replyText = aiData?.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (replyText && replyText.trim()) {
-                    replyText = replyText.replace(/<ACTION>[\s\S]*?<\/ACTION>/g, '').trim();
                     console.log(`[WhatsApp AI] ⚡ Gemini 3.8 Flash replied successfully for ${phone}`);
-                    return { replyText, tokensUsed: 250 };
+                    return processReply(replyText, 250);
                 }
             } else {
                 const errText = await geminiRes.text();
@@ -1099,9 +1122,8 @@ async function generateAiReply({ systemPrompt, history, text, phone }) {
                 const aiData = await res.json();
                 let replyText = aiData?.choices?.[0]?.message?.content;
                 if (replyText && replyText.trim()) {
-                    replyText = replyText.replace(/<ACTION>[\s\S]*?<\/ACTION>/g, '').trim();
                     console.log(`[WhatsApp AI] ⚡ OpenRouter replied successfully for ${phone}`);
-                    return { replyText, tokensUsed: aiData?.usage?.total_tokens || 250 };
+                    return processReply(replyText, aiData?.usage?.total_tokens || 250);
                 }
             }
         } catch (err) {
@@ -1132,9 +1154,8 @@ async function generateAiReply({ systemPrompt, history, text, phone }) {
                     const aiData = await res.json();
                     let replyText = aiData?.choices?.[0]?.message?.content;
                     if (replyText && replyText.trim()) {
-                        replyText = replyText.replace(/<ACTION>[\s\S]*?<\/ACTION>/g, '').trim();
                         console.log(`[WhatsApp AI] ⚡ Groq (${model}) replied successfully for ${phone}`);
-                        return { replyText, tokensUsed: aiData?.usage?.total_tokens || 250 };
+                        return processReply(replyText, aiData?.usage?.total_tokens || 250);
                     }
                 }
             } catch (err) {
@@ -1162,8 +1183,7 @@ async function generateAiReply({ systemPrompt, history, text, phone }) {
             const aiData = await res.json();
             let replyText = aiData?.choices?.[0]?.message?.content;
             if (replyText && replyText.trim()) {
-                replyText = replyText.replace(/<ACTION>[\s\S]*?<\/ACTION>/g, '').trim();
-                return { replyText, tokensUsed: 250 };
+                return processReply(replyText, 250);
             }
         }
     } catch (err) {
