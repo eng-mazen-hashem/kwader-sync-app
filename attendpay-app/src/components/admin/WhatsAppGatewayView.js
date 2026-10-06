@@ -829,7 +829,7 @@ export function WhatsAppGatewayView() {
               const s = n.last_seen ? Math.round((Date.now() - new Date(n.last_seen).getTime()) / 1000) : 9999;
               return s < 180 && n.status !== "offline";
             })
-            .map((n) => n.hostname)
+            .map((n) => n.node_id)
             .filter(Boolean)
         ),
       ];
@@ -842,10 +842,10 @@ export function WhatsAppGatewayView() {
       const nonDefaultChs = channels.filter((c) => !c.is_default);
       const updates = [];
 
-      // Host 0 gets Default Channel (target_channel_id = null)
+      // Host 0 gets Default Channel (channel_id = null)
       updates.push({
-        hostname: activeHosts[0],
-        target_channel_id: null,
+        node_id: activeHosts[0],
+        channel_id: null,
         updated_at: new Date().toISOString(),
       });
 
@@ -853,15 +853,15 @@ export function WhatsAppGatewayView() {
       for (let i = 1; i < activeHosts.length; i++) {
         const targetChId = nonDefaultChs[i - 1] ? nonDefaultChs[i - 1].id : null;
         updates.push({
-          hostname: activeHosts[i],
-          target_channel_id: targetChId,
+          node_id: activeHosts[i],
+          channel_id: targetChId,
           updated_at: new Date().toISOString(),
         });
       }
 
       const { error } = await supabase
         .from("whatsapp_node_assignments")
-        .upsert(updates, { onConflict: "hostname" });
+        .upsert(updates, { onConflict: "node_id" });
 
       if (error) throw error;
       toast.success(
@@ -2820,8 +2820,31 @@ echo $response;
 
       {/* TAB: DECENTRALIZED CLUSTER & SMART LEADER ELECTION */}
       {activeTab === "cluster" && (() => {
+        // Deduplicate nodes by baseNodeId to prevent UI duplication of ghost nodes during restarts
+        const displayNodes = allowMultiChannel 
+          ? nodes 
+          : Object.values(nodes.reduce((acc, n) => {
+              const baseN = n.node_id ? n.node_id.split('_')[0] : n.node_id;
+              if (!acc[baseN]) {
+                acc[baseN] = n;
+              } else {
+                const existingTime = acc[baseN].last_seen ? new Date(acc[baseN].last_seen).getTime() : 0;
+                const newTime = n.last_seen ? new Date(n.last_seen).getTime() : 0;
+                if (newTime > existingTime) {
+                  acc[baseN] = n;
+                }
+              }
+              return acc;
+            }, {})).sort((a, b) => {
+              if (a.is_leader && !b.is_leader) return -1;
+              if (!a.is_leader && b.is_leader) return 1;
+              const aTime = a.last_seen ? new Date(a.last_seen).getTime() : 0;
+              const bTime = b.last_seen ? new Date(b.last_seen).getTime() : 0;
+              return bTime - aTime;
+            });
+
         // Calculate alive nodes (< 180s and status != offline)
-        const aliveNodes = nodes.filter((n) => {
+        const aliveNodes = displayNodes.filter((n) => {
           const lastSeen = n.last_seen ? new Date(n.last_seen).getTime() : 0;
           return (Date.now() - lastSeen) < 180000 && n.status !== "offline";
         });
@@ -2835,7 +2858,7 @@ echo $response;
         );
 
         const leaderNode = clusterLock?.node_id
-          ? nodes.find((n) => n.node_id === clusterLock.node_id)
+          ? displayNodes.find((n) => n.node_id === clusterLock.node_id)
           : null;
 
         const isLeaderAlive = Boolean(
@@ -2900,7 +2923,7 @@ echo $response;
                   </button>
 
                   {/* ✅ إصلاح #2: زر تنظيف العقد الشبح — يظهر فقط إذا كانت هناك عقد ميتة */}
-                  {nodes.some((n) => (Date.now() - new Date(n.last_seen || 0).getTime()) > 3 * 60 * 1000) && (
+                  {displayNodes.some((n) => (Date.now() - new Date(n.last_seen || 0).getTime()) > 3 * 60 * 1000) && (
                     <button
                       onClick={handlePurgeGhostNodes}
                       disabled={purgingGhosts}
@@ -3225,7 +3248,7 @@ echo $response;
               <div className="flex items-center gap-2.5 shrink-0 flex-wrap pt-2 border-t border-emerald-200/60">
                 <span className="text-[11px] font-black text-emerald-900">توزيع الأجهزة الحالي:</span>
                 {channels.map((ch) => {
-                  const assignedCount = nodes.filter((n) => {
+                  const assignedCount = displayNodes.filter((n) => {
                     const baseN = n.node_id ? n.node_id.split('_')[0] : '';
                     const assigned = nodeAssignments[baseN] !== undefined ? nodeAssignments[baseN] : n.channel_id;
                     return ch.is_default ? (!assigned) : (assigned === ch.id);
@@ -3274,20 +3297,20 @@ echo $response;
                   <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
                     {activeNodesCount} عقدة نشطة
                   </span>
-                  {nodes.length > activeNodesCount && (
+                  {displayNodes.length > activeNodesCount && (
                     <button
                       onClick={handlePurgeDeadNodes}
                       className="text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2.5 py-1 rounded-full transition-colors flex items-center gap-1 cursor-pointer"
                       title={t.titlePurgeDeadRecords || "تنظيف السجلات القديمة المنتهية من قاعدة البيانات"}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                      {(t.btnPurgeDeadRecords || "تنظيف السجلات القديمة")} ({nodes.length - activeNodesCount})
+                      {(t.btnPurgeDeadRecords || "تنظيف السجلات القديمة")} ({displayNodes.length - activeNodesCount})
                     </button>
                   )}
                 </div>
               </div>
 
-              {nodes.length === 0 ? (
+              {displayNodes.length === 0 ? (
                 <div className="p-8 text-center space-y-2">
                   <Server className="w-8 h-8 text-gray-300 mx-auto" />
                   <div className="text-xs font-bold text-gray-600">لم يتم رصد أي عقد نشطة حالياً</div>
@@ -3297,7 +3320,7 @@ echo $response;
                 </div>
               ) : (
                 <div className="divide-y divide-gray-100">
-                  {nodes.map((node) => {
+                  {displayNodes.map((node) => {
                     const lastSeenDate = node.last_seen ? new Date(node.last_seen) : null;
                     const secondsAgo = lastSeenDate ? Math.max(0, Math.round((Date.now() - lastSeenDate.getTime()) / 1000)) : null;
                     const isAlive = secondsAgo !== null && secondsAgo < 180 && node.status !== "offline";
