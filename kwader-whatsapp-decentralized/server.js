@@ -593,14 +593,19 @@ ${session.currentPlaybook || 'لا يوجد دليل قديم.'}`
                     }
                     
                     // Handle Admin Notification Action
-                    if (aiAction === 'NOTIFY_ADMIN' && actionPayload && adminPhone) {
-                        try {
-                            const adminJid = `${adminPhone.replace(/\D/g, '')}@s.whatsapp.net`;
-                            const alertMsg = `🚨 *تنبيه من الوكيل الذكي (استفسار/تدخل)* 🚨\n\n👤 *العميل:* +${phone}\n\n💬 *رسالة العميل الأخيرة:*\n${text.trim()}\n\n🤖 *طلب الوكيل:*\n${actionPayload}\n\n👉 _للرد على العميل، يرجى البحث عن رقمه في المحادثات._`;
-                            await sock.sendMessage(adminJid, { text: alertMsg });
-                            console.log(`[WhatsApp AI] 🔔 Admin notified successfully at ${adminJid}`);
-                        } catch(err) {
-                            console.error(`[WhatsApp AI] ❌ Failed to notify admin:`, err.message);
+                    if (aiAction === 'NOTIFY_ADMIN' && actionPayload) {
+                        if (adminPhone) {
+                            try {
+                                const adminJid = `${adminPhone.replace(/\D/g, '')}@s.whatsapp.net`;
+                                const alertMsg = `🚨 *تنبيه من الوكيل الذكي (استفسار/تدخل)* 🚨\n\n👤 *العميل:* +${phone}\n\n💬 *رسالة العميل الأخيرة:*\n${text.trim()}\n\n🤖 *طلب الوكيل:*\n${actionPayload}\n\n💡 _للرد على العميل، قم بعمل (رد / Reply) على هذه الرسالة واكتب رسالتك لترسل له مباشرة._`;
+                                await sock.sendMessage(adminJid, { text: alertMsg });
+                                console.log(`[WhatsApp AI] 🔔 Admin notified successfully at ${adminJid}`);
+                            } catch(err) {
+                                console.error(`[WhatsApp AI] ❌ Failed to notify admin:`, err.message);
+                            }
+                        } else {
+                            // Fallback: Notify the customer directly to contact the channel's phone
+                            replyText += `\n\n*(رسالة تلقائية)*: أعتذر منك، الإدارة غير متاحة للتدخل الفوري عبر الوكيل الذكي حالياً. يرجى الاتصال المباشر بهذا الرقم (+${state.activePhoneNumber}) أو الانتظار حتى يتم مراجعة محادثتك.`;
                         }
                     }
                 }
@@ -1050,9 +1055,7 @@ async function generateAiReply({ systemPrompt, history, text, phone, adminPhone 
     // Add strong sales empathy booster
     let enhancedSystemPrompt = systemPrompt + "\n\n[Sales Persona Booster]: أنت بائع استشاري (Consultative Seller). كن متعاطفاً جداً مع العميل وافهم مشاعره ومخاوفه قبل البيع. لا تكتفِ بسرد الأسعار، بل افهم احتياجه أولاً ثم اطرح الحل كأنك مستشار مؤتمن يخاف على مصلحته بأسلوب ودود ومقنع جداً ومختصر.";
 
-    if (adminPhone) {
-        enhancedSystemPrompt += `\n\n[الطوارئ والتواصل مع الإدارة]: في الحالات الطارئة، أو عند رغبة العميل في حجز موعد هام، أو إذا سألك عن معلومة لا تعرفها نهائياً وطلب التأكد من الإدارة، استخدم الإجراء التالي لإرسال رسالة فورية للمدير: أضف <ACTION>NOTIFY_ADMIN: ملخص المشكلة أو طلب العميل هنا</ACTION> في نهاية ردك. يجب أن تستخدم هذا الإجراء فقط عند الضرورة.`;
-    }
+    enhancedSystemPrompt += `\n\n[الطوارئ والتواصل مع الإدارة]: في الحالات الطارئة، أو عند رغبة العميل في حجز موعد هام، أو إذا سألك عن معلومة لا تعرفها نهائياً وطلب التأكد من الإدارة، استخدم الإجراء التالي لإرسال رسالة فورية للمدير: أضف <ACTION>NOTIFY_ADMIN: ملخص المشكلة أو طلب العميل هنا</ACTION> في نهاية ردك. يجب أن تستخدم هذا الإجراء فقط عند الضرورة.`;
 
     const processReply = (rawReply, tokens) => {
         let actionPayload = null;
