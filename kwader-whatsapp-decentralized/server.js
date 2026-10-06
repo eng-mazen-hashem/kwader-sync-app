@@ -508,7 +508,7 @@ ${session.currentPlaybook || 'لا يوجد دليل قديم.'}`
 
                 // 9. Generate AI Reply
                 const adminPhone = companySettings.admin_phone;
-                const { replyText, tokensUsed, action, actionPayload } = await generateAiReply({
+                const { replyText, tokensUsed, action: aiAction, actionPayload } = await generateAiReply({
                     systemPrompt,
                     history,
                     text: text.trim(),
@@ -553,7 +553,7 @@ ${session.currentPlaybook || 'لا يوجد دليل قديم.'}`
                     }
                     
                     // Handle Admin Notification Action
-                    if (action === 'NOTIFY_ADMIN' && actionPayload && adminPhone) {
+                    if (aiAction === 'NOTIFY_ADMIN' && actionPayload && adminPhone) {
                         try {
                             const adminJid = `${adminPhone.replace(/\D/g, '')}@s.whatsapp.net`;
                             const alertMsg = `🚨 *تنبيه من الوكيل الذكي (استفسار/تدخل)* 🚨\n\n👤 *العميل:* +${phone}\n\n💬 *رسالة العميل الأخيرة:*\n${text.trim()}\n\n🤖 *طلب الوكيل:*\n${actionPayload}\n\n👉 _للرد على العميل، يرجى البحث عن رقمه في المحادثات._`;
