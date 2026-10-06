@@ -41,8 +41,8 @@ except Exception:
     Image = None
 
 APP_TITLE = 'KWADER Sync'
-APP_VERSION = '1.6.4'
-APP_BUILD = '1009'
+APP_VERSION = '1.6.5'
+APP_BUILD = '1010'
 APP_ID = 'sync-agent'
 WINDOWS_APP_ID = 'com.kwader.sync.agent'
 ORG_NAME = 'KWADER'
@@ -72,6 +72,7 @@ DATA_DIR = resolve_data_dir()
 SETTINGS_FILE = DATA_DIR / 'settings.json'
 
 MAIN_WINDOW = None
+IS_WINDOW_HIDDEN = False
 
 TRAY_ICON = None
 
@@ -885,6 +886,13 @@ class SyncAppUpdater:
 
             _exe_path = str(tmp_exe)
             _safe = _exe_path.replace('"', '""')
+
+            # If the window is currently hidden in the system tray, write a flag so it relaunches hidden
+            if globals().get('IS_WINDOW_HIDDEN', False):
+                try:
+                    (DATA_DIR / 'ota_was_hidden.flag').write_text('1')
+                except Exception:
+                    pass
 
             # Write decoupled launcher script using wscript (pure GUI subsystem, no cmd window)
             # Waits 1.5s so KWADER Sync.exe exits completely and releases all file locks before installer runs
@@ -2515,11 +2523,15 @@ def run_in_thread(func):
     threading.Thread(target=func, daemon=True).start()
 
 def show_window():
+    global IS_WINDOW_HIDDEN
+    IS_WINDOW_HIDDEN = False
     if MAIN_WINDOW:
         MAIN_WINDOW.show()
         MAIN_WINDOW.restore()
 
 def hide_window():
+    global IS_WINDOW_HIDDEN
+    IS_WINDOW_HIDDEN = True
     if MAIN_WINDOW: MAIN_WINDOW.hide()
 
 def quit_app():
@@ -2594,6 +2606,13 @@ def main():
     threading.Thread(target=_start_wa_background, daemon=True, name="WANodeStartupThread").start()
 
     start_hidden = '--hidden' in sys.argv
+    try:
+        _flag_path = DATA_DIR / 'ota_was_hidden.flag'
+        if _flag_path.exists():
+            start_hidden = True
+            _flag_path.unlink(missing_ok=True)
+    except Exception:
+        pass
     global MAIN_WINDOW
     MAIN_WINDOW = webview.create_window(
         APP_TITLE,

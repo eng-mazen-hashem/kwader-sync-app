@@ -109,7 +109,7 @@ function uploadReleaseAsset(uploadUrl, fileName, filePath) {
 
 async function main() {
     console.log('🚀 Starting KWADER Sync Agent Release Deployment...\n');
-    const version = '1.6.4';
+    const version = '1.6.5';
     const tagName = `v${version}`;
 
     const setupFile = path.join(__dirname, 'installer', `KWADER_Sync_Setup_v${version}.exe`);
