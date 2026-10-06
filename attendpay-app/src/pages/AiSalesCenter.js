@@ -56,7 +56,7 @@ export default function AiSalesCenter() {
   const isRTL = language === 'ar';
 
   const [activeTab, setActiveTab] = useState('inbox'); // 'inbox' | 'leads' | 'knowledge' | 'channels'
-
+  const [activeChannelId, setActiveChannelId] = useState('all');
   // ==========================================
   // INBOX STATES
   // ==========================================
@@ -124,6 +124,14 @@ export default function AiSalesCenter() {
         query = query.or(`company_id.eq.${company.id},company_id.is.null`);
       }
 
+      if (activeChannelId !== 'all') {
+        if (activeChannelId === 'unassigned') {
+          query = query.is('channel_id', null);
+        } else {
+          query = query.eq('channel_id', activeChannelId);
+        }
+      }
+
       const { data, error } = await query.limit(50);
       if (error) throw error;
       setConversations(data || []);
@@ -135,7 +143,7 @@ export default function AiSalesCenter() {
     } finally {
       setLoadingConversations(false);
     }
-  }, [company?.id, isSuperAdmin, selectedConvId]);
+  }, [company?.id, isSuperAdmin, selectedConvId, activeChannelId]);
 
   useEffect(() => {
     fetchConversations();
@@ -430,10 +438,19 @@ export default function AiSalesCenter() {
   const fetchLeads = useCallback(async () => {
     setLoadingLeads(true);
     try {
-      let query = supabase.from('ai_leads').select('id, company_id, conversation_id, contact_name, contact_phone, customer_name, customer_phone, company_name, employee_count, interested_products, customer_notes, interest_summary, score, status, created_at').order('created_at', { ascending: false });
+      let query = supabase.from('ai_leads').select('id, company_id, channel_id, conversation_id, contact_name, contact_phone, customer_name, customer_phone, company_name, employee_count, interested_products, customer_notes, interest_summary, score, status, created_at').order('created_at', { ascending: false });
       if (company?.id && !isSuperAdmin) {
         query = query.or(`company_id.eq.${company.id},company_id.is.null`);
       }
+      
+      if (activeChannelId !== 'all') {
+        if (activeChannelId === 'unassigned') {
+          query = query.is('channel_id', null);
+        } else {
+          query = query.eq('channel_id', activeChannelId);
+        }
+      }
+
       const { data, error } = await query;
       if (error) throw error;
       setLeads(data || []);
@@ -442,7 +459,7 @@ export default function AiSalesCenter() {
     } finally {
       setLoadingLeads(false);
     }
-  }, [company?.id, isSuperAdmin]);
+  }, [company?.id, isSuperAdmin, activeChannelId]);
 
   const handleUpdateLeadStatus = async (leadId, newStatus) => {
     try {
@@ -464,10 +481,19 @@ export default function AiSalesCenter() {
   const fetchKnowledge = useCallback(async () => {
     setLoadingKnowledge(true);
     try {
-      let query = supabase.from('ai_knowledge_base').select('id, company_id, category, question_trigger, answer_content, keywords, is_active, created_at').order('created_at', { ascending: false });
+      let query = supabase.from('ai_knowledge_base').select('id, company_id, channel_id, category, question_trigger, answer_content, keywords, is_active, created_at').order('created_at', { ascending: false });
       if (company?.id && !isSuperAdmin) {
         query = query.or(`company_id.eq.${company.id},company_id.is.null`);
       }
+      
+      if (activeChannelId !== 'all') {
+        if (activeChannelId === 'unassigned') {
+          query = query.is('channel_id', null);
+        } else {
+          query = query.eq('channel_id', activeChannelId);
+        }
+      }
+
       const { data, error } = await query;
       if (error) throw error;
       setKnowledgeItems(data || []);
@@ -476,7 +502,7 @@ export default function AiSalesCenter() {
     } finally {
       setLoadingKnowledge(false);
     }
-  }, [company?.id, isSuperAdmin]);
+  }, [company?.id, isSuperAdmin, activeChannelId]);
 
   const handleAddKnowledge = async (e) => {
     e.preventDefault();
@@ -489,6 +515,7 @@ export default function AiSalesCenter() {
 
       const { error } = await supabase.from('ai_knowledge_base').insert({
         company_id: company?.id || null,
+        channel_id: (activeChannelId !== 'all' && activeChannelId !== 'unassigned') ? activeChannelId : null,
         category: newKb.category,
         question_trigger: newKb.question_trigger,
         answer_content: newKb.answer_content,
@@ -526,7 +553,7 @@ export default function AiSalesCenter() {
     try {
       const { data, error } = await supabase
         .from('whatsapp_channels')
-        .select('id, name, phone_number, status, is_default, is_active, ai_enabled, company_id, ai_mode, ai_name, ai_greeting, ai_prompt_instructions, ai_auto_handoff_keywords')
+        .select('id, name, phone_number, status, is_default, is_active, ai_enabled, company_id, ai_mode, ai_name, ai_greeting, ai_prompt_instructions, ai_auto_handoff_keywords, ai_admin_phone')
         .order('created_at', { ascending: true });
       if (error) throw error;
       setChannels(data || []);
@@ -546,6 +573,7 @@ export default function AiSalesCenter() {
           ai_enabled: channel.ai_enabled,
           ai_mode: channel.ai_mode || 'hybrid',
           ai_name: channel.ai_name || 'مساعد كوادر الذكي',
+          ai_admin_phone: channel.ai_admin_phone,
           ai_greeting: channel.ai_greeting,
           ai_prompt_instructions: channel.ai_prompt_instructions,
           ai_auto_handoff_keywords: Array.isArray(channel.ai_auto_handoff_keywords)
@@ -579,10 +607,13 @@ export default function AiSalesCenter() {
 
   // Load data based on active tab
   useEffect(() => {
+    fetchChannels();
+  }, [fetchChannels]);
+
+  useEffect(() => {
     if (activeTab === 'leads') fetchLeads();
     if (activeTab === 'knowledge') fetchKnowledge();
-    if (activeTab === 'channels') fetchChannels();
-  }, [activeTab, fetchLeads, fetchKnowledge, fetchChannels]);
+  }, [activeTab, fetchLeads, fetchKnowledge]);
 
   // Filtered Conversations
   const filteredConversations = useMemo(() => {
@@ -622,7 +653,7 @@ export default function AiSalesCenter() {
           <div className="ai-brand-icon-box">
             <Sparkles className="w-7 h-7 text-emerald-400 animate-pulse" />
           </div>
-          <div>
+          <div className="flex flex-col gap-2">
             <div className="ai-brand-badge">
               <span className="ai-pulse-dot" />
               <span>KWADER NEURAL AGENT • v2.1 ACTIVE</span>
@@ -630,11 +661,26 @@ export default function AiSalesCenter() {
             <h1 className="ai-header-title">
               {isRTL ? 'مركز الذكاء الاصطناعي للمبيعات والخدمة' : 'AI Sales & Customer Support Hub'}
             </h1>
-            <p className="ai-header-desc">
-              {isRTL
-                ? 'أتمتة محادثات الواتساب اللحظية، تأهيل المبيعات، وقاعدة المعرفة الفورية بأعلى دقة وأقل استهلاك'
-                : 'Automate WhatsApp conversations, qualify leads, and manage KB with minimal resource cost'}
-            </p>
+            <div className="flex items-center gap-3 mt-1">
+              <p className="ai-header-desc mb-0">
+                {isRTL
+                  ? 'أتمتة محادثات الواتساب اللحظية، تأهيل المبيعات، وقاعدة المعرفة الفورية بأعلى دقة وأقل استهلاك'
+                  : 'Automate WhatsApp conversations, qualify leads, and manage KB with minimal resource cost'}
+              </p>
+              <select
+                value={activeChannelId}
+                onChange={(e) => setActiveChannelId(e.target.value)}
+                className="bg-slate-800/80 border border-slate-700 text-emerald-400 text-xs rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-emerald-500"
+              >
+                <option value="all">{isRTL ? 'جميع القنوات' : 'All Channels'}</option>
+                <option value="unassigned">{isRTL ? 'القناة الافتراضية' : 'Default Channel'}</option>
+                {channels.map((ch) => (
+                  <option key={ch.id} value={ch.id}>
+                    {ch.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
@@ -1487,6 +1533,22 @@ export default function AiSalesCenter() {
                           }}
                           placeholder="مساعد كوادر الذكي"
                           className="ai-input-dark"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-slate-300 mb-1.5 block">
+                          {isRTL ? 'رقم الإدارة (للطوارئ والمواعيد)' : 'Admin Phone (Emergencies)'}
+                        </label>
+                        <input
+                          type="text"
+                          value={ch.ai_admin_phone || ''}
+                          onChange={(e) => {
+                            const updated = { ...ch, ai_admin_phone: e.target.value };
+                            setChannels((prev) => prev.map((c) => (c.id === ch.id ? updated : c)));
+                          }}
+                          placeholder="9665XXXXXXXX"
+                          className="ai-input-dark font-mono text-emerald-300"
                         />
                       </div>
 
