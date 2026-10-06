@@ -131,6 +131,46 @@ async function startChannelManager(channelId) {
                 const customerName = msg.pushName || phone;
 
                 // ══════════════════════════════════════════════════════════════
+                // 👨‍💼 Admin Proxy Reply Interceptor
+                // ══════════════════════════════════════════════════════════════
+                const contextInfo = msg.message?.extendedTextMessage?.contextInfo;
+                const quotedText = contextInfo?.quotedMessage?.conversation || contextInfo?.quotedMessage?.extendedTextMessage?.text;
+                
+                if (quotedText && quotedText.includes('تنبيه من الوكيل الذكي')) {
+                    const phoneMatch = quotedText.match(/👤 \*العميل:\*\s*\+([0-9]+)/);
+                    if (phoneMatch && phoneMatch[1]) {
+                        const customerPhone = phoneMatch[1];
+                        const customerJid = `${customerPhone}@s.whatsapp.net`;
+                        
+                        const adminReplyToCustomer = `👨‍💼 *إجابة من الإدارة:*\n\n💬 ${text.trim()}\n\n---\n🤖 _أنا الوكيل الذكي، هل هناك أي شيء آخر يمكنني مساعدتك به؟_`;
+                        
+                        await sock.sendMessage(customerJid, { text: adminReplyToCustomer });
+                        console.log(`[WhatsApp AI] 🔔 Admin proxy reply forwarded to customer ${customerPhone}`);
+                        await sock.sendMessage(jid, { text: `✅ تم إرسال ردك للعميل +${customerPhone} بنجاح.` });
+                        
+                        // Fire and forget: save to AI history
+                        (async () => {
+                            try {
+                                const { data: convs } = await supabase.from('ai_conversations').select('id').eq('channel_id', channelId).eq('customer_phone', customerPhone).order('updated_at', { ascending: false }).limit(1);
+                                if (convs && convs.length > 0) {
+                                    await supabase.from('ai_messages').insert({
+                                        conversation_id: convs[0].id,
+                                        sender_type: 'ai',
+                                        role: 'assistant',
+                                        content: adminReplyToCustomer,
+                                        message_text: adminReplyToCustomer,
+                                        tokens_used: 0,
+                                        status: 'delivered'
+                                    });
+                                }
+                            } catch(e) {}
+                        })();
+                        
+                        return; // Stop processing this admin message as a normal user query
+                    }
+                }
+
+                // ══════════════════════════════════════════════════════════════
                 // 🕒 Smart Message Batching (10-Second Debouncer)
                 // ══════════════════════════════════════════════════════════════
                 if (!MESSAGE_BUFFER.has(phone)) {
