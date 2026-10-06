@@ -4,9 +4,18 @@ const crypto = require('crypto');
 const https = require('https');
 const { createClient } = require('@supabase/supabase-js');
 
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+    const envConfig = fs.readFileSync(envPath, 'utf8').split('\n');
+    envConfig.forEach(line => {
+        const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+        if (match) process.env[match[1]] = match[2].trim().replace(/^['"]|['"]$/g, '');
+    });
+}
+
 const REPO = 'eng-mazen-hashem/kwader-sync-app';
 const TAG = 'v1.4.0'; // Upload to the active release tag so all client agents can reach it
-const VERSION = '2.11.1';
+const VERSION = '2.11.7';
 const ZIP_PATH = path.join(__dirname, 'bin', `whatsapp-node-v${VERSION}.zip`);
 const ASSET_NAME = `whatsapp-node-v${VERSION}.zip`;
 
