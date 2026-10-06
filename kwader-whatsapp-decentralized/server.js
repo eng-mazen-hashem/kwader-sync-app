@@ -548,7 +548,7 @@ ${session.currentPlaybook || 'لا يوجد دليل قديم.'}`
 
                 // 9. Generate AI Reply
                 const adminPhone = channelData.ai_admin_phone || companySettings.admin_phone;
-                const { replyText, tokensUsed, action: aiAction, actionPayload } = await generateAiReply({
+                let { replyText, tokensUsed, action: aiAction, actionPayload } = await generateAiReply({
                     systemPrompt,
                     history,
                     text: text.trim(),
