@@ -50,7 +50,8 @@ async function startChannelManager(channelId) {
         currentEpoch: 0,
         isConnected: false,
         activePhoneNumber: null,
-        leaseManager: null
+        leaseManager: null,
+        heartbeatIntervalId: null  // FIX: track ref to prevent ghost heartbeats on stopChannelManager
     };
 
     const startWhatsAppLeaderEngine = async () => {
@@ -706,7 +707,8 @@ ${session.currentPlaybook || 'لا يوجد دليل قديم.'}`
     state.leaseManager.start();
 
     // Periodic Heartbeat for UI metrics (both Standby & Leader)
-    setInterval(async () => {
+    // Store ref in state so stopChannelManager can clear it cleanly
+    state.heartbeatIntervalId = setInterval(async () => {
         try {
             const memMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
             const uptimeSec = Math.round(process.uptime());
@@ -829,6 +831,11 @@ async function stopChannelManager(channelId) {
     if (!state) return;
     
     console.log(`[Cluster] Stopping channel manager for ${channelId}...`);
+    // FIX: Clear UI heartbeat interval to prevent ghost heartbeats in Supabase
+    if (state.heartbeatIntervalId) {
+        clearInterval(state.heartbeatIntervalId);
+        state.heartbeatIntervalId = null;
+    }
     if (state.queueProcessor) state.queueProcessor.stop();
     if (state.activeClient) state.activeClient.disconnect();
     if (state.leaseManager) await state.leaseManager.shutdown();
@@ -951,7 +958,7 @@ async function buildSmartContext(conv, phone) {
     try {
         const [sumRes, profRes] = await Promise.all([
             supabase.from('ai_conversation_summaries').select('*').eq('conversation_id', conv?.id).maybeSingle(),
-            supabase.from('ai_customer_profiles').select('*').eq('customer_phone', phone).eq('channel_id', DEFAULT_CHANNEL_ID).maybeSingle()
+            supabase.from('ai_customer_profiles').select('*').eq('customer_phone', phone).eq('channel_id', channelId).maybeSingle()
         ]);
         summary = sumRes.data;
         profile = profRes.data;

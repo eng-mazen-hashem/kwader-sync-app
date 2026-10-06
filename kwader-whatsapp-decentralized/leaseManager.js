@@ -279,14 +279,9 @@ class LeaseManager {
     }
 
     setupExitHooks() {
-        const cleanExit = async (sig) => {
-            console.log(`[LeaseManager] Received ${sig}, initiating graceful handover...`);
-            await this.shutdown(`signal_${sig}`);
-            process.exit(0);
-        };
-
-        process.once('SIGINT', () => cleanExit('SIGINT'));
-        process.once('SIGTERM', () => cleanExit('SIGTERM'));
+        // NOTE: SIGINT/SIGTERM are handled as a singleton in server.js
+        // to avoid registering duplicate handlers per channel in multi-tenant mode.
+        // This method is kept for compatibility but does nothing.
     }
 }
 
