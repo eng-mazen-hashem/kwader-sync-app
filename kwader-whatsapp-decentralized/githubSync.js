@@ -1,4 +1,5 @@
-const { execSync } = require('child_process');
+const { execSync: _execSync } = require('child_process');
+const execSync = (cmd, opts) => _execSync(cmd, { windowsHide: true, ...opts });
 const path = require('path');
 const fs = require('fs');
 
