@@ -15,7 +15,7 @@ if (fs.existsSync(envPath)) {
 
 const REPO = 'eng-mazen-hashem/kwader-sync-app';
 const TAG = 'v1.4.0'; // Upload to the active release tag so all client agents can reach it
-const VERSION = '2.11.17';
+const VERSION = '2.11.18';
 const ZIP_PATH = path.join(__dirname, 'bin', `whatsapp-node-v${VERSION}.zip`);
 const ASSET_NAME = `whatsapp-node-v${VERSION}.zip`;
 

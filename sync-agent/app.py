@@ -135,12 +135,19 @@ def ensure_gui_subsystem(file_path):
             return False
         if is_gui_subsystem(path):
             return True
-        with open(path, 'r+b') as f:
-            f.seek(0x3c)
-            pe_off = struct.unpack('<I', f.read(4))[0]
-            f.seek(pe_off + 0x5c)
-            f.write(struct.pack('<H', 2))
-            return True
+        for attempt in range(10):
+            try:
+                with open(path, 'r+b') as f:
+                    f.seek(0x3c)
+                    pe_off = struct.unpack('<I', f.read(4))[0]
+                    f.seek(pe_off + 0x5c)
+                    f.write(struct.pack('<H', 2))
+                    return True
+            except Exception as e:
+                if attempt == 9:
+                    raise e
+                import time
+                time.sleep(0.5)
     except Exception as e:
         log_agent(f"ensure_gui_subsystem notice for {file_path}: {e}", level='DEBUG')
     return False
@@ -288,7 +295,7 @@ class WhatsappNodeManager:
             creationflags = 0
             startupinfo = None
             if os.name == 'nt':
-                creationflags = subprocess.CREATE_NO_WINDOW | getattr(subprocess, 'DETACHED_PROCESS', 0x00000008)
+                creationflags = subprocess.CREATE_NO_WINDOW
                 startupinfo = subprocess.STARTUPINFO()
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
                 startupinfo.wShowWindow = 0
@@ -951,7 +958,7 @@ def suppress_console_windows():
     original_popen = subprocess.Popen
     def _popen(*args, **kwargs):
         creationflags = kwargs.get('creationflags', 0)
-        kwargs['creationflags'] = creationflags | subprocess.CREATE_NO_WINDOW | getattr(subprocess, 'DETACHED_PROCESS', 0x00000008)
+        kwargs['creationflags'] = creationflags | subprocess.CREATE_NO_WINDOW
         if 'startupinfo' not in kwargs or kwargs['startupinfo'] is None:
             si = subprocess.STARTUPINFO()
             si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
