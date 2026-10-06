@@ -142,7 +142,7 @@ async function startChannelManager(channelId) {
                         const customerPhone = phoneMatch[1];
                         const customerJid = `${customerPhone}@s.whatsapp.net`;
                         
-                        const adminReplyToCustomer = `👨‍💼 *إجابة من الإدارة:*\n\n💬 ${text.trim()}\n\n---\n🤖 _أنا الوكيل الذكي، هل هناك أي شيء آخر يمكنني مساعدتك به؟_`;
+                        const adminReplyToCustomer = `${text.trim()}`;
                         
                         await sock.sendMessage(customerJid, { text: adminReplyToCustomer });
                         console.log(`[WhatsApp AI] 🔔 Admin proxy reply forwarded to customer ${customerPhone}`);
@@ -605,7 +605,7 @@ ${session.currentPlaybook || 'لا يوجد دليل قديم.'}`
                             }
                         } else {
                             // Fallback: Notify the customer directly to contact the channel's phone
-                            replyText += `\n\n*(رسالة تلقائية)*: أعتذر منك، الإدارة غير متاحة للتدخل الفوري عبر الوكيل الذكي حالياً. يرجى الاتصال المباشر بهذا الرقم (+${state.activePhoneNumber}) أو الانتظار حتى يتم مراجعة محادثتك.`;
+                            replyText += `\n\nأعتذر منك، حاولت التواصل مع الإدارة بخصوص طلبك لكنهم غير متاحين في هذه اللحظة. للرد السريع يرجى الاتصال هاتفياً على الرقم (+${state.activePhoneNumber}) وسيكونون في خدمتك فوراً، أو يمكنك ترك رسالتك وسيتواصلون معك في أقرب وقت.`;
                         }
                     }
                 }
