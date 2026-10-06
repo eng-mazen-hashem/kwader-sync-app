@@ -684,6 +684,12 @@ async function initMultiTenant() {
         return;
     }
     
+    // Cleanup ghost nodes for this physical machine to prevent duplicates in UI
+    try {
+        await supabase.from('whatsapp_nodes').delete().like('node_id', `${baseNodeId}_%`);
+        console.log(`[Cluster] Cleaned up previous ghost nodes for ${baseNodeId}`);
+    } catch(e) {}
+
     // 2. Fetch specific assignments for this physical server
     const { data: assignments } = await supabase.from('whatsapp_node_assignments').select('channel_id').like('node_id', `${baseNodeId}%`);
     const assignedChannelIds = new Set(assignments?.map(a => a.channel_id) || []);
@@ -744,46 +750,17 @@ async function initMultiTenant() {
     // Listen for node assignment changes dynamically
     supabase.channel('public:whatsapp_node_assignments')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'whatsapp_node_assignments' }, async payload => {
-            console.log('[Cluster] Received assignment change:', payload.eventType);
-            
-            const { data: pData } = await supabase.from('system_settings').select('value').eq('key', 'whatsapp_allow_multi_channel').maybeSingle();
-            const isMultiAllowed = pData?.value === true || pData?.value?.enabled === true;
-
-            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-                const newAssign = payload.new;
-                if (newAssign.node_id && newAssign.node_id.startsWith(baseNodeId)) {
-                    let targetChId = newAssign.channel_id;
-                    if (targetChId === null) {
-                        const { data: defaultCh } = await supabase.from('whatsapp_channels').select('id').eq('is_default', true).maybeSingle();
-                        if (defaultCh) targetChId = defaultCh.id;
-                    }
-                    
-                    if (targetChId && !ACTIVE_CHANNELS.has(targetChId)) {
-                        if (!isMultiAllowed && ACTIVE_CHANNELS.size >= 1) {
-                            console.log(`[Cluster] Ignoring dynamic assignment for ${targetChId}: RAM Saving Mode limits to 1 session.`);
-                        } else {
-                            console.log(`[Cluster] Node dynamically assigned to channel ${targetChId}. Starting manager...`);
-                            assignedChannelIds.add(newAssign.channel_id); // add null or id
-                            startChannelManager(targetChId);
-                        }
-                    }
-                }
-            }
-            
-            if (payload.eventType === 'DELETE') {
-                console.log('[Cluster] Re-evaluating assignments due to deletion...');
-                const { data: currentAssignments } = await supabase.from('whatsapp_node_assignments').select('channel_id').like('node_id', `${baseNodeId}%`);
-                const currentAssignedChannelIds = new Set(currentAssignments?.map(a => a.channel_id) || []);
+            const affectedNodeId = payload.new?.node_id || payload.old?.node_id;
+            if (affectedNodeId && affectedNodeId.startsWith(baseNodeId)) {
+                console.log(`[Cluster] Assignment changed for ${affectedNodeId}. Safely restarting to apply new topology...`);
                 
-                // Stop all channels if we have 0 assignments and we shouldn't fallback, or something.
-                // It's safer to just restart the process, or manually stop unassigned ones.
-                // We will rely on initMultiTenant() on restart for perfect state.
-                
-                // Update our Set
-                assignedChannelIds.clear();
-                for (const id of currentAssignedChannelIds) {
-                    assignedChannelIds.add(id);
+                // Cleanly shutdown all active channels before exiting
+                for (const chId of ACTIVE_CHANNELS.keys()) {
+                    await stopChannelManager(chId);
                 }
+                
+                // Let the app.py watchdog restart us cleanly in 3 seconds
+                process.exit(0);
             }
         })
         .subscribe();
@@ -799,6 +776,14 @@ async function stopChannelManager(channelId) {
     if (state.leaseManager) await state.leaseManager.shutdown();
     
     ACTIVE_CHANNELS.delete(channelId);
+    
+    // Clean up ghost node from UI
+    try {
+        const baseNodeId = process.env.NODE_ID || require('os').hostname();
+        const uniqueNodeId = `${baseNodeId}_${channelId.split('-')[0]}`;
+        await supabase.from('whatsapp_nodes').delete().eq('node_id', uniqueNodeId);
+        console.log(`[Cluster] Deleted ghost node ${uniqueNodeId} from UI metrics.`);
+    } catch(e) {}
 }
 
 async function stopAllChannels() {
