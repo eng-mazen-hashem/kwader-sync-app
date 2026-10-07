@@ -504,6 +504,31 @@ async function processQueueBatch(queueKey) {
                     const fallbackNum = state?.activePhoneNumber || '';
                     replyText += `\n\nأعتذر منك، حاولت التواصل مع الإدارة بخصوص طلبك لكنهم غير متاحين في هذه اللحظة. للرد السريع يرجى الاتصال هاتفياً على الرقم (+${fallbackNum}) وسيكونون في خدمتك فوراً، أو يمكنك ترك رسالتك وسيتواصلون معك في أقرب وقت.`;
                 }
+            } else if (aiAction === 'CREATE_INVOICE' && actionPayload) {
+                // Autonomous Invoice Generation (Zero Token cost for formatting!)
+                try {
+                    const items = JSON.parse(actionPayload);
+                    let total = 0;
+                    let invoiceMsg = `🧾 *فاتورة مبدئية / Proforma Invoice*\n\n`;
+                    invoiceMsg += `━━━━━━━━━━━━━━━━━\n`;
+                    items.forEach(item => {
+                        const qty = parseFloat(item.qty) || 1;
+                        const price = parseFloat(item.price) || 0;
+                        const lineTotal = qty * price;
+                        total += lineTotal;
+                        invoiceMsg += `🛒 *${item.item}*\n`;
+                        invoiceMsg += `   الكمية: ${qty} | السعر: ${price} | المجموع: ${lineTotal}\n`;
+                    });
+                    invoiceMsg += `━━━━━━━━━━━━━━━━━\n`;
+                    invoiceMsg += `💰 *الإجمالي الكلي: ${total}*\n\n`;
+                    invoiceMsg += `شكراً لاختياركم خدماتنا! 🙏`;
+
+                    const currentSock = state?.activeClient?.sock || q.sock;
+                    await currentSock.sendMessage(jid, { text: invoiceMsg });
+                    console.log(`[WhatsApp AI] 🧾 Invoice auto-generated and sent to ${phone}`);
+                } catch(err) {
+                    console.error(`[WhatsApp AI] ❌ Failed to parse or send invoice:`, err.message);
+                }
             }
         }
 
@@ -1201,14 +1226,20 @@ async function generateAiReply({ systemPrompt, history, text, phone, adminPhone,
     // Add strong sales empathy booster
     let enhancedSystemPrompt = systemPrompt + "\n\n[Sales Persona Booster]: أنت بائع استشاري (Consultative Seller). كن متعاطفاً جداً مع العميل وافهم مشاعره ومخاوفه قبل البيع. لا تكتفِ بسرد الأسعار، بل افهم احتياجه أولاً ثم اطرح الحل كأنك مستشار مؤتمن يخاف على مصلحته بأسلوب ودود ومقنع جداً ومختصر.";
 
-    enhancedSystemPrompt += `\n\n[الطوارئ والتواصل مع الإدارة]: في الحالات الطارئة، أو عند رغبة العميل في حجز موعد هام، أو إذا سألك عن معلومة لا تعرفها نهائياً وطلب التأكد من الإدارة، استخدم الإجراء التالي لإرسال رسالة فورية للمدير: أضف <ACTION>NOTIFY_ADMIN: ملخص المشكلة أو طلب العميل هنا</ACTION> في نهاية ردك. يجب أن تستخدم هذا الإجراء فقط عند الضرورة.`;
+    enhancedSystemPrompt += `\n\n[الطوارئ والتواصل مع الإدارة]: في الحالات الطارئة، أو عند رغبة العميل في حجز موعد هام، استخدم الإجراء التالي لإرسال رسالة للمدير: أضف <ACTION>NOTIFY_ADMIN: ملخص المشكلة هنا</ACTION> في نهاية ردك.`;
+    
+    enhancedSystemPrompt += `\n\n[نظام الفواتير الآلي]: إذا اتفق العميل على شراء منتجات وتريد إصدار فاتورة له، لا تقم بكتابة الفاتورة يدوياً أبداً لتجنب الخطأ وتوفير الوقت. بدلاً من ذلك، أرسل هذا الأمر فقط في نهاية ردك وسيقوم النظام بتنسيقها وحساب الإجمالي: <ACTION>CREATE_INVOICE: [{"item": "اسم المنتج", "qty": 1, "price": 150}]</ACTION>`;
 
     const processReply = (rawReply, tokens) => {
         let actionPayload = null;
-        const actionMatch = rawReply.match(/<ACTION>NOTIFY_ADMIN:\s*([\s\S]*?)<\/ACTION>/i);
-        if (actionMatch) actionPayload = actionMatch[1].trim();
-        const cleanReply = rawReply.replace(/<ACTION>[\s\S]*?<\/ACTION>/g, '').trim();
-        return { replyText: cleanReply, tokensUsed: tokens, action: actionPayload ? 'NOTIFY_ADMIN' : null, actionPayload };
+        let aiAction = null;
+        const actionMatch = rawReply.match(/<ACTION>(NOTIFY_ADMIN|CREATE_INVOICE):\s*([\s\S]*?)<\/ACTION>/i);
+        if (actionMatch) {
+            aiAction = actionMatch[1].toUpperCase();
+            actionPayload = actionMatch[2].trim();
+        }
+        const cleanReply = rawReply.replace(/<ACTION>[\s\S]*?<\/ACTION>/gi, '').trim();
+        return { replyText: cleanReply, tokensUsed: tokens, action: aiAction, actionPayload };
     };
 
     const messages = [
