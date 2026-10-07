@@ -237,7 +237,16 @@ export function WhatsAppGatewayView() {
   const [newChannelName, setNewChannelName] = useState("");
   const [newChannelDesc, setNewChannelDesc] = useState("");
   const [newChannelDefault, setNewChannelDefault] = useState(false);
+  const [newChannelAdminPhone, setNewChannelAdminPhone] = useState("");
   const [creatingChannel, setCreatingChannel] = useState(false);
+
+  // Edit Channel States
+  const [isEditChannelModalOpen, setIsEditChannelModalOpen] = useState(false);
+  const [editChannelId, setEditChannelId] = useState(null);
+  const [editChannelName, setEditChannelName] = useState("");
+  const [editChannelDesc, setEditChannelDesc] = useState("");
+  const [editChannelAdminPhone, setEditChannelAdminPhone] = useState("");
+  const [editingChannel, setEditingChannel] = useState(false);
 
   const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
@@ -924,7 +933,8 @@ export function WhatsAppGatewayView() {
           name: newChannelName.trim(),
           description: newChannelDesc.trim() || null,
           is_default: newChannelDefault,
-          status: "disconnected"
+          status: "disconnected",
+          ai_admin_phone: newChannelAdminPhone.trim() || null
         })
         .select()
         .single();
@@ -935,12 +945,51 @@ export function WhatsAppGatewayView() {
       setNewChannelName("");
       setNewChannelDesc("");
       setNewChannelDefault(false);
+      setNewChannelAdminPhone("");
       setIsChannelModalOpen(false);
       fetchData();
     } catch (err) {
       toast.error("فشل إنشاء القناة: " + err.message);
     } finally {
       setCreatingChannel(false);
+    }
+  };
+
+  const handleOpenEditChannel = (channel) => {
+    setEditChannelId(channel.id);
+    setEditChannelName(channel.name || "");
+    setEditChannelDesc(channel.description || "");
+    setEditChannelAdminPhone(channel.ai_admin_phone || "");
+    setIsEditChannelModalOpen(true);
+  };
+
+  const handleEditChannelSubmit = async (e) => {
+    e.preventDefault();
+    if (!editChannelName.trim()) {
+      toast.error("يرجى إدخال اسم القناة");
+      return;
+    }
+
+    setEditingChannel(true);
+    try {
+      const { error } = await supabase
+        .from("whatsapp_channels")
+        .update({
+          name: editChannelName.trim(),
+          description: editChannelDesc.trim() || null,
+          ai_admin_phone: editChannelAdminPhone.trim() || null
+        })
+        .eq("id", editChannelId);
+
+      if (error) throw error;
+
+      toast.success("تم تحديث إعدادات القناة بنجاح! 🎉");
+      setIsEditChannelModalOpen(false);
+      fetchData();
+    } catch (err) {
+      toast.error("فشل تحديث القناة: " + err.message);
+    } finally {
+      setEditingChannel(false);
     }
   };
 
@@ -1741,6 +1790,13 @@ echo $response;
                     </div>
 
                     <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleOpenEditChannel(channel)}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+                        title="إعدادات القناة"
+                      >
+                        <Settings className="w-4 h-4" />
+                      </button>
                       {!isDefault && (
                         <button
                           onClick={() => handleDeleteChannel(channel.id)}
@@ -3609,6 +3665,23 @@ echo $response;
                   />
                 </div>
 
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    رقم الإدارة (رقم مدير القناة للتنبيهات والتحويل):
+                  </label>
+                  <input
+                    type="text"
+                    dir="ltr"
+                    placeholder="مثال: 2010xxxxxxxx"
+                    value={newChannelAdminPhone}
+                    onChange={(e) => setNewChannelAdminPhone(e.target.value.replace(/\D/g, ""))}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none font-mono focus:border-emerald-500 text-left"
+                  />
+                  <p className="text-[10px] text-gray-500 mt-1 leading-tight">
+                    هذا الرقم سيتم تحويل المحادثات المهمة إليه من قبل الذكاء الاصطناعي، وسيتلقى الإشعارات الخاصة بصاحب القناة.
+                  </p>
+                </div>
+
                 <div className="flex items-center gap-2 pt-1">
                   <input
                     type="checkbox"
@@ -3637,6 +3710,79 @@ echo $response;
                   >
                     {creatingChannel && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                     <span>إنشاء القناة</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Edit Channel Modal */}
+        {isEditChannelModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-gray-100 space-y-4"
+            >
+              <h3 className="text-gray-900 font-bold text-sm">تعديل إعدادات القناة</h3>
+
+              <form onSubmit={handleEditChannelSubmit} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">اسم القناة:</label>
+                  <input
+                    type="text"
+                    value={editChannelName}
+                    onChange={(e) => setEditChannelName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:border-emerald-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">وصف القناة (اختياري):</label>
+                  <input
+                    type="text"
+                    value={editChannelDesc}
+                    onChange={(e) => setEditChannelDesc(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:border-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center justify-between">
+                    <span>رقم الإدارة (رقم مدير القناة للتنبيهات والتحويل):</span>
+                    <Crown className="w-4 h-4 text-amber-500" />
+                  </label>
+                  <input
+                    type="text"
+                    dir="ltr"
+                    placeholder="مثال: 2010xxxxxxxx"
+                    value={editChannelAdminPhone}
+                    onChange={(e) => setEditChannelAdminPhone(e.target.value.replace(/\D/g, ""))}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none font-mono focus:border-emerald-500 text-left"
+                  />
+                  <p className="text-[10px] text-gray-500 mt-1 leading-tight">
+                    هذا الرقم سيتم تحويل المحادثات المهمة إليه من قبل الذكاء الاصطناعي، وسيتلقى الإشعارات الخاصة بصاحب القناة.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditChannelModalOpen(false)}
+                    className="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={editingChannel}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-2"
+                  >
+                    {editingChannel && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                    <span>حفظ التعديلات</span>
                   </button>
                 </div>
               </form>
