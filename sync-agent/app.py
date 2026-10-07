@@ -64,9 +64,37 @@ SUPABASE = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def resolve_data_dir():
     appdata = os.getenv('APPDATA')
-    if appdata:
-        return Path(appdata) / APP_ID
-    return Path(user_data_dir(APP_ID, ORG_NAME))
+    base_dir = Path(appdata) if appdata else Path(user_data_dir('', ORG_NAME))
+    default_dir = base_dir / APP_ID
+
+    exe_path = sys.executable if getattr(sys, 'frozen', False) else os.path.abspath(__file__)
+    exe_dir = Path(exe_path).parent.resolve()
+    
+    # Check for manual portable mode first
+    if (exe_dir / 'instance_id.txt').exists():
+        iid = (exe_dir / 'instance_id.txt').read_text(encoding='utf-8').strip()
+        safe_iid = "".join(c for c in iid if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
+        if safe_iid:
+            return base_dir / f"{APP_ID}_{safe_iid}"
+
+    folder_name = exe_dir.name
+    # 100% backward compatibility for default installations
+    if folder_name.lower() in ['kwader sync', 'kwader_sync', 'sync-agent', 'dist']:
+        return default_dir
+        
+    # Automatic isolation based on renamed folder
+    safe_name = "".join(c for c in folder_name if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
+    isolated_dir = base_dir / f"{APP_ID}_{safe_name}"
+    
+    # Auto-copy settings from default to isolated to help users setup branches easily
+    if not isolated_dir.exists() and default_dir.exists() and (default_dir / 'settings.json').exists():
+        try:
+            import shutil
+            shutil.copytree(default_dir, isolated_dir, dirs_exist_ok=True)
+        except Exception:
+            pass
+            
+    return isolated_dir
 
 DATA_DIR = resolve_data_dir()
 SETTINGS_FILE = DATA_DIR / 'settings.json'
