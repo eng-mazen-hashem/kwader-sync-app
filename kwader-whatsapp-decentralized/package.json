@@ -1,6 +1,6 @@
 {
   "name": "kwader-whatsapp-node",
-  "version": "2.11.22",
+  "version": "2.11.23",
   "description": "KWADER Decentralized WhatsApp Cluster Engine",
   "main": "server.js",
   "bin": "./server.js",

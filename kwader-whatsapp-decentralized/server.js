@@ -901,12 +901,6 @@ async function initMultiTenant() {
         return;
     }
     
-    // Cleanup ghost nodes for this physical machine to prevent duplicates in UI
-    try {
-        await supabase.from('whatsapp_nodes').delete().like('node_id', `${baseNodeId}_%`);
-        console.log(`[Cluster] Cleaned up previous ghost nodes for ${baseNodeId}`);
-    } catch(e) {}
-
     // 2. Fetch specific assignments for this physical server
     const { data: assignments } = await supabase.from('whatsapp_node_assignments').select('channel_id').like('node_id', `${baseNodeId}%`);
     const assignedChannelIds = new Set(assignments?.map(a => a.channel_id) || []);
