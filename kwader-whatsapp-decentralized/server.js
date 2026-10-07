@@ -3,13 +3,16 @@ const http = require('http');
 const { createClient } = require('@supabase/supabase-js');
 
 // Store active training sessions for persona cloning
-const TRAINER_SESSIONS = new Map();
-const MESSAGE_BUFFER = new Map(); // Store pending consecutive messages for debouncing
+
+const LID_CACHE = new Map(); // In-memory cache for resolved LID -> { phone, targetJid }
+const CHAT_QUEUES = new Map(); // Queue for debouncing and batching consecutive messages
 
 const { LeaseManager } = require('./leaseManager');
 const { initWhatsAppClient } = require('./whatsappClient');
 const { QueueProcessor } = require('./queueProcessor');
 const { moeRouter, compressContext } = require('./aiOptimizer');
+const personaTrainer = require('./personaTrainer');
+const { decrypt } = require('./encryption');
 
 // Environment Configuration
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://whuopqnhmsevlilkcfre.supabase.co';
@@ -27,14 +30,551 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const GROQ_API_KEY = process.env.GROQ_API_KEY || ['gsk_oA6TsDXRKF9ZX', 'XFeGWGxWGdyb3FYrmkkfHLlICrAZtgoB82DMt4g'].join('');
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || ['sk-or-v1-9bbbb78248b9f4', 'd0be30c35a37a755a4b8659c5173b6e4f12bf7bdd91ba3e9fd'].join('');
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || ['AQ', 'Ab8RN6I4AlR4DYfI-h1KbohjTmamouaOiosZWPKyptLfssMJIg'].join('.');
-const APP_VERSION = require('./package.json').version || '2.11.1';
+const APP_VERSION = require('./package.json').version || '2.12.0';
+personaTrainer.init({ GEMINI_API_KEY, GROQ_API_KEY });
+personaTrainer.setSupabase(supabase);
 
 console.log('═══════════════════════════════════════════════════════════════');
-console.log(' 🚀 KWADER Decentralized WhatsApp Cluster Engine (Baileys) v2.11.1 ');
+console.log(` 🚀 KWADER Decentralized WhatsApp Cluster Engine (Baileys) v${APP_VERSION} `);
 console.log('═══════════════════════════════════════════════════════════════');
 
 // MULTI-TENANCY REFACTOR
 const ACTIVE_CHANNELS = new Map();
+
+// ══════════════════════════════════════════════════════════════
+// 🕒 Consecutive Message Batching & Debouncing Engine
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * 🕒 Smart Message Debouncer & Consecutive Message Buffer
+ * Merges consecutive messages into a single prompt, keeps typing indicator active,
+ * and aborts any in-flight AI generation if the user adds new input.
+ */
+function enqueueIncomingMessage({ channelId, phone, targetJid, jid, customerName, text, sock, state }) {
+    const queueKey = `${channelId}:${phone}`;
+    let q = CHAT_QUEUES.get(queueKey);
+    if (!q) {
+        q = {
+            channelId,
+            phone,
+            targetJid,
+            jid,
+            customerName: customerName || phone,
+            messages: [],
+            timer: null,
+            presenceInterval: null,
+            isProcessing: false,
+            abortController: null,
+            currentBatchTexts: [],
+            sock,
+            state
+        };
+        CHAT_QUEUES.set(queueKey, q);
+    }
+
+    // Refresh refs with latest socket and details
+    q.sock = sock;
+    q.state = state;
+    if (customerName) q.customerName = customerName;
+    if (targetJid) q.targetJid = targetJid;
+    if (jid) q.jid = jid;
+
+    const sendComposing = () => {
+        try {
+            const currentSock = q.state?.activeClient?.sock || q.sock;
+            if (!currentSock) return;
+            if (q.targetJid) currentSock.sendPresenceUpdate('composing', q.targetJid).catch(() => {});
+            if (q.jid && q.jid !== q.targetJid) currentSock.sendPresenceUpdate('composing', q.jid).catch(() => {});
+        } catch (e) {}
+    };
+
+    // If an AI generation is currently in-flight for this user:
+    if (q.isProcessing) {
+        console.log(`[WhatsApp AI] ⚡ User ${phone} sent new message while AI was thinking! Aborting in-flight generation & merging messages...`);
+        if (q.abortController) {
+            try {
+                q.abortController.abort();
+            } catch (e) {}
+            q.abortController = null;
+        }
+        // Prepend previous in-flight texts back to pending queue
+        if (q.currentBatchTexts && q.currentBatchTexts.length > 0) {
+            q.messages = [...q.currentBatchTexts, ...q.messages];
+            q.currentBatchTexts = [];
+        }
+        q.isProcessing = false;
+    }
+
+    // Push new message to buffer
+    q.messages.push(text.trim());
+    console.log(`[WhatsApp AI] 📥 Buffered message from ${phone} [Batch count: ${q.messages.length}]: "${text.trim().substring(0, 45)}"`);
+
+    // Immediately trigger typing indicator
+    sendComposing();
+
+    // Keep typing presence alive during the debounce window
+    if (!q.presenceInterval) {
+        q.presenceInterval = setInterval(() => {
+            sendComposing();
+        }, 2500);
+    }
+
+    // Reset debounce timer
+    if (q.timer) {
+        clearTimeout(q.timer);
+        q.timer = null;
+    }
+
+    // 5.0 seconds debounce delay: Waits for consecutive sentences to finish
+    const DEBOUNCE_DELAY_MS = 5000;
+    q.timer = setTimeout(() => {
+        if (q.presenceInterval) {
+            clearInterval(q.presenceInterval);
+            q.presenceInterval = null;
+        }
+        q.timer = null;
+
+        processQueueBatch(queueKey).catch(err => {
+            console.error(`[WhatsApp AI] Unhandled error in processQueueBatch for ${phone}:`, err);
+        });
+    }, DEBOUNCE_DELAY_MS);
+}
+
+async function processQueueBatch(queueKey) {
+    const q = CHAT_QUEUES.get(queueKey);
+    if (!q || q.messages.length === 0) return;
+
+    // Snapshot messages and mark as processing
+    q.currentBatchTexts = [...q.messages];
+    q.messages = [];
+    q.isProcessing = true;
+    q.abortController = new AbortController();
+    const signal = q.abortController.signal;
+
+    const { channelId, phone, targetJid, jid, customerName, state } = q;
+    const combinedText = q.currentBatchTexts.join('\n\n');
+
+    console.log(`[WhatsApp AI] 🤖 Processing unified batch (${q.currentBatchTexts.length} messages) for ${phone}: "${combinedText.substring(0, 60)}..."`);
+
+    const sendPresence = (presence = 'composing') => {
+        try {
+            const currentSock = state?.activeClient?.sock || q.sock;
+            if (!currentSock) return;
+            if (targetJid) currentSock.sendPresenceUpdate(presence, targetJid).catch(() => {});
+            if (jid && jid !== targetJid) currentSock.sendPresenceUpdate(presence, jid).catch(() => {});
+        } catch (e) {}
+    };
+
+    const sendWhatsAppMessage = async (content) => {
+        const currentSock = state?.activeClient?.sock || q.sock;
+        if (!currentSock) throw new Error('No active WhatsApp socket');
+
+        if (targetJid) {
+            try {
+                return await currentSock.sendMessage(targetJid, content);
+            } catch (e1) {
+                console.warn(`[WhatsApp AI] Failed sending to targetJid ${targetJid}:`, e1.message);
+            }
+        }
+
+        if (jid && jid !== targetJid) {
+            try {
+                return await currentSock.sendMessage(jid, content);
+            } catch (e2) {
+                console.error(`[WhatsApp AI] Failed sending to fallback jid ${jid}:`, e2.message);
+                throw e2;
+            }
+        }
+        throw new Error('All destination JIDs failed for sendMessage');
+    };
+
+    // Keep typing presence alive while AI is generating
+    sendPresence('composing');
+    const aiPresenceInterval = setInterval(() => {
+        if (!signal.aborted) {
+            sendPresence('composing');
+        }
+    }, 2500);
+
+    let replyText = null;
+
+    try {
+        // 1. Fetch channel AI settings safely
+        let channelData = null;
+        try {
+            const { data, error } = await supabase
+                .from('whatsapp_channels')
+                .select('*, companies(settings)')
+                .eq('id', channelId)
+                .single();
+            if (error || !data) {
+                const { data: simpleData } = await supabase
+                    .from('whatsapp_channels')
+                    .select('*')
+                    .eq('id', channelId)
+                    .single();
+                channelData = simpleData;
+            } else {
+                channelData = data;
+            }
+        } catch (e) {
+            console.error('[WhatsApp AI] Exception fetching channel:', e.message);
+        }
+
+        if (!channelData || channelData.ai_enabled === false) {
+            return;
+        }
+
+        // 🎓 Persona training (admin only): versioned, evaluated, reversible
+        const configuredAdminPhone = channelData.ai_admin_phone || channelData.companies?.settings?.admin_phone;
+        const senderIsAdmin = personaTrainer.isAdminPhone(phone, configuredAdminPhone);
+        if (!senderIsAdmin && !configuredAdminPhone && personaTrainer.looksLikeCommand(combinedText)) {
+            console.warn('[PersonaTrainer] Training command ignored: ai_admin_phone is not configured for this channel.');
+        }
+        if (senderIsAdmin) {
+            const handled = await personaTrainer.handleAdminMessage({
+                text: combinedText, phone, channelId, channelData,
+                isAdmin: true, reply: sendWhatsAppMessage, signal
+            });
+            if (handled) return;
+        }
+
+        // 2. Fetch or create active conversation in ai_conversations
+        let { data: conv } = await supabase
+            .from('ai_conversations')
+            .select('*')
+            .eq('platform', 'whatsapp')
+            .eq('session_id', phone)
+            .eq('channel_id', channelId)
+            .maybeSingle();
+
+        if (!conv) {
+            const { data: createdConv, error: createErr } = await supabase
+                .from('ai_conversations')
+                .insert({
+                    channel_id: channelId,
+                    company_id: channelData.company_id || null,
+                    platform: 'whatsapp',
+                    session_id: phone,
+                    customer_name: customerName,
+                    customer_phone: phone,
+                    status: 'ai_active',
+                    lead_status: 'none',
+                    last_message_at: new Date().toISOString()
+                })
+                .select()
+                .single();
+            if (!createErr) conv = createdConv;
+        } else {
+            await supabase
+                .from('ai_conversations')
+                .update({
+                    last_message_at: new Date().toISOString(),
+                    ...(customerName && (!conv.customer_name || conv.customer_name === phone) ? { customer_name: customerName } : {})
+                })
+                .eq('id', conv.id);
+        }
+
+        // 3. Check if conversation is in human takeover mode
+        if (conv?.status === 'human_takeover') {
+            console.log(`[WhatsApp AI] ⏸️ Chat with ${phone} is in human_takeover mode. Skipping AI.`);
+            return;
+        }
+
+        // 4. Intelligent Human Escalation Detection
+        const explicitHandoffRegex = /(حولني (لـ)?(بشري|موظف|انسان|حد تاني)|(عايز|اريد|حابب|ابغى) (اتكلم|اكلم|تحدث|اتواصل) مع (بشري|انسان|حد|شخص|مسؤول|موظف|خدمة العملاء)|(كلمني|اتصل بي|اتصلوا بي|اتصال) (هاتف|تليفون|فون|مكالمة)|مش عايز (بوت|روبوت|ذكاء))/i;
+        const isExplicitHandoff = explicitHandoffRegex.test(combinedText);
+
+        if (isExplicitHandoff && conv?.id) {
+            await supabase
+                .from('ai_conversations')
+                .update({ status: 'human_takeover', summary: 'طلب العميل مكالمة أو تواصل بشري' })
+                .eq('id', conv.id);
+            console.log(`[WhatsApp AI] 👨‍💼 Explicit handoff flagged for ${phone}, AI will answer and confirm follow-up.`);
+        }
+
+        // 5. Build Smart Context BEFORE saving batch (so previous history is clean and not duplicated)
+        const { summary: convSummary, profile: customerProfile, history } = await buildSmartContext(conv, phone, channelId);
+
+        // 6. Save each incoming user message in ai_messages for complete audit trail
+        if (conv?.id && q.currentBatchTexts.length > 0) {
+            const userInserts = q.currentBatchTexts.map(t => ({
+                conversation_id: conv.id,
+                sender_type: 'user',
+                role: 'user',
+                content: t,
+                message_text: t,
+                tokens_used: 0,
+                status: 'delivered'
+            }));
+            await supabase.from('ai_messages').insert(userInserts);
+        }
+
+        // Check if aborted before expensive calls
+        if (signal.aborted) throw new Error('AbortError');
+
+        // 7. Grounding Context from 0-token Knowledge Base
+        let kbGroundingText = '';
+        let kbItemsFound = [];
+        try {
+            let kbQuery = supabase
+                .from('ai_knowledge_base')
+                .select('question_trigger, answer_content, keywords')
+                .eq('is_active', true)
+                .or(`channel_id.is.null,channel_id.eq.${channelId}`);
+
+            if (channelData.company_id) {
+                kbQuery = kbQuery.or(`company_id.is.null,company_id.eq.${channelData.company_id}`);
+            } else {
+                kbQuery = kbQuery.is('company_id', null);
+            }
+
+            const { data: kbList } = await kbQuery.limit(60);
+            if (kbList && kbList.length > 0) {
+                const lowerText = combinedText.trim().toLowerCase();
+                for (const item of kbList) {
+                    const triggerMatch = item.question_trigger && lowerText.includes(item.question_trigger.toLowerCase());
+                    const keywordMatch = Array.isArray(item.keywords) && item.keywords.some(k => k && lowerText.includes(k.toLowerCase()));
+                    if (triggerMatch || keywordMatch) {
+                        kbItemsFound.push(item);
+                    }
+                }
+            }
+        } catch (kbErr) {
+            console.warn('[WhatsApp AI] KB lookup warning:', kbErr.message);
+        }
+
+        // 8. 🧠 Mixture of Experts (MoE) Fast Router (Saves 80% Cost)
+        const { action, reply: routerReply, tokensUsed: routerTokens } = await moeRouter(combinedText, history, kbItemsFound, GROQ_API_KEY, signal);
+        
+        if (action === 'REPLY_DIRECTLY' && routerReply) {
+            console.log(`[WhatsApp AI] ⚡ MoE Fast Router resolved the query seamlessly for ${phone}`);
+            
+            try {
+                sendPresence('composing');
+                const typingDuration = Math.min(2000, Math.max(1000, routerReply.length * 15));
+                await new Promise((res) => setTimeout(res, typingDuration));
+                sendPresence('paused');
+            } catch (e) {}
+
+            let sent = false;
+            try {
+                await sendWhatsAppMessage({ text: routerReply });
+                sent = true;
+                console.log(`[WhatsApp AI] ⚡ MoE reply delivered to ${phone}`);
+            } catch (sendErr) {
+                console.error(`[WhatsApp AI] ❌ Failed to send MoE reply to ${phone}:`, sendErr.message);
+            }
+            
+            if (conv?.id) {
+                await supabase.from('ai_messages').insert({
+                    conversation_id: conv.id,
+                    sender_type: 'ai',
+                    role: 'assistant',
+                    content: routerReply,
+                    message_text: routerReply,
+                    tokens_used: routerTokens || 50,
+                    status: sent ? 'delivered' : 'failed'
+                });
+            }
+            
+            autoUpdateCustomerProfile(phone, channelId, combinedText, customerName);
+            return;
+        }
+
+        // 9. Contextual Compression for Heavy Model
+        kbGroundingText = await compressContext(combinedText, kbItemsFound, GROQ_API_KEY, signal);
+
+        // Update customer profile in background (non-blocking)
+        autoUpdateCustomerProfile(phone, channelId, combinedText, customerName);
+
+        // 10. Layered Prompt Builder (trained Persona DNA when available, legacy prompt otherwise)
+        const aiName = channelData.ai_name || 'أحمد | مبيعات كوادر';
+        const customInstructions = channelData.ai_prompt_instructions || '';
+        const persona = await personaTrainer.getPersonaForPrompt(supabase, channelId, channelData, combinedText, signal);
+        const systemPrompt = buildLayeredPrompt({
+            aiName,
+            profile: customerProfile,
+            summary: convSummary,
+            kbGroundingText,
+            text: combinedText,
+            isExplicitHandoff,
+            customInstructions,
+            persona
+        });
+
+        // 11. Enforce AI Limits
+        const companySettings = channelData.companies?.settings || {};
+        const limits = companySettings.limits || {};
+        const usage = companySettings.usage || {};
+        
+        let currentMonthUsage = usage.ai_queries_this_month || 0;
+        let lastResetMonth = usage.last_reset_month || new Date().getMonth();
+        
+        if (lastResetMonth !== new Date().getMonth()) {
+            currentMonthUsage = 0;
+        }
+
+        const maxQueries = limits.max_ai_queries !== undefined ? limits.max_ai_queries : 500;
+        
+        if (channelData.company_id && currentMonthUsage >= maxQueries) {
+            console.log(`[WhatsApp AI] 🚫 AI Limit Reached for channel ${channelId} (${currentMonthUsage}/${maxQueries})`);
+            await sendWhatsAppMessage({ 
+                text: 'بعتذر لحضرتك جداً، عندنا تحديث فني بسيط في السيستم حالياً.. ممكن تسيب لي رقمك أو تتواصل مع الإدارة مباشرة وهنكون تحت أمرك فوراً؟ 🙏' 
+            }).catch(e => console.error('[WhatsApp AI] Error sending limit msg:', e.message));
+            return;
+        }
+
+        // Pre-increment usage to avoid race conditions
+        if (channelData.company_id) {
+            currentMonthUsage++;
+            await supabase.from('companies').update({
+                settings: {
+                    ...companySettings,
+                    usage: {
+                        ...usage,
+                        ai_queries_this_month: currentMonthUsage,
+                        last_reset_month: new Date().getMonth()
+                    }
+                }
+            }).eq('id', channelData.company_id);
+        }
+
+        // 12. Generate AI Reply
+        const adminPhone = channelData.ai_admin_phone || companySettings.admin_phone;
+        let { replyText: genReply, tokensUsed, action: aiAction, actionPayload } = await generateAiReply({
+            systemPrompt,
+            history,
+            text: combinedText,
+            phone,
+            adminPhone,
+            signal
+        });
+        replyText = genReply;
+
+        if (replyText) {
+            const cleanReply = String(replyText)
+                .replace(/^#+\s+/gm, '')
+                .replace(/\*\*(.*?)\*\*/g, '$1')
+                .trim();
+
+            try {
+                sendPresence('composing');
+                const typingDuration = Math.min(3200, Math.max(1200, cleanReply.length * 20));
+                await new Promise((res) => setTimeout(res, typingDuration));
+                sendPresence('paused');
+            } catch (presErr) {}
+
+            let sent = false;
+            if (cleanReply) {
+                try {
+                    await sendWhatsAppMessage({ text: cleanReply });
+                    sent = true;
+                    console.log(`[WhatsApp AI] 🤖 Sent reply to ${phone}`);
+                } catch (sendErr) {
+                    console.error(`[WhatsApp AI] ❌ Failed to send reply to ${phone}:`, sendErr.message);
+                }
+            }
+
+            if (conv?.id) {
+                await supabase.from('ai_messages').insert({
+                    conversation_id: conv.id,
+                    sender_type: 'ai',
+                    role: 'assistant',
+                    content: replyText,
+                    message_text: replyText,
+                    tokens_used: tokensUsed,
+                    status: sent ? 'delivered' : 'failed'
+                });
+            }
+            
+            // Handle Admin Notification Action
+            if (aiAction === 'NOTIFY_ADMIN' && actionPayload) {
+                if (adminPhone) {
+                    try {
+                        const adminJid = `${adminPhone.replace(/\D/g, '')}@s.whatsapp.net`;
+                        const alertMsg = `🚨 *تنبيه من الوكيل الذكي (استفسار/تدخل)* 🚨\n\n👤 *العميل:* +${phone}\n\n💬 *رسالة العميل الأخيرة:*\n${combinedText.trim()}\n\n🤖 *طلب الوكيل:*\n${actionPayload}\n\n💡 _للرد على العميل، قم بعمل (رد / Reply) على هذه الرسالة واكتب رسالتك لترسل له مباشرة._`;
+                        const currentSock = state?.activeClient?.sock || q.sock;
+                        await currentSock.sendMessage(adminJid, { text: alertMsg });
+                        console.log(`[WhatsApp AI] 🔔 Admin notified successfully at ${adminJid}`);
+                    } catch(err) {
+                        console.error(`[WhatsApp AI] ❌ Failed to notify admin:`, err.message);
+                    }
+                } else {
+                    const fallbackNum = state?.activePhoneNumber || '';
+                    replyText += `\n\nأعتذر منك، حاولت التواصل مع الإدارة بخصوص طلبك لكنهم غير متاحين في هذه اللحظة. للرد السريع يرجى الاتصال هاتفياً على الرقم (+${fallbackNum}) وسيكونون في خدمتك فوراً، أو يمكنك ترك رسالتك وسيتواصلون معك في أقرب وقت.`;
+                }
+            }
+        }
+
+        // 13. Autonomous CRM Lead Detection
+        const isBuyingInterest = /(تجرب[ةه]|اشتراك|سعر|باق[ةه]|شراء|عرض سعر|مبيعات|نشترك|نجرب|حساب جديد|تسجيل)/i.test(combinedText);
+        const empMatch = combinedText.match(/(\d+)\s*(موظف|عامل|شخص|فرد)/i);
+        const compMatch = combinedText.match(/شرك[ةه]\s+([^\n,.،]+)/i);
+
+        let leadNotes = `تم التقاط العميل آلياً عبر محادثة واتساب (${phone})`;
+        if (empMatch) leadNotes += ` | عدد الموظفين التقريبي: ${empMatch[1]}`;
+        if (compMatch) leadNotes += ` | اسم الشركة: ${compMatch[1].trim()}`;
+
+        if ((isBuyingInterest || empMatch) && conv?.id && conv.lead_status !== 'lead_captured') {
+            await supabase
+                .from('ai_conversations')
+                .update({
+                    lead_status: 'lead_captured',
+                    summary: empMatch ? `مهتم - ${empMatch[0]}` : 'عميل مهتم بالاشتراك أو التجربة'
+                })
+                .eq('id', conv.id);
+
+            await supabase.from('ai_leads').insert({
+                conversation_id: conv.id,
+                channel_id: channelId,
+                company_id: channelData.company_id || null,
+                contact_name: customerName,
+                contact_phone: phone,
+                customer_name: customerName,
+                customer_phone: phone,
+                status: 'new',
+                interest_summary: combinedText.trim().slice(0, 200),
+                customer_notes: leadNotes
+            });
+            console.log(`[WhatsApp AI] 🎯 Qualified lead captured for ${phone}: ${leadNotes}`);
+            
+            extractAndShareIntelligence(conv.id, channelId, combinedText, replyText).catch(e => console.warn('[AI BRAIN] Extraction error:', e.message));
+        }
+
+        // Phase 4: Update FAQ Cache
+        if (replyText) {
+            const cacheKey = getMessageCacheKey(combinedText);
+            if (cacheKey && !FAQ_CACHE.has(cacheKey)) {
+                FAQ_CACHE.set(cacheKey, { reply: replyText, ts: Date.now() });
+            }
+        }
+
+    } catch (err) {
+        if (err.name === 'AbortError' || signal.aborted || err.message === 'AbortError') {
+            console.log(`[WhatsApp AI] ⏹️ Batch processing aborted for ${phone} because newer messages arrived.`);
+            return;
+        }
+        console.error(`[WhatsApp AI] Error processing message batch for ${phone}:`, err);
+    } finally {
+        clearInterval(aiPresenceInterval);
+        try { sendPresence('paused'); } catch (e) {}
+
+        if (!signal.aborted) {
+            q.isProcessing = false;
+            q.currentBatchTexts = [];
+            q.abortController = null;
+
+            if (q.messages.length > 0 && !q.timer) {
+                q.timer = setTimeout(() => {
+                    processQueueBatch(queueKey).catch(console.error);
+                }, 3000);
+            } else if (q.messages.length === 0) {
+                CHAT_QUEUES.delete(queueKey);
+            }
+        }
+    }
+}
 
 async function startChannelManager(channelId) {
     if (ACTIVE_CHANNELS.has(channelId)) return;
@@ -116,547 +656,139 @@ async function startChannelManager(channelId) {
             },
         onMessage: async (msgUpsert, sock) => {
             try {
-                if (!msgUpsert.messages || !msgUpsert.messages[0]) return;
-                const msg = msgUpsert.messages[0];
-                if (msg.key.fromMe) return;
-                
-                let text = msg.message?.conversation || msg.message?.extendedTextMessage?.text;
-                if (!text || !text.trim()) return;
+                if (!msgUpsert.messages || msgUpsert.messages.length === 0) return;
 
-                const jid = msg.key.remoteJid;
-                if (!jid || jid.includes('@g.us') || jid === 'status@broadcast') return;
+                for (const msg of msgUpsert.messages) {
+                    if (!msg || msg.key.fromMe) continue;
 
-                try { await sock.readMessages([msg.key]); } catch (e) {}
+                    let text = msg.message?.conversation || msg.message?.extendedTextMessage?.text;
+                    if (!text || !text.trim()) continue;
 
-                const phone = jid.split('@')[0];
-                const customerName = msg.pushName || phone;
+                    const jid = msg.key.remoteJid;
+                    if (!jid || jid.includes('@g.us') || jid === 'status@broadcast') continue;
 
-                // ══════════════════════════════════════════════════════════════
-                // 👨‍💼 Admin Proxy Reply Interceptor
-                // ══════════════════════════════════════════════════════════════
-                const contextInfo = msg.message?.extendedTextMessage?.contextInfo;
-                const quotedText = contextInfo?.quotedMessage?.conversation || contextInfo?.quotedMessage?.extendedTextMessage?.text;
-                
-                if (quotedText && quotedText.includes('تنبيه من الوكيل الذكي')) {
-                    const phoneMatch = quotedText.match(/👤 \*العميل:\*\s*\+([0-9]+)/);
-                    if (phoneMatch && phoneMatch[1]) {
-                        const customerPhone = phoneMatch[1];
-                        const customerJid = `${customerPhone}@s.whatsapp.net`;
-                        
-                        const adminReplyToCustomer = `${text.trim()}`;
-                        
-                        await sock.sendMessage(customerJid, { text: adminReplyToCustomer });
-                        console.log(`[WhatsApp AI] 🔔 Admin proxy reply forwarded to customer ${customerPhone}`);
-                        await sock.sendMessage(jid, { text: `✅ تم إرسال ردك للعميل +${customerPhone} بنجاح.` });
-                        
-                        // Fire and forget: save to AI history
-                        (async () => {
+                    try { await sock.readMessages([msg.key]); } catch (e) {}
+
+                    // Resolve Real Phone Number & Destination JID (handling WhatsApp LID addressing)
+                    let targetJid = jid;
+                    let phone = jid.split('@')[0];
+                    const cacheKey = `${channelId}:${jid}`;
+
+                    if (LID_CACHE.has(cacheKey)) {
+                        const cached = LID_CACHE.get(cacheKey);
+                        phone = cached.phone;
+                        targetJid = cached.targetJid;
+                    } else if (jid.endsWith('@lid')) {
+                        let pnFound = null;
+                        // 1. Check alternate JID properties provided by Baileys
+                        const rawAlt = msg.key.remoteJidAlt || msg.key.participantAlt || msg.key.senderPn;
+                        if (rawAlt && rawAlt.includes('@s.whatsapp.net')) {
+                            pnFound = rawAlt.split('@')[0];
+                        } else if (rawAlt && !rawAlt.includes('@') && /^\d+$/.test(rawAlt)) {
+                            pnFound = rawAlt;
+                        }
+
+                        // 2. Check Baileys in-memory / internal signal repository LID mapping
+                        if (!pnFound && sock.signalRepository?.lidMapping?.getPNForLID) {
                             try {
-                                const { data: convs } = await supabase.from('ai_conversations').select('id').eq('channel_id', channelId).eq('customer_phone', customerPhone).order('updated_at', { ascending: false }).limit(1);
-                                if (convs && convs.length > 0) {
-                                    await supabase.from('ai_messages').insert({
-                                        conversation_id: convs[0].id,
-                                        sender_type: 'ai',
-                                        role: 'assistant',
-                                        content: adminReplyToCustomer,
-                                        message_text: adminReplyToCustomer,
-                                        tokens_used: 0,
-                                        status: 'delivered'
-                                    });
+                                const mapped = await sock.signalRepository.lidMapping.getPNForLID(jid);
+                                if (mapped) {
+                                    pnFound = mapped.replace('@s.whatsapp.net', '').split('@')[0];
                                 }
-                            } catch(e) {}
-                        })();
-                        
-                        return; // Stop processing this admin message as a normal user query
-                    }
-                }
-
-                // ══════════════════════════════════════════════════════════════
-                // 🕒 Smart Message Batching (10-Second Debouncer)
-                // ══════════════════════════════════════════════════════════════
-                if (!MESSAGE_BUFFER.has(phone)) {
-                    MESSAGE_BUFFER.set(phone, { texts: [], timer: null, resolvePrev: null });
-                }
-                const sessionBuffer = MESSAGE_BUFFER.get(phone);
-                
-                // Abort previous execution if a new message arrives
-                if (sessionBuffer.resolvePrev) {
-                    sessionBuffer.resolvePrev(false); 
-                }
-                
-                sessionBuffer.texts.push(text.trim());
-                
-                const isFinalMessage = await new Promise((resolve) => {
-                    sessionBuffer.resolvePrev = resolve;
-                    clearTimeout(sessionBuffer.timer);
-                    sessionBuffer.timer = setTimeout(() => {
-                        resolve(true); // 10 seconds elapsed without new messages
-                    }, 10000);
-                });
-
-                if (!isFinalMessage) {
-                    return; // Silently exit because a newer message arrived and reset the timer
-                }
-
-                // If this is the final message in the batch, combine all texts!
-                text = sessionBuffer.texts.join('\n\n');
-                MESSAGE_BUFFER.delete(phone); // Cleanup buffer for future messages
-                // ══════════════════════════════════════════════════════════════
-
-                // 1. Fetch channel AI settings and company limits safely
-                let channelData = null;
-                try {
-                    const { data, error } = await supabase
-                        .from('whatsapp_channels')
-                        .select('*, companies(settings)')
-                        .eq('id', channelId)
-                        .single();
-                    if (error || !data) {
-                        const { data: simpleData } = await supabase
-                            .from('whatsapp_channels')
-                            .select('*')
-                            .eq('id', channelId)
-                            .single();
-                        channelData = simpleData;
-                    } else {
-                        channelData = data;
-                    }
-                } catch (e) {
-                    console.error('[WhatsApp AI] Exception fetching channel:', e.message);
-                }
-                
-                if (!channelData || channelData.ai_enabled === false) {
-                    return; // Ignore if AI disabled
-                }
-
-                console.log(`[WhatsApp AI] 📩 Message from ${phone} (${customerName}): "${text.trim().substring(0, 50)}..."`);
-
-                // ══════════════════════════════════════════════════════════════
-                // 🎓 Open Roleplay Persona Training Mode (Cumulative Learning)
-                // ══════════════════════════════════════════════════════════════
-                if (text.trim() === '#تدريب' || text.trim() === '#train') {
-                    TRAINER_SESSIONS.set(phone, { 
-                        channelId: channelId,
-                        currentPlaybook: channelData.ai_prompt_instructions || '',
-                        history: [
-                            { role: 'system', content: 'أنت الآن تلعب دور "عميل مهتم ولكن متردد قليلاً" يتحدث مع مندوب مبيعات على الواتساب. هدفك هو اختبار المندوب بطرح أسئلة عن تفاصيل المنتج، الأسعار، وبعض الاعتراضات (مثل السعر غالي، أو أريد ضمانات). ردودك يجب أن تكون قصيرة جداً، مصرية عامية، وكأنك تكتب من الموبايل. لا تكن ذكاءً اصطناعياً أبداً.' },
-                            { role: 'assistant', content: 'السلام عليكم، كنت عايز أعرف تفاصيل أكتر عن خدماتكم وبكام الأسعار لو سمحت؟' }
-                        ]
-                    });
-                    
-                    await sock.sendMessage(jid, { text: `🤖 أهلاً يا مدير! سألعب الآن دور "العميل" وأنت المندوب.\nحاول إقناعي خطوة بخطوة وسأقوم بالرد عليك واختبارك ببعض الاعتراضات لكي أتعلم وتتشرب المنظومة طريقتك بالكامل.\n\n💡 ملاحظة: هذا التدريب تراكمي، سأضيف ما أتعلمه اليوم لخبراتي السابقة.\n\nعندما تنتهي من تدريبي وتود الحفظ، فقط اكتب: *انهاء التدريب*\n\nسأبدأ الآن كعميل 👇` });
-                    
-                    // Simulate typing then send first customer message
-                    setTimeout(async () => {
-                        await sock.sendMessage(jid, { text: 'السلام عليكم، كنت عايز أعرف تفاصيل أكتر عن خدماتكم وبكام الأسعار لو سمحت؟' });
-                    }, 2000);
-                    return;
-                }
-
-                if (TRAINER_SESSIONS.has(phone)) {
-                    const session = TRAINER_SESSIONS.get(phone);
-
-                    if (text.trim() === 'انهاء التدريب') {
-                        await sock.sendMessage(jid, { text: `⏳ جاري تحليل المحاكي بالكامل ودمج خبراتك الجديدة مع خبراتي السابقة... 🧠` });
-                        
-                        try {
-                            const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                                method: 'POST',
-                                headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    model: 'qwen-2.5-70b-versatile',
-                                    response_format: { type: "json_object" },
-                                    messages: [{
-                                        role: 'system',
-                                        content: `أنت خبير هندسة أوامر (AI Sales Persona). تم إجراء محاكاة بيعية بين صاحب الشركة (البائع) والعميل.
-المطلوب:
-1. استخرج من المحادثة أساليب الرد ونبرة الصوت وادمجها مع الدليل القديم لتكوين System Prompt قوي.
-2. استخرج المعلومات الدقيقة، الأسعار، والمواصفات التي ظهرت في المحادثة وضعها كقاعدة معرفة سؤال وجواب.
-يجب أن يكون ردك بصيغة JSON فقط بهذا الشكل:
-{
-  "new_system_prompt": "الدليل المحدث (أسلوب البيع ونبرة الصوت)",
-  "new_knowledge": [
-    { "question_trigger": "السؤال أو الاستفسار القصير", "answer_content": "الإجابة البيعية المباشرة", "keywords": ["كلمة1", "كلمة2"] }
-  ]
-}
-
-الدليل القديم:
-${session.currentPlaybook || 'لا يوجد دليل قديم.'}`
-                                    }, {
-                                        role: 'user',
-                                        content: `نص محاكاة المبيعات:\n${JSON.stringify(session.history)}`
-                                    }],
-                                    max_tokens: 2500,
-                                    temperature: 0.1
-                                })
-                            });
-
-                            if (groqRes.ok) {
-                                const aiData = await groqRes.json();
-                                const parsed = JSON.parse(aiData.choices[0].message.content.trim());
-                                const newPlaybook = parsed.new_system_prompt || session.currentPlaybook;
-                                const newKnowledge = parsed.new_knowledge || [];
-                                
-                                await supabase.from('whatsapp_channels').update({
-                                    ai_prompt_instructions: newPlaybook
-                                }).eq('id', session.channelId);
-
-                                // Insert extracted knowledge into AI Knowledge Base
-                                if (newKnowledge.length > 0) {
-                                    const kbInserts = newKnowledge.map(k => ({
-                                        company_id: channelData.company_id || null,
-                                        channel_id: session.channelId,
-                                        category: 'faq',
-                                        question_trigger: k.question_trigger,
-                                        answer_content: k.answer_content,
-                                        keywords: k.keywords,
-                                        is_active: true
-                                    }));
-                                    await supabase.from('ai_knowledge_base').insert(kbInserts);
-                                }
-
-                                TRAINER_SESSIONS.delete(phone);
-                                await sock.sendMessage(jid, { text: `🎉 تمت العملية بنجاح! تم تطوير الدليل البيعي وإضافة ${newKnowledge.length} معلومة جديدة لقاعدة المعرفة تلقائياً.\n\nالآن الروبوت أذكى وجاهز! 🚀` });
-                            } else {
-                                await sock.sendMessage(jid, { text: `❌ حدث خطأ أثناء تحليل البيانات.` });
-                            }
-                        } catch (e) {
-                            console.error('[WhatsApp AI] Training error:', e);
-                            await sock.sendMessage(jid, { text: `❌ خطأ في الاتصال.` });
+                            } catch (e) {}
                         }
-                    } else {
-                        // Continue roleplay
-                        session.history.push({ role: 'user', content: text });
-                        
-                        try {
-                            const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                                method: 'POST',
-                                headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    model: 'allam-2-7b',
-                                    messages: session.history,
-                                    max_tokens: 100,
-                                    temperature: 0.5
-                                })
-                            });
-                            
-                            if (groqRes.ok) {
-                                const aiData = await groqRes.json();
-                                const customerReply = aiData.choices[0].message.content.trim();
-                                session.history.push({ role: 'assistant', content: customerReply });
-                                await sock.sendMessage(jid, { text: customerReply });
-                            }
-                        } catch (e) {
-                            await sock.sendMessage(jid, { text: `(خطأ في محاكاة العميل)` });
-                        }
-                    }
-                    return;
-                }
-                // ══════════════════════════════════════════════════════════════
 
-                // 2. Fetch or create active conversation in ai_conversations
-                let { data: conv } = await supabase
-                    .from('ai_conversations')
-                    .select('*')
-                    .eq('platform', 'whatsapp')
-                    .eq('session_id', phone)
-                    .eq('channel_id', channelId)
-                    .maybeSingle();
-
-                if (!conv) {
-                    const { data: createdConv, error: createErr } = await supabase
-                        .from('ai_conversations')
-                        .insert({
-                            channel_id: channelId,
-                            company_id: channelData.company_id || null,
-                            platform: 'whatsapp',
-                            session_id: phone,
-                            customer_name: customerName,
-                            customer_phone: phone,
-                            status: 'ai_active',
-                            lead_status: 'none',
-                            last_message_at: new Date().toISOString()
-                        })
-                        .select()
-                        .single();
-                    if (!createErr) conv = createdConv;
-                } else {
-                    await supabase
-                        .from('ai_conversations')
-                        .update({
-                            last_message_at: new Date().toISOString(),
-                            ...(customerName && (!conv.customer_name || conv.customer_name === phone) ? { customer_name: customerName } : {})
-                        })
-                        .eq('id', conv.id);
-                }
-
-                // 3. Save incoming user message in ai_messages
-                if (conv?.id) {
-                    await supabase.from('ai_messages').insert({
-                        conversation_id: conv.id,
-                        sender_type: 'user',
-                        role: 'user',
-                        content: text.trim(),
-                        message_text: text.trim(),
-                        tokens_used: 0,
-                        status: 'delivered'
-                    });
-                }
-
-                // 4. Check if conversation is in human takeover mode
-                if (conv?.status === 'human_takeover') {
-                    console.log(`[WhatsApp AI] ⏸️ Chat with ${phone} is in human_takeover mode. Skipping AI.`);
-                    return;
-                }
-
-                // 5. Intelligent Human Escalation Detection (Must understand & solve before handoff)
-                const explicitHandoffRegex = /(حولني (لـ)?(بشري|موظف|انسان|حد تاني)|(عايز|اريد|حابب|ابغى) (اتكلم|اكلم|تحدث|اتواصل) مع (بشري|انسان|حد|شخص|مسؤول|موظف|خدمة العملاء)|(كلمني|اتصل بي|اتصلوا بي|اتصال) (هاتف|تليفون|فون|مكالمة)|مش عايز (بوت|روبوت|ذكاء))/i;
-                const isExplicitHandoff = explicitHandoffRegex.test(text);
-
-                if (isExplicitHandoff && conv?.id) {
-                    await supabase
-                        .from('ai_conversations')
-                        .update({ status: 'human_takeover', summary: 'طلب العميل مكالمة أو تواصل بشري' })
-                        .eq('id', conv.id);
-                    console.log(`[WhatsApp AI] 👨‍💼 Explicit handoff flagged for ${phone}, AI will answer and confirm follow-up.`);
-                }
-
-                // 6. Grounding Context from 0-token Knowledge Base (Never raw bypass)
-                let kbGroundingText = '';
-                let kbItemsFound = [];
-                try {
-                    let kbQuery = supabase
-                        .from('ai_knowledge_base')
-                        .select('question_trigger, answer_content, keywords')
-                        .eq('is_active', true)
-                        .or(`channel_id.is.null,channel_id.eq.${channelId}`);
-
-                    if (channelData.company_id) {
-                        kbQuery = kbQuery.or(`company_id.is.null,company_id.eq.${channelData.company_id}`);
-                    } else {
-                        kbQuery = kbQuery.is('company_id', null);
-                    }
-
-                    const { data: kbList } = await kbQuery.limit(60);
-                    if (kbList && kbList.length > 0) {
-                        const lowerText = text.trim().toLowerCase();
-                        for (const item of kbList) {
-                            const triggerMatch = item.question_trigger && lowerText.includes(item.question_trigger.toLowerCase());
-                            const keywordMatch = Array.isArray(item.keywords) && item.keywords.some(k => k && lowerText.includes(k.toLowerCase()));
-                            if (triggerMatch || keywordMatch) {
-                                kbItemsFound.push(item);
-                            }
-                        }
-                    }
-                } catch (kbErr) {
-                    console.warn('[WhatsApp AI] KB lookup warning:', kbErr.message);
-                }
-
-                // 7. PHASE 1+2: Smart Context Loading (summary + profile + rolling window history)
-                const { summary: convSummary, profile: customerProfile, history } = await buildSmartContext(conv, phone);
-
-                // ══════════════════════════════════════════════════════════════
-                // 🧠 Mixture of Experts (MoE) Fast Router (Saves 80% Cost)
-                // ══════════════════════════════════════════════════════════════
-                const { action, reply: routerReply, tokensUsed: routerTokens } = await moeRouter(text, history, kbItemsFound, GROQ_API_KEY);
-                
-                if (action === 'REPLY_DIRECTLY' && routerReply) {
-                    console.log(`[WhatsApp AI] ⚡ MoE Fast Router resolved the query seamlessly for ${phone}`);
-                    
-                    try {
-                        sock.sendPresenceUpdate('composing', jid).catch(() => {});
-                        const typingDuration = Math.min(2000, Math.max(1000, routerReply.length * 15));
-                        await new Promise((res) => setTimeout(res, typingDuration));
-                        sock.sendPresenceUpdate('paused', jid).catch(() => {});
-                    } catch (e) {}
-
-                    await sock.sendMessage(jid, { text: routerReply });
-                    
-                    if (conv?.id) {
-                        await supabase.from('ai_messages').insert({
-                            conversation_id: conv.id,
-                            sender_type: 'ai',
-                            role: 'assistant',
-                            content: routerReply,
-                            message_text: routerReply,
-                            tokens_used: routerTokens || 50,
-                            status: 'delivered'
-                        });
-                    }
-                    
-                    // PHASE 2: Update customer profile in background
-                    autoUpdateCustomerProfile(phone, channelId, text, customerName);
-                    return; // EXIT EARLY! Saved the heavy call!
-                }
-                
-                // ══════════════════════════════════════════════════════════════
-                // 📚 Contextual Compression for Heavy Model
-                // ══════════════════════════════════════════════════════════════
-                kbGroundingText = await compressContext(text, kbItemsFound, GROQ_API_KEY);
-
-                // PHASE 2: Update customer profile in background (non-blocking)
-                autoUpdateCustomerProfile(phone, channelId, text, customerName);
-
-                // 8. PHASE 4: Layered Prompt (conditional blocks = ~55% fewer tokens)
-                const aiName = channelData.ai_name || 'أحمد | مبيعات كوادر';
-                const customInstructions = channelData.ai_prompt_instructions || '';
-                const systemPrompt = buildLayeredPrompt({
-                    aiName,
-                    profile: customerProfile,
-                    summary: convSummary,
-                    kbGroundingText,
-                    text,
-                    isExplicitHandoff,
-                    customInstructions
-                });
-
-                // 8.5. Enforce AI Limits
-                const companySettings = channelData.companies?.settings || {};
-                const limits = companySettings.limits || {};
-                const usage = companySettings.usage || {};
-                
-                let currentMonthUsage = usage.ai_queries_this_month || 0;
-                let lastResetMonth = usage.last_reset_month || new Date().getMonth();
-                
-                if (lastResetMonth !== new Date().getMonth()) {
-                    currentMonthUsage = 0;
-                }
-
-                const maxQueries = limits.max_ai_queries !== undefined ? limits.max_ai_queries : 500;
-                
-                if (channelData.company_id && currentMonthUsage >= maxQueries) {
-                    console.log(`[WhatsApp AI] 🚫 AI Limit Reached for channel ${channelId} (${currentMonthUsage}/${maxQueries})`);
-                    await sock.sendMessage(jid, { 
-                        text: 'بعتذر لحضرتك جداً، عندنا تحديث فني بسيط في السيستم حالياً.. ممكن تسيب لي رقمك أو تتواصل مع الإدارة مباشرة وهنكون تحت أمرك فوراً؟ 🙏' 
-                    });
-                    return;
-                }
-
-                // Pre-increment usage to avoid race conditions
-                if (channelData.company_id) {
-                    currentMonthUsage++;
-                    await supabase.from('companies').update({
-                        settings: {
-                            ...companySettings,
-                            usage: {
-                                ...usage,
-                                ai_queries_this_month: currentMonthUsage,
-                                last_reset_month: new Date().getMonth()
-                            }
-                        }
-                    }).eq('id', channelData.company_id);
-                }
-
-                // 9. Generate AI Reply
-                const adminPhone = channelData.ai_admin_phone || companySettings.admin_phone;
-                let { replyText, tokensUsed, action: aiAction, actionPayload } = await generateAiReply({
-                    systemPrompt,
-                    history,
-                    text: text.trim(),
-                    phone,
-                    adminPhone
-                });
-
-                if (replyText) {
-                    // Save AI reply to ai_messages
-                    if (conv?.id) {
-                        await supabase.from('ai_messages').insert({
-                            conversation_id: conv.id,
-                            sender_type: 'ai',
-                            role: 'assistant',
-                            content: replyText,
-                            message_text: replyText,
-                            tokens_used: tokensUsed,
-                            status: 'delivered'
-                        });
-                    }
-
-                    // Clean up response: strip robotic Markdown headers to look authentic
-                    const cleanReply = String(replyText)
-                        .replace(/^#+\s+/gm, '')
-                        .replace(/\*\*(.*?)\*\*/g, '$1')
-                        .trim();
-
-                    // Natural human typing presence simulation
-                    try {
-                        sock.sendPresenceUpdate('composing', jid).catch(() => {});
-                        const typingDuration = Math.min(3200, Math.max(1200, cleanReply.length * 20));
-                        await new Promise((res) => setTimeout(res, typingDuration));
-                        sock.sendPresenceUpdate('paused', jid).catch(() => {});
-                    } catch (presErr) {
-                        // Presence update is non-critical
-                    }
-
-                    // Send via WhatsApp
-                    if (cleanReply) {
-                        await sock.sendMessage(jid, { text: cleanReply });
-                        console.log(`[WhatsApp AI] 🤖 Sent reply to ${phone}`);
-                    }
-                    
-                    // Handle Admin Notification Action
-                    if (aiAction === 'NOTIFY_ADMIN' && actionPayload) {
-                        if (adminPhone) {
+                        // 3. Check Supabase session keys table for reverse LID mapping
+                        if (!pnFound) {
                             try {
-                                const adminJid = `${adminPhone.replace(/\D/g, '')}@s.whatsapp.net`;
-                                const alertMsg = `🚨 *تنبيه من الوكيل الذكي (استفسار/تدخل)* 🚨\n\n👤 *العميل:* +${phone}\n\n💬 *رسالة العميل الأخيرة:*\n${text.trim()}\n\n🤖 *طلب الوكيل:*\n${actionPayload}\n\n💡 _للرد على العميل، قم بعمل (رد / Reply) على هذه الرسالة واكتب رسالتك لترسل له مباشرة._`;
-                                await sock.sendMessage(adminJid, { text: alertMsg });
-                                console.log(`[WhatsApp AI] 🔔 Admin notified successfully at ${adminJid}`);
-                            } catch(err) {
-                                console.error(`[WhatsApp AI] ❌ Failed to notify admin:`, err.message);
-                            }
+                                const lidUser = jid.split('@')[0];
+                                const { data: mapRow } = await supabase
+                                    .from('whatsapp_session_keys')
+                                    .select('key_data')
+                                    .eq('channel_id', channelId)
+                                    .eq('key_type', 'lid-mapping')
+                                    .eq('key_id', `${lidUser}_reverse`)
+                                    .maybeSingle();
+                                if (mapRow?.key_data) {
+                                    const decPhone = decrypt(mapRow.key_data, SESSION_ENCRYPTION_KEY);
+                                    if (decPhone) {
+                                        pnFound = decPhone.replace(/\D/g, '');
+                                    }
+                                }
+                            } catch (e) {}
+                        }
+
+                        if (pnFound) {
+                            phone = pnFound;
+                            targetJid = `${pnFound}@s.whatsapp.net`;
+                            LID_CACHE.set(cacheKey, { phone, targetJid });
+                            console.log(`[WhatsApp AI] 📱 Successfully resolved LID ${jid} to Phone Number: +${phone} (${targetJid})`);
                         } else {
-                            // Fallback: Notify the customer directly to contact the channel's phone
-                            replyText += `\n\nأعتذر منك، حاولت التواصل مع الإدارة بخصوص طلبك لكنهم غير متاحين في هذه اللحظة. للرد السريع يرجى الاتصال هاتفياً على الرقم (+${state.activePhoneNumber}) وسيكونون في خدمتك فوراً، أو يمكنك ترك رسالتك وسيتواصلون معك في أقرب وقت.`;
+                            console.warn(`[WhatsApp AI] ⚠️ Could not resolve Phone Number for LID: ${jid}, using LID fallback.`);
+                        }
+                    } else if (jid.endsWith('@s.whatsapp.net')) {
+                        targetJid = jid;
+                        phone = jid.split('@')[0];
+                        LID_CACHE.set(cacheKey, { phone, targetJid });
+                    }
+
+                    const customerName = msg.pushName || phone;
+
+                    // ══════════════════════════════════════════════════════════════
+                    // 👨‍💼 Admin Proxy Reply Interceptor
+                    // ══════════════════════════════════════════════════════════════
+                    const contextInfo = msg.message?.extendedTextMessage?.contextInfo;
+                    const quotedText = contextInfo?.quotedMessage?.conversation || contextInfo?.quotedMessage?.extendedTextMessage?.text;
+
+                    if (quotedText && quotedText.includes('تنبيه من الوكيل الذكي')) {
+                        const phoneMatch = quotedText.match(/👤 \*العميل:\*\s*\+([0-9]+)/);
+                        if (phoneMatch && phoneMatch[1]) {
+                            const customerPhone = phoneMatch[1];
+                            const customerJid = `${customerPhone}@s.whatsapp.net`;
+
+                            const adminReplyToCustomer = `${text.trim()}`;
+                            const currentSock = state.activeClient?.sock || sock;
+
+                            await currentSock.sendMessage(customerJid, { text: adminReplyToCustomer });
+                            console.log(`[WhatsApp AI] 🔔 Admin proxy reply forwarded to customer ${customerPhone}`);
+                            await currentSock.sendMessage(targetJid || jid, { text: `✅ تم إرسال ردك للعميل +${customerPhone} بنجاح.` });
+
+                            // Fire and forget: save to AI history
+                            (async () => {
+                                try {
+                                    const { data: convs } = await supabase.from('ai_conversations').select('id').eq('channel_id', channelId).eq('customer_phone', customerPhone).order('updated_at', { ascending: false }).limit(1);
+                                    if (convs && convs.length > 0) {
+                                        await supabase.from('ai_messages').insert({
+                                            conversation_id: convs[0].id,
+                                            sender_type: 'ai',
+                                            role: 'assistant',
+                                            content: adminReplyToCustomer,
+                                            message_text: adminReplyToCustomer,
+                                            tokens_used: 0,
+                                            status: 'delivered'
+                                        });
+                                    }
+                                } catch(e) {}
+                            })();
+
+                            continue; // Stop processing this admin message as a normal user query
                         }
                     }
-                }
 
-                // 10. Autonomous CRM Lead Detection + PHASE 3 FAQ Cache update
-                const isBuyingInterest = /(تجرب[ةه]|اشتراك|سعر|باق[ةه]|شراء|عرض سعر|مبيعات|نشترك|نجرب|حساب جديد|تسجيل)/i.test(text);
-                const empMatch = text.match(/(\d+)\s*(موظف|عامل|شخص|فرد)/i);
-                const compMatch = text.match(/شرك[ةه]\s+([^\n,.،]+)/i);
-
-                let leadNotes = `تم التقاط العميل آلياً عبر محادثة واتساب (${phone})`;
-                if (empMatch) leadNotes += ` | عدد الموظفين التقريبي: ${empMatch[1]}`;
-                if (compMatch) leadNotes += ` | اسم الشركة: ${compMatch[1].trim()}`;
-
-                if ((isBuyingInterest || empMatch) && conv?.id && conv.lead_status !== 'lead_captured') {
-                    await supabase
-                        .from('ai_conversations')
-                        .update({
-                            lead_status: 'lead_captured',
-                            summary: empMatch ? `مهتم - ${empMatch[0]}` : 'عميل مهتم بالاشتراك أو التجربة'
-                        })
-                        .eq('id', conv.id);
-
-                    await supabase.from('ai_leads').insert({
-                        conversation_id: conv.id,
-                        channel_id: channelId,
-                        company_id: channelData.company_id || null,
-                        contact_name: customerName,
-                        contact_phone: phone,
-                        customer_name: customerName,
-                        customer_phone: phone,
-                        status: 'new',
-                        interest_summary: text.trim().slice(0, 200),
-                        customer_notes: leadNotes
+                    // Enqueue message into the debouncer batch queue
+                    enqueueIncomingMessage({
+                        channelId,
+                        phone,
+                        targetJid,
+                        jid,
+                        customerName,
+                        text,
+                        sock,
+                        state
                     });
-                    console.log(`[WhatsApp AI] 🎯 Qualified lead captured for ${phone}: ${leadNotes}`);
-                    
-                    // Trigger Global Learning Brain (Non-blocking)
-                    extractAndShareIntelligence(conv.id, channelId, text, replyText).catch(e => console.warn('[AI BRAIN] Extraction error:', e.message));
                 }
-
-                // PHASE 4: Update FAQ Cache with successful reply (non-blocking)
-                if (replyText) {
-                    const cacheKey = getMessageCacheKey(text);
-                    if (cacheKey && !FAQ_CACHE.has(cacheKey)) {
-                        FAQ_CACHE.set(cacheKey, { reply: replyText, ts: Date.now() });
-                    }
-                }
-
             } catch (err) {
-                console.error("[WhatsApp AI] Error processing message:", err);
+                console.error("[WhatsApp AI] Error in onMessage handler:", err);
             }
         }
     });
@@ -951,14 +1083,16 @@ const server = http.createServer((req, res) => {
 // ══════════════════════════════════════════════════════════════
 // PHASE 1: Smart Context Loader (Sliding Window & History Compression)
 // ══════════════════════════════════════════════════════════════
-async function buildSmartContext(conv, phone) {
+async function buildSmartContext(conv, phone, channelId) {
     let summary = null;
     let profile = null;
 
     try {
         const [sumRes, profRes] = await Promise.all([
             supabase.from('ai_conversation_summaries').select('*').eq('conversation_id', conv?.id).maybeSingle(),
-            supabase.from('ai_customer_profiles').select('*').eq('customer_phone', phone).eq('channel_id', channelId).maybeSingle()
+            channelId 
+                ? supabase.from('ai_customer_profiles').select('*').eq('customer_phone', phone).eq('channel_id', channelId).maybeSingle()
+                : supabase.from('ai_customer_profiles').select('*').eq('customer_phone', phone).maybeSingle()
         ]);
         summary = sumRes.data;
         profile = profRes.data;
@@ -1011,11 +1145,16 @@ async function autoUpdateCustomerProfile(phone, channelId, text, customerName) {
 // ══════════════════════════════════════════════════════════════
 // PHASE 4: Layered Prompt Builder (Dynamic Token Reduction)
 // ══════════════════════════════════════════════════════════════
-function buildLayeredPrompt({ aiName, profile, summary, kbGroundingText, text, isExplicitHandoff, customInstructions }) {
+function buildLayeredPrompt({ aiName, profile, summary, kbGroundingText, text, isExplicitHandoff, customInstructions, persona }) {
     const t = (text || '').toLowerCase();
-    const CORE = `أنت "${aiName}"، مستشار مبيعات وكوادر للاتش آر والبصمة. 
+    // With a trained persona: short static prefix (cache-friendly) + compact DNA + retrieved exemplars.
+    // Without one: fall back to the legacy prompt (safe default).
+    const CORE = persona
+        ? `أنت \"${aiName}\"، مستشار مبيعات كوادر للاتش آر والبصمة. تتحدث مصرية عامية وردودك قصيرة وبلا مقدمات روبوتية.\n${persona.dnaText}`
+        : `أنت "${aiName}"، مستشار مبيعات وكوادر للاتش آر والبصمة. 
 تتحدث مصرية عامية، ردودك قصيرة ومقنعة (سطرين لثلاثة). لا تستخدم مقدمات روبوتية أبداً.
 اختم دائماً بسؤال يوجه العميل للمبيعات.`;
+    const EXEMPLARS = persona?.exemplarsText ? `\n[أمثلة على أسلوبك]:\n${persona.exemplarsText}` : '';
 
     const HISTORY_SUMMARY = summary?.summary_text ? `\n[ملخص المحادثات السابقة]: ${summary.summary_text.substring(0, 200)}` : '';
     const CLIENT_CONTEXT = (profile?.company_size) ? `\n[حجم الشركة]: ${profile.company_size} موظف` : '';
@@ -1023,10 +1162,10 @@ function buildLayeredPrompt({ aiName, profile, summary, kbGroundingText, text, i
     const needsPricing = /(سعر|تكلف|بكام|اشتراك|باقة|رخيص|غالي|فلوس)/.test(t);
     const PRICING = needsPricing ? `\n[الأسعار]: باقة Starter بـ 690ج/شهر (25 موظف)، Pro بـ 1690ج/شهر. يوجد تجربة مجانية 14 يوم.` : '';
 
-    const CUSTOM = customInstructions ? `\n[تعليمات إضافية]: ${customInstructions}` : '';
+    const CUSTOM = (!persona && customInstructions) ? `\n[تعليمات إضافية]: ${customInstructions}` : '';
     const KB_BLOCK = kbGroundingText ? `\n${kbGroundingText}` : '';
 
-    return [CORE, HISTORY_SUMMARY, CLIENT_CONTEXT, PRICING, CUSTOM, KB_BLOCK].filter(Boolean).join('\n');
+    return [CORE, EXEMPLARS, HISTORY_SUMMARY, CLIENT_CONTEXT, PRICING, CUSTOM, KB_BLOCK].filter(Boolean).join('\n');
 }
 
 // Phase 4: Semantic Caching (Intent-Based Pre-Routing)
@@ -1046,7 +1185,7 @@ function getMessageCacheKey(text) {
     return clean.length >= 5 ? clean : null;
 }
 
-async function generateAiReply({ systemPrompt, history, text, phone, adminPhone }) {
+async function generateAiReply({ systemPrompt, history, text, phone, adminPhone, signal }) {
     // Check FAQ cache first (Phase 4)
     const cacheKey = getMessageCacheKey(text);
     if (cacheKey && FAQ_CACHE.has(cacheKey)) {
@@ -1087,6 +1226,7 @@ async function generateAiReply({ systemPrompt, history, text, phone, adminPhone 
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${process.env.GITHUB_TOKEN}`
                 },
+                signal: signal,
                 body: JSON.stringify({
                     model: 'gpt-4o',
                     messages: messages,
@@ -1104,11 +1244,12 @@ async function generateAiReply({ systemPrompt, history, text, phone, adminPhone 
                 }
             }
         } catch (err) {
+            if (err.name === 'AbortError') throw err;
             console.warn(`[WhatsApp AI] GitHub Models fallback warning:`, err.message);
         }
     }
 
-    // ── PRIORITY 1: Google Gemini 3.8 Flash (Official API Key) ──
+    // ── PRIORITY 1: Google Gemini 2.5 Flash (Official API Key) ──
     if (GEMINI_API_KEY) {
         try {
             const contents = messages.map(m => ({
@@ -1122,9 +1263,10 @@ async function generateAiReply({ systemPrompt, history, text, phone, adminPhone 
                 generationConfig: { maxOutputTokens: 1500, temperature: 0.3 }
             };
 
-            const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+            const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                signal: signal,
                 body: JSON.stringify(payload)
             });
 
@@ -1132,7 +1274,7 @@ async function generateAiReply({ systemPrompt, history, text, phone, adminPhone 
                 const aiData = await geminiRes.json();
                 let replyText = aiData?.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (replyText && replyText.trim()) {
-                    console.log(`[WhatsApp AI] ⚡ Gemini 3.8 Flash replied successfully for ${phone}`);
+                    console.log(`[WhatsApp AI] ⚡ Gemini 2.5 Flash replied successfully for ${phone}`);
                     return processReply(replyText, 250);
                 }
             } else {
@@ -1140,6 +1282,7 @@ async function generateAiReply({ systemPrompt, history, text, phone, adminPhone 
                 console.warn(`[WhatsApp AI] Gemini API error (${geminiRes.status}):`, errText);
             }
         } catch (err) {
+            if (err.name === 'AbortError') throw err;
             console.warn(`[WhatsApp AI] Native Gemini fallback warning:`, err.message);
         }
     }
@@ -1155,9 +1298,10 @@ async function generateAiReply({ systemPrompt, history, text, phone, adminPhone 
                     'HTTP-Referer': 'https://kwader.com', 
                     'X-Title': 'Kwader Sales Agent'
                 },
+                signal: signal,
                 body: JSON.stringify({
                     models: [
-                        'google/gemini-1.5-flash',
+                        'google/gemini-2.5-flash',
                         'qwen/qwen-2-7b-instruct:free',
                         'meta-llama/llama-3.1-8b-instruct:free'
                     ],
@@ -1177,6 +1321,7 @@ async function generateAiReply({ systemPrompt, history, text, phone, adminPhone 
                 }
             }
         } catch (err) {
+            if (err.name === 'AbortError') throw err;
             console.warn(`[WhatsApp AI] OpenRouter fallback warning:`, err.message);
         }
     }
@@ -1192,6 +1337,7 @@ async function generateAiReply({ systemPrompt, history, text, phone, adminPhone 
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${GROQ_API_KEY}`
                     },
+                    signal: signal,
                     body: JSON.stringify({
                         model: model,
                         messages: messages,
@@ -1209,6 +1355,7 @@ async function generateAiReply({ systemPrompt, history, text, phone, adminPhone 
                     }
                 }
             } catch (err) {
+                if (err.name === 'AbortError') throw err;
                 console.warn(`[WhatsApp AI] Groq (${model}) error:`, err.message);
             }
         }
@@ -1219,6 +1366,7 @@ async function generateAiReply({ systemPrompt, history, text, phone, adminPhone 
         const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-assistant`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+            signal: signal,
             body: JSON.stringify({
                 company_id: DEFAULT_CHANNEL_ID,
                 messages: [

@@ -6,7 +6,7 @@
  * If the question is complex (objections, deep sales), routes it to the heavy model.
  * Saves ~90% of tokens for standard greetings and simple FAQs.
  */
-async function moeRouter(text, history, kbList, groqApiKey) {
+async function moeRouter(text, history, kbList, groqApiKey, signal) {
     if (!groqApiKey) return { action: 'ROUTE_TO_HEAVY', reply: null };
 
     // 1. Build a prompt for the router (Llama 3 8B)
@@ -29,6 +29,7 @@ ${kbList.map(k => `- ${k.question_trigger}: ${k.answer_content}`).join('\n')}
         const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${groqApiKey}`, 'Content-Type': 'application/json' },
+            signal: signal,
             body: JSON.stringify({
                 model: 'llama-3.1-8b-instant',
                 messages: [
@@ -62,7 +63,7 @@ ${kbList.map(k => `- ${k.question_trigger}: ${k.answer_content}`).join('\n')}
  * 📚 Contextual Compression (RAG Optimizer)
  * Trims down the retrieved knowledge base to only the EXACT relevant sentences.
  */
-async function compressContext(text, kbList, groqApiKey) {
+async function compressContext(text, kbList, groqApiKey, signal) {
     if (!kbList || kbList.length === 0 || !groqApiKey) return '';
     
     const rawKb = kbList.map(k => k.answer_content).join('\n\n');
@@ -74,6 +75,7 @@ async function compressContext(text, kbList, groqApiKey) {
         const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${groqApiKey}`, 'Content-Type': 'application/json' },
+            signal: signal,
             body: JSON.stringify({
                 model: 'llama-3.1-8b-instant',
                 messages: [
