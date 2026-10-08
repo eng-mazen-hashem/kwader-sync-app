@@ -312,7 +312,7 @@ function AppLayout() {
 
   const currentPage = pageTitles[location.pathname] || pageTitles['/dashboard'] || { title: '', subtitle: '' };
 
-  const { requiresPasswordUpdate, updatePassword, clearPasswordUpdate, signOut, isSuperAdmin, activeRole, company, switchRole } = useAuth();
+  const { requiresPasswordUpdate, updatePassword, clearPasswordUpdate, signOut, isSuperAdmin, activeRole, company, switchRole, isAiOnlyClient } = useAuth();
   const [newPass, setNewPass] = useState('');
   const [passUpdating, setPassUpdating] = useState(false);
 
@@ -368,7 +368,20 @@ function AppLayout() {
           </div>
       )}
 
-      {/* Mobile Backdrop */}
+      {/* Standalone AI Mode (No Sidebar, No Standard Navigation) */}
+      {isAiOnlyClient && (
+        <main className="ai-standalone-full-page" style={{ minHeight: '100vh', width: '100vw', overflowY: 'auto', background: '#090d16' }}>
+          <Routes>
+            <Route path="/*" element={<Navigate to="/ai-sales-center" replace />} />
+            <Route path="/ai-sales-center" element={<AiSalesCenter />} />
+          </Routes>
+        </main>
+      )}
+
+      {/* Standard App Layout */}
+      {!isAiOnlyClient && (
+        <>
+          {/* Mobile Backdrop */}
       {isMobileOpen && (
         <div 
           className="sidebar-backdrop" 
@@ -419,7 +432,7 @@ function AppLayout() {
             <Route path="/shifts" element={<RequirePermission permission="manage_attendance"><Shifts /></RequirePermission>} />
             <Route path="/rules" element={<RequirePermission permission="manage_settings"><RuleBuilder /></RequirePermission>} />
             <Route path="/assistant" element={<Assistant />} />
-            <Route path="/ai-sales-center" element={<RequirePermission permission="super_admin_only"><AiSalesCenter /></RequirePermission>} />
+            <Route path="/ai-sales-center" element={<AiSalesCenter />} />
             <Route path="/devices" element={<RequirePermission permission="manage_settings"><Devices /></RequirePermission>} />
             <Route path="/settings" element={<RequirePermission permission="manage_settings"><Settings /></RequirePermission>} />
             <Route path="/leaves" element={<RequirePermission permission="manage_attendance"><Leaves /></RequirePermission>} />
@@ -436,7 +449,9 @@ function AppLayout() {
       <MobileBottomNav onOpenMenu={() => setIsMobileOpen(true)} />
 
       {/* Global Support Widget for Users */}
-      <SupportChatWidget />
+      {!isAiOnlyClient && <SupportChatWidget />}
+        </>
+      )}
     </div>
   );
 }

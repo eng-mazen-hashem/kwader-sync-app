@@ -21,6 +21,7 @@ import { PaymentRequestsView } from "../components/admin/PaymentRequestsView";
 import { WhatsAppGatewayView } from "../components/admin/WhatsAppGatewayView";
 import AiSalesCenter from "./AiSalesCenter";
 import { supabase } from "../supabaseClient";
+import { createClient } from "@supabase/supabase-js";
 import { motion, AnimatePresence } from "motion/react";
 import { useAuth } from "../context/AuthContext";
 import { useLocale } from "../context/LocaleContext";
@@ -1545,6 +1546,111 @@ export default function SuperAdminDashboard() {
     }
   }, [fetchOverviewData, fetchUsersPage, getValidatedSession, handleError, t, user]);
 
+  const handleAddUser = useCallback(async (formData) => {
+    try {
+      await getValidatedSession();
+      // Use a secondary Supabase client with no session persistence to avoid logging out the Super Admin
+      const tempSupabase = createClient(
+        process.env.REACT_APP_SUPABASE_URL,
+        process.env.REACT_APP_SUPABASE_ANON_KEY,
+        {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false
+          }
+        }
+      );
+
+      // Rigorously clean the email address to remove any hidden bidirectional/Unicode characters
+      const cleanEmail = (formData.email || "")
+        .replace(/[^a-zA-Z0-9.!#$%&'*+/=?^_`{|}~@-]/g, "") // Keep only strictly valid email characters based on Gotrue's regex
+        .toLowerCase();
+
+      const { data, error: signUpError } = await tempSupabase.auth.signUp({
+        email: cleanEmail,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.name,
+            company_name: formData.company,
+            name: formData.name,
+          }
+        }
+      });
+
+      if (signUpError) throw signUpError;
+      
+      const newUserId = data?.user?.id;
+      if (!newUserId) throw new Error("لم يتم إرجاع معرف المستخدم");
+
+      // Wait a moment for the database trigger to create the company
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      // Update the created company with the selected plan using our primary super admin client
+      const { data: updatedCompanies, error: updateError } = await supabase
+        .from("companies")
+        .update({ plan: formData.plan })
+        .eq("owner_id", newUserId)
+        .select("id, name");
+        
+      if (updateError) {
+        console.warn("Could not update plan immediately:", updateError);
+      }
+
+      // If it's an AI-Only client, auto-provision their dedicated WhatsApp channel immediately
+      if (formData.plan === 'ai_only') {
+        try {
+          let targetCompanyId = updatedCompanies?.[0]?.id;
+          let targetCompanyName = updatedCompanies?.[0]?.name || formData.company || formData.name;
+
+          if (!targetCompanyId) {
+            const { data: comp } = await supabase
+              .from("companies")
+              .select("id, name")
+              .eq("owner_id", newUserId)
+              .maybeSingle();
+            if (comp) {
+              targetCompanyId = comp.id;
+              targetCompanyName = comp.name || targetCompanyName;
+            }
+          }
+
+          if (targetCompanyId) {
+            const { data: existingChan } = await supabase
+              .from("whatsapp_channels")
+              .select("id")
+              .eq("company_id", targetCompanyId)
+              .maybeSingle();
+
+            if (!existingChan) {
+              await supabase.from("whatsapp_channels").insert({
+                name: `${targetCompanyName} - واتساب AI`,
+                company_id: targetCompanyId,
+                status: "disconnected",
+                ai_enabled: true,
+                ai_mode: "hybrid",
+                ai_name: `مساعد مبيعات ${targetCompanyName}`,
+                is_active: true,
+                is_default: false
+              });
+            }
+          }
+        } catch (chanErr) {
+          console.warn("Auto-provisioning WhatsApp channel for AI client warning:", chanErr);
+        }
+      }
+
+      toast.success("تم إنشاء الشركة وإضافتها بنجاح ✅");
+      fetchUsersPage({ silent: true });
+      fetchOverviewData({ silent: true });
+    } catch (err) {
+      handleError("Failed to create user", err);
+      toast.error("حدث خطأ أثناء إنشاء الحساب: " + (err.message || ""));
+      throw err;
+    }
+  }, [getValidatedSession, fetchUsersPage, fetchOverviewData, handleError]);
+
   // Danger deletion state — drives the confirmation modal in JSX (constitution §9: no window.confirm)
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
@@ -1758,6 +1864,7 @@ export default function SuperAdminDashboard() {
                         loading={usersLoading}
                         onStatusChange={updateCompanyStatus}
                         onSubscriptionChange={updateCompanySubscription}
+                        onAddUser={handleAddUser}
                         onNotify={sendNotification}
                         onDelete={deleteCompanyCompletely}
                         onImpersonate={handleImpersonate}

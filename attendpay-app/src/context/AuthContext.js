@@ -588,6 +588,7 @@ export function AuthProvider({ children }) {
         hasPermission,
         // Derived helpers
         userRole: authState.activeRole || (authState.isSuperAdmin ? 'super_admin' : authState.isReseller ? 'reseller' : 'org_admin'),
+        isAiOnlyClient: authState.company?.plan === 'ai_agent' || authState.company?.plan === 'ai_only',
     }), [
         authState,
         signIn,

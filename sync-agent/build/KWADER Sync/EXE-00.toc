@@ -3,7 +3,7 @@
  False,
  True,
  ['D:\\Zk att project\\sync-agent\\installer\\icon.ico'],
- versioninfo.VSVersionInfo(ffi=versioninfo.FixedFileInfo(filevers=(1, 6, 0, 0), prodvers=(1, 6, 0, 0), mask=0x3f, flags=0x0, OS=0x40004, fileType=1, subtype=0x0, date=(0, 0)), kids=[versioninfo.StringFileInfo([versioninfo.StringTable('040904B0', [versioninfo.StringStruct('CompanyName', 'KWADER'), versioninfo.StringStruct('FileDescription', 'KWADER Sync Agent'), versioninfo.StringStruct('FileVersion', '1.6.0'), versioninfo.StringStruct('InternalName', 'KWADER Sync'), versioninfo.StringStruct('LegalCopyright', 'Copyright (c) 2026 KWADER'), versioninfo.StringStruct('OriginalFilename', 'KWADER Sync.exe'), versioninfo.StringStruct('ProductName', 'KWADER Sync'), versioninfo.StringStruct('ProductVersion', '1.6.0')])]), versioninfo.VarFileInfo([versioninfo.VarStruct('Translation', [1033, 1200])])]),
+ versioninfo.VSVersionInfo(ffi=versioninfo.FixedFileInfo(filevers=(1, 6, 7, 0), prodvers=(1, 6, 7, 0), mask=0x3f, flags=0x0, OS=0x40004, fileType=1, subtype=0x0, date=(0, 0)), kids=[versioninfo.StringFileInfo([versioninfo.StringTable('040904B0', [versioninfo.StringStruct('CompanyName', 'KWADER'), versioninfo.StringStruct('FileDescription', 'KWADER Sync Agent'), versioninfo.StringStruct('FileVersion', '1.6.9'), versioninfo.StringStruct('InternalName', 'KWADER Sync'), versioninfo.StringStruct('LegalCopyright', 'Copyright (c) 2026 KWADER'), versioninfo.StringStruct('OriginalFilename', 'KWADER Sync.exe'), versioninfo.StringStruct('ProductName', 'KWADER Sync'), versioninfo.StringStruct('ProductVersion', '1.6.9')])]), versioninfo.VarFileInfo([versioninfo.VarStruct('Translation', [1033, 1200])])]),
  False,
  False,
  b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<assembly xmlns='
@@ -81,7 +81,7 @@
  [],
  False,
  False,
- 1790954607,
+ 1791418879,
  [('runw.exe',
    'D:\\Zk att '
    'project\\sync-agent\\.venv\\Lib\\site-packages\\PyInstaller\\bootloader\\Windows-64bit-intel\\runw.exe',

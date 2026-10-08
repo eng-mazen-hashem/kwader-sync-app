@@ -41,8 +41,8 @@ except Exception:
     Image = None
 
 APP_TITLE = 'KWADER Sync'
-APP_VERSION = '1.6.6'
-APP_BUILD = '1011'
+APP_VERSION = '1.6.9'
+APP_BUILD = '1014'
 APP_ID = 'sync-agent'
 WINDOWS_APP_ID = 'com.kwader.sync.agent'
 ORG_NAME = 'KWADER'
@@ -688,6 +688,7 @@ class SyncAppUpdater:
         self.current_version = APP_VERSION
         self._thread = None
         self._stop_event = threading.Event()
+        self._is_downloading = False  # Guard against concurrent OTA runs
 
     def start(self):
         if not self._thread or not self._thread.is_alive():
@@ -758,8 +759,12 @@ class SyncAppUpdater:
                             remote_url = str(data_map.get('sync_agent_download_url', '')).strip()
 
                         if remote_ver_str and remote_url and self._parse_semver(remote_ver_str) > self._parse_semver(self.current_version):
+                            if self._is_downloading:
+                                print('[SYNC-OTA] Download already in progress, skipping duplicate trigger.')
+                                return {'success': True, 'update_available': True, 'version': remote_ver_str}
                             print(f"[SYNC-OTA] Supabase OTA update available: v{remote_ver_str}")
                             log_to_ui(f'New version v{remote_ver_str} available. Downloading update...', 'info')
+                            self._is_downloading = True
                             import threading
                             threading.Thread(target=self._download_and_install, args=(remote_ver_str, remote_url), daemon=True).start()
                             return {'success': True, 'update_available': True, 'version': remote_ver_str}
@@ -794,8 +799,12 @@ class SyncAppUpdater:
                                 download_url = asset.get('browser_download_url')
                                 break
                         if download_url:
+                            if self._is_downloading:
+                                print('[SYNC-OTA] Download already in progress, skipping duplicate trigger.')
+                                return {'success': True, 'update_available': True, 'version': clean_ver}
                             print(f"[SYNC-OTA] GitHub release update available: v{clean_ver}")
                             log_to_ui(f'New version v{clean_ver} available. Downloading update...', 'info')
+                            self._is_downloading = True
                             import threading
                             threading.Thread(target=self._download_and_install, args=(clean_ver, download_url), daemon=True).start()
                             return {'success': True, 'update_available': True, 'version': clean_ver}
@@ -933,9 +942,19 @@ class SyncAppUpdater:
             # Waits 1.5s so KWADER Sync.exe exits completely and releases all file locks before installer runs
             _vbs_path = DATA_DIR / 'kwader_ota_launcher.vbs'
             _vbs = (
-                'WScript.Sleep 1500\n'
+                'On Error Resume Next\n'
+                'WScript.Sleep 2000\n'
                 'Set s = CreateObject("WScript.Shell")\n'
-                f's.Run """{_safe}"" /S", 0, False\n'
+                'Set fso = CreateObject("Scripting.FileSystemObject")\n'
+                'For i = 1 To 20\n'
+                '    Err.Clear\n'
+                # bWaitOnReturn=True so VBScript blocks until installer exits
+                f'    s.Run """{_safe}"" /S", 0, True\n'
+                '    If Err.Number = 0 Then Exit For\n'
+                '    WScript.Sleep 1000\n'
+                'Next\n'
+                # Delete the update exe after install so no loop
+                f'fso.DeleteFile "{_safe}", True\n'
             )
             _vbs_path.write_text(_vbs, encoding='utf-8')
 
@@ -961,6 +980,7 @@ class SyncAppUpdater:
             return True
 
         except Exception as _exc:
+            self._is_downloading = False  # Reset flag on failure
             try:
                 with open(log_path, 'a', encoding='utf-8') as _lf:
                     _lf.write(f'EXCEPTION: {_exc}\n{_tb.format_exc()}\n')
@@ -2648,6 +2668,9 @@ def main():
             _flag_path.unlink(missing_ok=True)
     except Exception:
         pass
+
+    global IS_WINDOW_HIDDEN
+    IS_WINDOW_HIDDEN = start_hidden
     global MAIN_WINDOW
     MAIN_WINDOW = webview.create_window(
         APP_TITLE,

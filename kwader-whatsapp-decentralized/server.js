@@ -10,9 +10,11 @@ const CHAT_QUEUES = new Map(); // Queue for debouncing and batching consecutive 
 const { LeaseManager } = require('./leaseManager');
 const { initWhatsAppClient } = require('./whatsappClient');
 const { QueueProcessor } = require('./queueProcessor');
-const { moeRouter, compressContext } = require('./aiOptimizer');
+const { smartRetrieveKB, moeRouter, compressContext } = require('./aiOptimizer');
 const personaTrainer = require('./personaTrainer');
 const { decrypt } = require('./encryption');
+const { processVoiceNote } = require('./audioProcessor');
+const { processImageMessage } = require('./imageProcessor');
 
 // Environment Configuration
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://whuopqnhmsevlilkcfre.supabase.co';
@@ -109,29 +111,15 @@ function enqueueIncomingMessage({ channelId, phone, targetJid, jid, customerName
     q.messages.push(text.trim());
     console.log(`[WhatsApp AI] 📥 Buffered message from ${phone} [Batch count: ${q.messages.length}]: "${text.trim().substring(0, 45)}"`);
 
-    // Immediately trigger typing indicator
-    sendComposing();
-
-    // Keep typing presence alive during the debounce window
-    if (!q.presenceInterval) {
-        q.presenceInterval = setInterval(() => {
-            sendComposing();
-        }, 2500);
-    }
-
     // Reset debounce timer
     if (q.timer) {
         clearTimeout(q.timer);
         q.timer = null;
     }
 
-    // 5.0 seconds debounce delay: Waits for consecutive sentences to finish
-    const DEBOUNCE_DELAY_MS = 5000;
+    // 4.0 seconds debounce delay: Waits for consecutive sentences to finish silently
+    const DEBOUNCE_DELAY_MS = 4000;
     q.timer = setTimeout(() => {
-        if (q.presenceInterval) {
-            clearInterval(q.presenceInterval);
-            q.presenceInterval = null;
-        }
         q.timer = null;
 
         processQueueBatch(queueKey).catch(err => {
@@ -329,16 +317,10 @@ async function processQueueBatch(queueKey) {
                 kbQuery = kbQuery.is('company_id', null);
             }
 
-            const { data: kbList } = await kbQuery.limit(60);
+            const { data: kbList } = await kbQuery.limit(150);
             if (kbList && kbList.length > 0) {
-                const lowerText = combinedText.trim().toLowerCase();
-                for (const item of kbList) {
-                    const triggerMatch = item.question_trigger && lowerText.includes(item.question_trigger.toLowerCase());
-                    const keywordMatch = Array.isArray(item.keywords) && item.keywords.some(k => k && lowerText.includes(k.toLowerCase()));
-                    if (triggerMatch || keywordMatch) {
-                        kbItemsFound.push(item);
-                    }
-                }
+                // 🧠 Phase 1: Smart Semantic Retrieval (Vector-less RAG) via fast LLM
+                kbItemsFound = await smartRetrieveKB(combinedText, kbList, GROQ_API_KEY, signal);
             }
         } catch (kbErr) {
             console.warn('[WhatsApp AI] KB lookup warning:', kbErr.message);
@@ -492,7 +474,13 @@ async function processQueueBatch(queueKey) {
             if (aiAction === 'NOTIFY_ADMIN' && actionPayload) {
                 if (adminPhone) {
                     try {
-                        const adminJid = `${adminPhone.replace(/\D/g, '')}@s.whatsapp.net`;
+                        let cleanAdminPhone = adminPhone.replace(/\D/g, '');
+                        if (cleanAdminPhone.startsWith('05')) {
+                            cleanAdminPhone = '966' + cleanAdminPhone.substring(1);
+                        } else if (cleanAdminPhone.startsWith('00')) {
+                            cleanAdminPhone = cleanAdminPhone.substring(2);
+                        }
+                        const adminJid = `${cleanAdminPhone}@s.whatsapp.net`;
                         const alertMsg = `🚨 *تنبيه من الوكيل الذكي (استفسار/تدخل)* 🚨\n\n👤 *العميل:* +${phone}\n\n💬 *رسالة العميل الأخيرة:*\n${combinedText.trim()}\n\n🤖 *طلب الوكيل:*\n${actionPayload}\n\n💡 _للرد على العميل، قم بعمل (رد / Reply) على هذه الرسالة واكتب رسالتك لترسل له مباشرة._`;
                         const currentSock = state?.activeClient?.sock || q.sock;
                         await currentSock.sendMessage(adminJid, { text: alertMsg });
@@ -517,15 +505,27 @@ async function processQueueBatch(queueKey) {
                         const lineTotal = qty * price;
                         total += lineTotal;
                         invoiceMsg += `🛒 *${item.item}*\n`;
-                        invoiceMsg += `   الكمية: ${qty} | السعر: ${price} | المجموع: ${lineTotal}\n`;
+                        invoiceMsg += `   الكمية: ${qty} | السعر: ${price} ج.م | المجموع: ${lineTotal} ج.م\n`;
                     });
                     invoiceMsg += `━━━━━━━━━━━━━━━━━\n`;
-                    invoiceMsg += `💰 *الإجمالي الكلي: ${total}*\n\n`;
-                    invoiceMsg += `شكراً لاختياركم خدماتنا! 🙏`;
+                    invoiceMsg += `💰 *الإجمالي الكلي: ${total} ج.م*\n\n`;
+                    invoiceMsg += `✅ تم تأكيد طلبك بنجاح! سيتم إشعار الإدارة فوراً وسيتواصلون معك لإتمام إجراءات الدفع. شكراً لثقتكم بنا! 🙏`;
 
                     const currentSock = state?.activeClient?.sock || q.sock;
                     await currentSock.sendMessage(jid, { text: invoiceMsg });
                     console.log(`[WhatsApp AI] 🧾 Invoice auto-generated and sent to ${phone}`);
+
+                    // Send notification to Admin
+                    if (adminPhone) {
+                        try {
+                            const adminJid = `${adminPhone.replace(/\D/g, '')}@s.whatsapp.net`;
+                            const adminAlert = `🚨 *تأكيد طلب جديد (فاتورة مصغرة)* 🚨\n\n👤 *العميل:* +${phone}\n\n${invoiceMsg}\n\n💡 _العميل جاهز للدفع، يرجى التواصل معه لإعطائه رابط الدفع أو الخطوات التالية!_`;
+                            await currentSock.sendMessage(adminJid, { text: adminAlert });
+                            console.log(`[WhatsApp AI] 🔔 Admin notified about invoice at ${adminJid}`);
+                        } catch(err) {
+                            console.error(`[WhatsApp AI] ❌ Failed to notify admin about invoice:`, err.message);
+                        }
+                    }
                 } catch(err) {
                     console.error(`[WhatsApp AI] ❌ Failed to parse or send invoice:`, err.message);
                 }
@@ -687,6 +687,34 @@ async function startChannelManager(channelId) {
                     if (!msg || msg.key.fromMe) continue;
 
                     let text = msg.message?.conversation || msg.message?.extendedTextMessage?.text;
+                    
+                    const audioMsg = msg.message?.audioMessage;
+                    if (audioMsg && audioMsg.ptt) {
+                        console.log(`[WhatsApp AI] 🎤 Voice note received from ${msg.key.remoteJid}, processing via STT...`);
+                        try {
+                            // Indicate processing
+                            await sock.sendPresenceUpdate('recording', msg.key.remoteJid).catch(()=>{});
+                            text = await processVoiceNote(msg, sock, GROQ_API_KEY, `Channel: ${channelId}`);
+                        } catch(e) {
+                            console.error('[WhatsApp AI] Voice processing failed:', e.message);
+                        }
+                        
+                        if (!text || !text.trim()) {
+                             await sock.sendMessage(msg.key.remoteJid, { text: "عذراً، لم أتمكن من سماع الصوت بوضوح بسبب التشويش. هل يمكنك التكرم بكتابة استفسارك؟" }).catch(()=>{});
+                             continue;
+                        }
+                    }
+
+                    const imageMsg = msg.message?.imageMessage;
+                    if (imageMsg) {
+                        console.log(`[WhatsApp AI] 🖼️ Image received from ${msg.key.remoteJid}, processing via Vision...`);
+                        try {
+                            text = await processImageMessage(msg, sock, GROQ_API_KEY, `Channel: ${channelId}`);
+                        } catch(e) {
+                            console.error('[WhatsApp AI] Image processing failed:', e.message);
+                        }
+                    }
+
                     if (!text || !text.trim()) continue;
 
                     const jid = msg.key.remoteJid;
@@ -912,18 +940,22 @@ async function initMultiTenant() {
     // 3. Determine which channels to start
     const channelsToStart = [];
     if (allChannels) {
-        for (const ch of allChannels) {
-            // Start if explicitly assigned, or if assigned to 'null' and this is the default channel
-            if (assignedChannelIds.has(ch.id) || (ch.is_default && assignedChannelIds.has(null))) {
-                channelsToStart.push(ch);
+        if (assignedChannelIds.size === 0) {
+            // No explicit assignments: if allowMulti is true, run all. Otherwise, run default only.
+            if (allowMulti) {
+                channelsToStart.push(...allChannels);
+            } else {
+                const defaultCh = allChannels.find(c => c.is_default);
+                if (defaultCh) channelsToStart.push(defaultCh);
+            }
+        } else {
+            // Explicit assignments exist: start only the assigned ones
+            for (const ch of allChannels) {
+                if (assignedChannelIds.has(ch.id) || (ch.is_default && assignedChannelIds.has(null))) {
+                    channelsToStart.push(ch);
+                }
             }
         }
-    }
-
-    // If no explicit assignments, fallback to default channel
-    if (channelsToStart.length === 0 && allChannels) {
-        const defaultCh = allChannels.find(c => c.is_default);
-        if (defaultCh) channelsToStart.push(defaultCh);
     }
 
     if (channelsToStart.length > 0) {
@@ -951,7 +983,9 @@ async function initMultiTenant() {
                     return;
                 }
 
-                if (assignedChannelIds.has(payload.new.id) || (payload.new.is_default && assignedChannelIds.has(null)) || (!assignedChannelIds.size && payload.new.is_default)) {
+                if (assignedChannelIds.has(payload.new.id) || 
+                   (payload.new.is_default && assignedChannelIds.has(null)) || 
+                   (assignedChannelIds.size === 0 && (isMultiAllowed || payload.new.is_default))) {
                     startChannelManager(payload.new.id);
                 }
             }
@@ -1178,13 +1212,10 @@ function buildLayeredPrompt({ aiName, profile, summary, kbGroundingText, text, i
     const HISTORY_SUMMARY = summary?.summary_text ? `\n[ملخص المحادثات السابقة]: ${summary.summary_text.substring(0, 200)}` : '';
     const CLIENT_CONTEXT = (profile?.company_size) ? `\n[حجم الشركة]: ${profile.company_size} موظف` : '';
     
-    const needsPricing = /(سعر|تكلف|بكام|اشتراك|باقة|رخيص|غالي|فلوس)/.test(t);
-    const PRICING = needsPricing ? `\n[الأسعار]: باقة Starter بـ 690ج/شهر (25 موظف)، Pro بـ 1690ج/شهر. يوجد تجربة مجانية 14 يوم.` : '';
-
     const CUSTOM = (!persona && customInstructions) ? `\n[تعليمات إضافية]: ${customInstructions}` : '';
     const KB_BLOCK = kbGroundingText ? `\n${kbGroundingText}` : '';
 
-    return [CORE, EXEMPLARS, HISTORY_SUMMARY, CLIENT_CONTEXT, PRICING, CUSTOM, KB_BLOCK].filter(Boolean).join('\n');
+    return [CORE, EXEMPLARS, HISTORY_SUMMARY, CLIENT_CONTEXT, CUSTOM, KB_BLOCK].filter(Boolean).join('\n');
 }
 
 // Phase 4: Semantic Caching (Intent-Based Pre-Routing)
@@ -1222,17 +1253,17 @@ async function generateAiReply({ systemPrompt, history, text, phone, adminPhone,
 
     enhancedSystemPrompt += `\n\n[الطوارئ والتواصل مع الإدارة]: في الحالات الطارئة، أو عند رغبة العميل في حجز موعد هام، استخدم الإجراء التالي لإرسال رسالة للمدير: أضف <ACTION>NOTIFY_ADMIN: ملخص المشكلة هنا</ACTION> في نهاية ردك.`;
     
-    enhancedSystemPrompt += `\n\n[نظام الفواتير الآلي]: إذا اتفق العميل على شراء منتجات وتريد إصدار فاتورة له، لا تقم بكتابة الفاتورة يدوياً أبداً لتجنب الخطأ وتوفير الوقت. بدلاً من ذلك، أرسل هذا الأمر فقط في نهاية ردك وسيقوم النظام بتنسيقها وحساب الإجمالي: <ACTION>CREATE_INVOICE: [{"item": "اسم المنتج", "qty": 1, "price": 150}]</ACTION>`;
+    enhancedSystemPrompt += `\n\n[نظام الفواتير والأسعار]: لتحديد أسعار المنتجات والفواتير، **يجب عليك الاعتماد فقط على الأسعار المذكورة في "قاعدة المعرفة" (Knowledge Base)** التي تم تزويدك بها أعلى هذه التعليمات. إذا لم تجد السعر، اسأل العميل بأدب لطلب تفاصيل أكثر. إذا طلب العميل الشراء وتأكدت من السعر من قاعدة المعرفة، أرسل هذا الأمر في نهاية ردك لإصدار فاتورة مبدئية للإدارة: <ACTION>CREATE_INVOICE: [{"item": "اسم المنتج كما في قاعدة المعرفة", "qty": 1, "price": 150}]</ACTION>`;
 
     const processReply = (rawReply, tokens) => {
         let actionPayload = null;
         let aiAction = null;
-        const actionMatch = rawReply.match(/<ACTION>(NOTIFY_ADMIN|CREATE_INVOICE):\s*([\s\S]*?)<\/ACTION>/i);
+        const actionMatch = rawReply.match(/<\s*ACTION\s*>\s*(NOTIFY_ADMIN|CREATE_INVOICE)\s*:\s*([\s\S]*?)<\/\s*ACTION\s*>/i);
         if (actionMatch) {
             aiAction = actionMatch[1].toUpperCase();
             actionPayload = actionMatch[2].trim();
         }
-        const cleanReply = rawReply.replace(/<ACTION>[\s\S]*?<\/ACTION>/gi, '').trim();
+        const cleanReply = rawReply.replace(/<\s*ACTION\s*>[\s\S]*?<\/\s*ACTION\s*>/gi, '').trim();
         return { replyText: cleanReply, tokensUsed: tokens, action: aiAction, actionPayload };
     };
 

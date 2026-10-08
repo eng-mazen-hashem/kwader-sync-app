@@ -5,7 +5,7 @@ import {
   Building2, Loader2, Radio, Search, Network, Server,
   Activity, ShieldCheck, Zap, RefreshCcw, Shield, ChevronDown,
   Laptop, Cpu, Info, ShieldAlert, Clock, CheckCircle2,
-  AlertCircle, MessageSquareText, ChevronLeft, ExternalLink, Filter, X, CheckCheck, Crown
+  AlertCircle, MessageSquareText, ChevronLeft, ExternalLink, Filter, X, CheckCheck, Crown, Settings
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
@@ -1350,6 +1350,7 @@ export function WhatsAppGatewayView() {
                 active_node_id: targetNodeId,
                 active_leader_id: targetNodeId,
                 forced_leader_node_id: targetNodeId,
+                lease_expires_at: new Date(Date.now() + 15000).toISOString(),
                 last_heartbeat: nowIso,
                 updated_at: nowIso
               })
@@ -1693,19 +1694,16 @@ echo $response;
                 ? companies.filter((c) => !c.whatsapp_channel_id || c.whatsapp_channel_id === channel.id).length
                 : companies.filter((c) => c.whatsapp_channel_id === channel.id).length;
 
-              // Check if default channel is connected via cluster lock
-              const isDefaultLeaderActive =
-                isDefault &&
-                clusterLock?.node_id &&
-                clusterLock?.last_heartbeat &&
-                Date.now() - new Date(clusterLock.last_heartbeat).getTime() < 120000;
-              const activeLeaderNodeId = isDefaultLeaderActive ? clusterLock.node_id : channel.active_node_id;
-
               // Telemetry: node lookup, role (leader vs standby), and response time
               const aliveNodes = nodes.filter((n) => {
                 const lastSeen = n.last_seen ? new Date(n.last_seen).getTime() : 0;
                 return (Date.now() - lastSeen) < 180000 && n.status !== "offline";
               });
+
+              const activeLeaderNodeId = channel.active_leader_id || channel.active_node_id;
+              const isDefaultLeaderActive = Boolean(
+                activeLeaderNodeId && aliveNodes.some(n => n.node_id === activeLeaderNodeId && n.is_leader)
+              );
 
               const activeNode =
                 aliveNodes.find(
@@ -2906,25 +2904,9 @@ echo $response;
         });
         const activeNodesCount = aliveNodes.length;
 
-        // Check if lock heartbeat is fresh (< 120s)
-        const isLockHeartbeatFresh = Boolean(
-          clusterLock?.node_id &&
-          clusterLock?.last_heartbeat &&
-          (Date.now() - new Date(clusterLock.last_heartbeat).getTime()) < 120000
-        );
-
-        const leaderNode = clusterLock?.node_id
-          ? displayNodes.find((n) => n.node_id === clusterLock.node_id)
-          : null;
-
-        const isLeaderAlive = Boolean(
-          clusterLock?.node_id &&
-          isLockHeartbeatFresh &&
-          (
-            aliveNodes.some((n) => n.node_id === clusterLock.node_id) ||
-            (leaderNode && leaderNode.status !== "offline")
-          )
-        );
+        // Find the leader node directly from the alive nodes
+        const leaderNode = aliveNodes.find((n) => n.is_leader);
+        const isLeaderAlive = Boolean(leaderNode);
 
         const activeLeader = isLeaderAlive ? leaderNode : null;
         const standbyCount = Math.max(0, activeNodesCount - (isLeaderAlive ? 1 : 0));

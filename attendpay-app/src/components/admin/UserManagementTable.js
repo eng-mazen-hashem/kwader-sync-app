@@ -30,6 +30,7 @@ const getPlanBadge = (p) => {
   const planName = (p || "Starter").toString().toLowerCase();
   if (planName.includes("pro")) return "bg-blue-50 text-blue-700 border border-blue-200";
   if (planName.includes("enterprise")) return "bg-gray-900 text-white";
+  if (planName.includes("ai_only") || planName.includes("ai_agent")) return "bg-purple-50 text-purple-700 border border-purple-200";
   return "bg-emerald-50 text-emerald-700 border border-emerald-200";
 };
 
@@ -37,6 +38,7 @@ const getPlanDot = (p) => {
   const planName = (p || "Starter").toString().toLowerCase();
   if (planName.includes("pro")) return "bg-blue-500";
   if (planName.includes("enterprise")) return "bg-white/50";
+  if (planName.includes("ai_only") || planName.includes("ai_agent")) return "bg-purple-500";
   return "bg-emerald-500";
 };
 
@@ -44,6 +46,7 @@ const getDisplayPlanName = (p) => {
   const planName = (p || "Starter").toString().toLowerCase();
   if (planName.includes("pro")) return "Pro";
   if (planName.includes("enterprise")) return "Enterprise";
+  if (planName.includes("ai_only") || planName.includes("ai_agent")) return "AI Only";
   return "Starter";
 };
 
@@ -55,24 +58,33 @@ const usageTrack = (v) =>
 
 // -------------------------------------------------------------------------
 function AddUserModal({ onClose, onAdd }) {
-  const [form, setForm] = useState({ name: "", email: "", company: "", plan: "Starter", password: "" });
+  const [form, setForm] = useState({ name: "", email: "", company: "", plan: "ai_only", password: "" });
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
   const validate = () => {
     const e = {};
-    if (!form.name.trim()) e.name = "Name is required";
-    if (!form.email.includes("@")) e.email = "Valid email required";
-    if (!form.password || form.password.length < 6) e.password = "Min 6 characters";
+    if (!form.name.trim()) e.name = "الاسم مطلوب";
+    if (!form.email.includes("@")) e.email = "يرجى إدخال بريد إلكتروني صالح";
+    if (!form.password || form.password.length < 6) e.password = "كلمة المرور 6 أحرف على الأقل";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = (ev) => {
-    ev.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     if (!validate()) return;
-    onAdd({ ...form, status: "active", resourceUsage: 0, initials: form.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() });
-    toast.success(`User "${form.name}" created successfully.`);
-    onClose();
+    
+    setLoading(true);
+    try {
+      await onAdd({ ...form, status: "active", resourceUsage: 0, initials: form.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() });
+      toast.success(`تم إنشاء حساب المشترك "${form.name}" بنجاح`);
+      onClose();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -88,8 +100,8 @@ function AddUserModal({ onClose, onAdd }) {
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div style={{ textAlign: 'right' }}>
-            <h3 className="text-gray-900" style={{ fontWeight: 700, fontSize: "1.05rem" }}>Add New User</h3>
-            <p className="text-gray-400" style={{ fontSize: "0.78rem" }}>Create a manual account</p>
+            <h3 className="text-gray-900" style={{ fontWeight: 700, fontSize: "1.05rem" }}>إضافة مشترك / شركة جديدة</h3>
+            <p className="text-gray-400" style={{ fontSize: "0.78rem" }}>إنشاء حساب مباشر وتحديد نوع الاشتراك والصلاحيات</p>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
             <X className="w-4 h-4" />
@@ -97,11 +109,11 @@ function AddUserModal({ onClose, onAdd }) {
         </div>
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4" style={{ textAlign: 'right' }}>
           {[
-            { label: "Full Name", key: "name", type: "text", placeholder: "e.g. John Smith" },
-            { label: "Email Address", key: "email", type: "email", placeholder: "john@company.com" },
-            { label: "Company", key: "company", type: "text", placeholder: "Company name" },
-            { label: "Password", key: "password", type: "password", placeholder: "Min. 6 characters" },
-          ].map(({ label, key, type, placeholder }) => (
+            { label: "الاسم الكامل للمسؤول", key: "name", type: "text", placeholder: "مثال: م. أحمد عبد الله", dir: "rtl" },
+            { label: "البريد الإلكتروني", key: "email", type: "email", placeholder: "client@company.com", dir: "ltr" },
+            { label: "اسم الشركة / النشاط", key: "company", type: "text", placeholder: "مثال: شركة النور للتجارة", dir: "rtl" },
+            { label: "كلمة المرور المؤقتة", key: "password", type: "password", placeholder: "6 أحرف أو أرقام كحد أدنى", dir: "ltr" },
+          ].map(({ label, key, type, placeholder, dir }) => (
             <div key={key}>
               <label className="block text-gray-700 mb-1.5" style={{ fontWeight: 600, fontSize: "0.8rem" }}>{label}</label>
               <input
@@ -112,33 +124,39 @@ function AddUserModal({ onClose, onAdd }) {
                 className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none transition-all ${
                   errors[key] ? "border-red-300 focus:ring-2 focus:ring-red-100" : "border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                 }`}
-                style={{ direction: 'ltr' }}
+                style={{ direction: dir }}
               />
               {errors[key] && <p className="text-red-500 mt-1" style={{ fontSize: "0.72rem" }}>{errors[key]}</p>}
             </div>
           ))}
           <div>
-            <label className="block text-gray-700 mb-1.5" style={{ fontWeight: 600, fontSize: "0.8rem" }}>Plan</label>
+            <label className="block text-gray-700 mb-1.5" style={{ fontWeight: 600, fontSize: "0.8rem" }}>نوع الباقة والنظام</label>
             <select
               value={form.plan}
               onChange={e => setForm(f => ({ ...f, plan: e.target.value }))}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all bg-white"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all bg-white font-medium"
             >
-              {["Starter", "Pro", "Enterprise"].map(p => (
-                <option key={p} value={p}>{p}</option>
-              ))}
+              <option value="ai_only">🤖 عميل ذكاء اصطناعي فقط (AI Hub Portal - بدون نظام حضور)</option>
+              <option value="Starter">🚀 باقة الحضور الأساسية (Starter)</option>
+              <option value="Pro">⭐ باقة الحضور الاحترافية (Pro)</option>
+              <option value="Enterprise">🏢 باقة المؤسسات المتكاملة (Enterprise)</option>
             </select>
+            {form.plan === 'ai_only' && (
+              <p className="text-xs text-purple-600 mt-1 font-semibold">
+                ✨ سيتم توجيه العميل فور دخوله إلى لوحة الذكاء الاصطناعي المستقلة للواتساب مباشرة دون إظهار أي بيانات HR.
+              </p>
+            )}
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors text-sm"
+            <button type="button" onClick={onClose} disabled={loading}
+              className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors text-sm disabled:opacity-50"
               style={{ fontWeight: 600 }}>
-              Cancel
+              إلغاء
             </button>
-            <button type="submit"
-              className="flex-1 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors text-sm shadow-lg shadow-blue-200"
+            <button type="submit" disabled={loading}
+              className="flex-1 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors text-sm shadow-lg shadow-blue-200 disabled:opacity-50 flex items-center justify-center gap-2"
               style={{ fontWeight: 700 }}>
-              Create User
+              {loading ? "جارٍ الإنشاء..." : "إنشاء وتفعيل الحساب"}
             </button>
           </div>
         </form>
@@ -192,6 +210,7 @@ function ManageSubscriptionModal({ user, onClose, onSave }) {
     { name: "Starter", price: "690 ج.م", desc: "الخطة الأساسية (حتى 25 موظف)" },
     { name: "Pro", price: "1,690 ج.م", desc: "الخطة الاحترافية (حتى 60 موظف)" },
     { name: "Enterprise", price: "3,290 ج.م", desc: "خطة الشركات (150+ موظف)" },
+    { name: "ai_only", price: "مخصص", desc: "وكيل الذكاء الاصطناعي فقط" },
   ];
 
   const applyQuickDuration = (months, cycle = 'monthly') => {
@@ -860,6 +879,7 @@ export function UserManagementTable({
   loading = false,
   onStatusChange,
   onSubscriptionChange,
+  onAddUser,
   onNotify,
   onDelete,
   onImpersonate,
@@ -1012,8 +1032,8 @@ export function UserManagementTable({
             className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm outline-none focus:border-gray-400 bg-white text-gray-700"
             style={{ fontWeight: 500 }}
           >
-            {["All", "Starter", "Pro", "Enterprise"].map(p => (
-              <option key={p} value={p}>{p === "All" ? "All Plans" : p}</option>
+            {["All", "Starter", "Pro", "Enterprise", "ai_only"].map(p => (
+              <option key={p} value={p}>{p === "All" ? "All Plans" : p === "ai_only" ? "AI Only" : p}</option>
             ))}
           </select>
 
@@ -1352,7 +1372,7 @@ export function UserManagementTable({
 
       {/* Modals */}
       <AnimatePresence>
-        {addOpen && <AddUserModal onClose={() => setAddOpen(false)} onAdd={addUser} />}
+        {addOpen && <AddUserModal onClose={() => setAddOpen(false)} onAdd={onAddUser ? onAddUser : addUser} />}
         {editUser && (
           <ManageSubscriptionModal
             user={editUser}

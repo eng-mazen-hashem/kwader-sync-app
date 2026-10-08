@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import * as XLSX from 'xlsx';
 import {
   Bot, MessageSquare, Users, BookOpen, Settings, Send,
   UserCheck, ShieldAlert, Phone, RefreshCw, Plus, Trash2, ExternalLink,
-  Search, Sparkles, Activity, ShieldCheck, Zap
+  Search, Sparkles, Activity, ShieldCheck, Zap, UploadCloud, Smartphone, LogOut
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '../supabaseClient';
@@ -10,6 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
 import './AiSalesCenter.css';
 import AiIntelligenceDashboard from '../landing/components/AiIntelligenceDashboard';
+import QRCode from 'react-qr-code';
 
 const MASTER_EGYPTIAN_SALES_PROMPT = `# هوية الوكيل (The Persona)
 أنت "أحمد"، مستشار مبيعات وشريك نجاح العملاء في شركة كوادر (KWADER) لأنظمة الحضور والرواتب والربط السحابي للبصمات.
@@ -51,11 +53,11 @@ const MASTER_CUSTOMER_CARE_PROMPT = `# هوية الوكيل (Persona)
 - أسلوب التعامل: حل المشاكل السريعة مباشرة، وفي حال طلب شكوى خاصة أو موضوع مالي معقد، أكد له باهتمام أن الموضوع تحت المتابعة وسيتم التواصل معه هاتفياً فوراً.`;
 
 export default function AiSalesCenter() {
-  const { company, isSuperAdmin } = useAuth();
+  const { company, isSuperAdmin, user, isAiOnlyClient, signOut } = useAuth();
   const { language } = useLocale();
   const isRTL = language === 'ar';
 
-  const [activeTab, setActiveTab] = useState('inbox'); // 'inbox' | 'leads' | 'knowledge' | 'channels'
+  const [activeTab, setActiveTab] = useState('inbox'); // 'inbox' | 'leads' | 'knowledge' | 'channels' | 'connection'
   const [activeChannelId, setActiveChannelId] = useState('all');
   // ==========================================
   // INBOX STATES
@@ -104,6 +106,7 @@ export default function AiSalesCenter() {
   const [channels, setChannels] = useState([]);
   const [loadingChannels, setLoadingChannels] = useState(false);
   const [savingChannelId, setSavingChannelId] = useState(null);
+  const [provisioningChannel, setProvisioningChannel] = useState(false);
 
   // ------------------------------------------
   // 1. FETCH CONVERSATIONS & REALTIME SYNC
@@ -120,8 +123,12 @@ export default function AiSalesCenter() {
         `)
         .order('last_message_at', { ascending: false });
 
-      if (company?.id && !isSuperAdmin) {
-        query = query.or(`company_id.eq.${company.id},company_id.is.null`);
+      if (!isSuperAdmin) {
+        if (company?.id) {
+          query = query.eq('company_id', company.id);
+        } else {
+          query = query.eq('company_id', '00000000-0000-0000-0000-000000000000');
+        }
       }
 
       if (activeChannelId !== 'all') {
@@ -257,10 +264,10 @@ export default function AiSalesCenter() {
     }
   }, [selectedConvId, fetchMessages]);
 
-  // Only auto-scroll down if user was already at/near the bottom
+  // Only auto-scroll down if user was already at/near the bottom (scroll internal container only, never window)
   useEffect(() => {
-    if (isNearBottomRef.current) {
-      chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (isNearBottomRef.current && chatFeedRef.current) {
+      chatFeedRef.current.scrollTop = chatFeedRef.current.scrollHeight;
     }
   }, [messages]);
 
@@ -387,7 +394,9 @@ export default function AiSalesCenter() {
       isNearBottomRef.current = true;
       setShowScrollBottomBtn(false);
       setTimeout(() => {
-        chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (chatFeedRef.current) {
+          chatFeedRef.current.scrollTop = chatFeedRef.current.scrollHeight;
+        }
       }, 50);
 
       toast.success(
@@ -439,8 +448,12 @@ export default function AiSalesCenter() {
     setLoadingLeads(true);
     try {
       let query = supabase.from('ai_leads').select('id, company_id, channel_id, conversation_id, contact_name, contact_phone, customer_name, customer_phone, company_name, employee_count, interested_products, customer_notes, interest_summary, score, status, created_at').order('created_at', { ascending: false });
-      if (company?.id && !isSuperAdmin) {
-        query = query.or(`company_id.eq.${company.id},company_id.is.null`);
+      if (!isSuperAdmin) {
+        if (company?.id) {
+          query = query.eq('company_id', company.id);
+        } else {
+          query = query.eq('company_id', '00000000-0000-0000-0000-000000000000');
+        }
       }
       
       if (activeChannelId !== 'all') {
@@ -482,8 +495,12 @@ export default function AiSalesCenter() {
     setLoadingKnowledge(true);
     try {
       let query = supabase.from('ai_knowledge_base').select('id, company_id, channel_id, category, question_trigger, answer_content, keywords, is_active, created_at').order('created_at', { ascending: false });
-      if (company?.id && !isSuperAdmin) {
-        query = query.or(`company_id.eq.${company.id},company_id.is.null`);
+      if (!isSuperAdmin) {
+        if (company?.id) {
+          query = query.eq('company_id', company.id);
+        } else {
+          query = query.eq('company_id', '00000000-0000-0000-0000-000000000000');
+        }
       }
       
       if (activeChannelId !== 'all') {
@@ -534,6 +551,68 @@ export default function AiSalesCenter() {
     }
   };
 
+  const handleExcelUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      toast.loading(isRTL ? 'جاري قراءة واستيراد ملف الإكسيل...' : 'Importing Excel file...');
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      // Expecting columns: Question, Answer, Keywords (comma separated)
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      
+      if (jsonData.length < 2) {
+        toast.dismiss();
+        toast.error(isRTL ? 'الملف فارغ أو لا يحتوي على بيانات صحيحة' : 'File is empty or invalid');
+        return;
+      }
+
+      const rowsToInsert = [];
+      // Skip header (i=1)
+      for (let i = 1; i < jsonData.length; i++) {
+        const row = jsonData[i];
+        if (!row || !row[0] || !row[1]) continue; // Question and Answer are required
+
+        let keywords = [];
+        if (row[2]) {
+          keywords = row[2].toString().split(',').map(k => k.trim()).filter(Boolean);
+        }
+
+        rowsToInsert.push({
+          company_id: company?.id,
+          question_trigger: row[0].toString(),
+          answer_content: row[1].toString(),
+          keywords: keywords,
+          category: 'imported_excel',
+          is_active: true
+        });
+      }
+
+      if (rowsToInsert.length === 0) {
+        toast.dismiss();
+        toast.error(isRTL ? 'لم يتم العثور على أي أسئلة وإجابات في الملف' : 'No valid Q&A found in file');
+        return;
+      }
+
+      const { error } = await supabase.from('ai_knowledge_base').insert(rowsToInsert);
+      
+      toast.dismiss();
+      if (error) throw error;
+      
+      toast.success(isRTL ? `تم استيراد ${rowsToInsert.length} معلومة بنجاح!` : `Successfully imported ${rowsToInsert.length} items!`);
+      fetchKnowledge();
+    } catch (err) {
+      toast.dismiss();
+      toast.error(isRTL ? 'حدث خطأ أثناء استيراد الملف' : 'Failed to import Excel file');
+      console.error(err);
+    }
+    // reset file input
+    e.target.value = null;
+  };
+
   const handleDeleteKnowledge = async (id) => {
     try {
       const { error } = await supabase.from('ai_knowledge_base').delete().eq('id', id);
@@ -551,18 +630,53 @@ export default function AiSalesCenter() {
   const fetchChannels = useCallback(async () => {
     setLoadingChannels(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('whatsapp_channels')
-        .select('id, name, phone_number, status, is_default, is_active, ai_enabled, company_id, ai_mode, ai_name, ai_greeting, ai_prompt_instructions, ai_auto_handoff_keywords, ai_admin_phone')
+        .select('id, name, phone_number, status, is_default, is_active, ai_enabled, company_id, ai_mode, ai_name, ai_greeting, ai_prompt_instructions, ai_auto_handoff_keywords, ai_admin_phone, qr_code, active_node_id, last_heartbeat')
         .order('created_at', { ascending: true });
+
+      if (company?.id && !isSuperAdmin) {
+        query = query.eq('company_id', company.id);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       setChannels(data || []);
+      
+      // Auto-select the first channel if none is selected for the dropdown, but keep 'all' as default
     } catch (err) {
       console.error(err);
     } finally {
       setLoadingChannels(false);
     }
-  }, []);
+  }, [company?.id, isSuperAdmin]);
+
+  const handleProvisionChannel = async () => {
+    setProvisioningChannel(true);
+    try {
+      const channelName = company?.name ? `${company.name} - وكيل واتساب` : 'قناتي الذكية';
+      const { error } = await supabase.from('whatsapp_channels').insert({
+        name: channelName,
+        company_id: company?.id || null,
+        status: 'disconnected',
+        ai_enabled: true,
+        ai_mode: 'hybrid',
+        ai_name: isRTL ? 'مساعد المبيعات الذكي' : 'AI Sales Assistant',
+        ai_greeting: isRTL ? 'أهلاً بك! 👋 يسعدني مساعدتك والرد على استفساراتك فوراً.' : 'Hello! 👋 How can I help you today?',
+        ai_prompt_instructions: MASTER_EGYPTIAN_SALES_PROMPT,
+        is_active: true,
+        is_default: false
+      });
+
+      if (error) throw error;
+      toast.success(isRTL ? 'تم إنشاء وتجهيز قناة الواتساب بنجاح! جارٍ تحضير رمز QR...' : 'WhatsApp channel provisioned successfully!');
+      await fetchChannels();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setProvisioningChannel(false);
+    }
+  };
 
   const handleSaveChannelConfig = async (channel) => {
     setSavingChannelId(channel.id);
@@ -609,6 +723,27 @@ export default function AiSalesCenter() {
   useEffect(() => {
     fetchChannels();
   }, [fetchChannels]);
+
+  // Poll channels for QR updates if connection tab is active
+  useEffect(() => {
+    if (activeTab === 'connection') {
+      const interval = setInterval(() => {
+        // use silent refresh to avoid loading spinner flicker
+        supabase
+          .from('whatsapp_channels')
+          .select('id, name, phone_number, status, is_default, is_active, ai_enabled, company_id, ai_mode, ai_name, ai_greeting, ai_prompt_instructions, ai_auto_handoff_keywords, ai_admin_phone, qr_code, active_node_id, last_heartbeat')
+          .order('created_at', { ascending: true })
+          .then(({ data }) => {
+            if (data) {
+              // filter by company if not super admin
+              const filteredData = (company?.id && !isSuperAdmin) ? data.filter(c => c.company_id === company.id) : data;
+              setChannels(filteredData);
+            }
+          });
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [activeTab, company?.id, isSuperAdmin]);
 
   useEffect(() => {
     if (activeTab === 'leads') fetchLeads();
@@ -686,6 +821,16 @@ export default function AiSalesCenter() {
 
         {/* KPI Stat Cards */}
         <div className="ai-kpi-group">
+          {isAiOnlyClient && (
+            <button 
+              onClick={() => signOut()}
+              className="px-4 py-2 text-xs font-bold bg-slate-800/80 hover:bg-rose-900/40 text-rose-400 border border-slate-700 hover:border-rose-500/30 rounded-xl transition-all flex items-center gap-2"
+            >
+              <LogOut className="w-4 h-4" />
+              {isRTL ? 'تسجيل الخروج' : 'Sign Out'}
+            </button>
+          )}
+
           <div className="ai-kpi-card blue">
             <div className="ai-kpi-icon">
               <MessageSquare className="w-5 h-5" />
@@ -769,6 +914,15 @@ export default function AiSalesCenter() {
         >
           <Settings className="w-4 h-4" />
           <span>{isRTL ? 'إعدادات القنوات والوكيل' : 'Channel AI Settings'}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('connection')}
+          className={`ai-tab-button ${activeTab === 'connection' ? 'active' : ''} text-cyan-400`}
+        >
+          <Smartphone className="w-4 h-4" />
+          <span>{isRTL ? 'حالة الربط والـ QR' : 'WhatsApp Connection (QR)'}</span>
         </button>
 
         {isSuperAdmin && (
@@ -1267,14 +1421,26 @@ export default function AiSalesCenter() {
                   : 'The AI references these exact facts to answer accurately without hallucinations'}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowAddKbModal(true)}
-              className="ai-btn-takeover resume py-2 px-4 text-xs"
-            >
-              <Plus className="w-4 h-4" />
-              <span>{isRTL ? 'إضافة معلومة جديدة' : 'Add Item'}</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <label className="ai-btn-ghost py-2 px-4 text-xs cursor-pointer flex items-center gap-2">
+                <UploadCloud className="w-4 h-4" />
+                <span>{isRTL ? 'استيراد من إكسيل (Excel)' : 'Import from Excel'}</span>
+                <input
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  onChange={handleExcelUpload}
+                  className="hidden"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowAddKbModal(true)}
+                className="ai-btn-takeover resume py-2 px-4 text-xs"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{isRTL ? 'إضافة معلومة جديدة' : 'Add Item'}</span>
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1766,6 +1932,179 @@ export default function AiSalesCenter() {
           </div>
         </div>
       )}
+      {/* ============================================================
+          TAB 5: CONNECTION & QR CODE
+          ============================================================ */}
+      {activeTab === 'connection' && (
+        <div className="ai-content-card">
+          <div className="ai-section-head">
+            <div>
+              <h2 className="ai-section-title">
+                {isRTL ? 'ربط وإدارة اتصال واتساب (QR Code)' : 'WhatsApp Connection (QR Code)'}
+              </h2>
+              <p className="ai-section-subtitle">
+                {isRTL
+                  ? 'امسح الرمز لربط رقمك بالنظام ليعمل الوكيل الذكي بشكل مباشر على حسابك'
+                  : 'Scan the QR code to link your WhatsApp number to the system and enable the AI Agent'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={fetchChannels}
+              className="ai-btn-takeover resume py-2 px-4 text-xs"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loadingChannels ? 'animate-spin' : ''}`} />
+              <span>{isRTL ? 'تحديث الحالة' : 'Refresh Status'}</span>
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-6">
+            {loadingChannels && channels.length === 0 ? (
+              <div className="text-center py-12 text-xs text-slate-400">
+                <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-emerald-400" />
+                {isRTL ? 'جارٍ تحميل حالة الربط...' : 'Loading connection status...'}
+              </div>
+            ) : channels.length === 0 ? (
+              <div className="p-8 rounded-2xl bg-slate-900/90 border border-slate-800 text-center max-w-lg mx-auto space-y-4 my-8 shadow-2xl">
+                <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-3xl mx-auto shadow-inner">
+                  🤖
+                </div>
+                <h3 className="text-base font-bold text-white">
+                  {isRTL ? 'تفعيل وكيل الذكاء الاصطناعي لحسابك' : 'Activate Your AI WhatsApp Agent'}
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  {isRTL
+                    ? 'لم يتم تهيئة قناة واتساب بعد لهذا الحساب. اضغط على الزر أدناه لتوليد قناة خاصة بك ورمز QR لمسحه بهاتفك والبدء فوراً.'
+                    : 'No WhatsApp channel is set up yet. Click below to provision your dedicated channel and QR code.'}
+                </p>
+                <button
+                  type="button"
+                  disabled={provisioningChannel}
+                  onClick={handleProvisionChannel}
+                  className="ai-btn-takeover resume py-3 px-6 text-xs font-black shadow-lg shadow-emerald-500/20 mx-auto flex items-center justify-center gap-2"
+                >
+                  {provisioningChannel ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>{isRTL ? 'جارٍ التوليد والتجهيز...' : 'Generating...'}</span>
+                    </>
+                  ) : (
+                    <span>{isRTL ? '🚀 إنشاء وتجهيز قناة الواتساب الآن' : '🚀 Generate WhatsApp Channel Now'}</span>
+                  )}
+                </button>
+              </div>
+            ) : (
+              channels.map((ch) => {
+                const isConnected = ch.status === 'connected';
+                const isPending = ch.status === 'qr_pending' || ch.status === 'disconnected';
+                
+                return (
+                  <div key={ch.id} className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl flex flex-col md:flex-row gap-8 items-center md:items-stretch">
+                    
+                    {/* Status Info Column */}
+                    <div className="flex-1 flex flex-col justify-center space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-inner ${
+                          isConnected ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                        }`}>
+                          {isConnected ? '✅' : '📱'}
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-black text-white">{ch.name}</h3>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400 animate-pulse'}`} />
+                            <span className={`text-xs font-bold ${isConnected ? 'text-emerald-400' : 'text-amber-400'}`}>
+                              {isConnected ? (isRTL ? 'متصل وجاهز للعمل' : 'Connected & Active') : (isRTL ? 'في انتظار الربط (QR)' : 'Waiting for QR Scan')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {isConnected && ch.phone_number ? (
+                         <div className="p-4 rounded-xl bg-slate-950/60 border border-emerald-500/20 text-center md:text-start">
+                            <p className="text-xs text-slate-400 mb-1">{isRTL ? 'الرقم المربوط حالياً:' : 'Currently Linked Number:'}</p>
+                            <p className="text-xl font-mono font-black text-emerald-400" dir="ltr">+{ch.phone_number}</p>
+                            
+                            <p className="text-[11px] text-slate-400 leading-relaxed mt-3">
+                              {isRTL
+                                ? 'الرقم متصل بنجاح بالخوادم اللامركزية. وكيل الذكاء الاصطناعي يستقبل ويرسل الرسائل الآن بانتظام.'
+                                : 'Number successfully connected to decentralized nodes. AI Agent is processing messages normally.'}
+                            </p>
+                         </div>
+                      ) : (
+                        <div className="p-4 rounded-xl bg-slate-950/60 border border-amber-500/20 text-center md:text-start">
+                           <p className="text-xs font-bold text-amber-300 mb-2">
+                             {isRTL ? 'خطوات الربط:' : 'Connection Steps:'}
+                           </p>
+                           <ol className="text-[11px] text-slate-400 leading-relaxed space-y-1.5 list-decimal list-inside">
+                             <li>{isRTL ? 'افتح تطبيق واتساب على هاتفك.' : 'Open WhatsApp on your phone.'}</li>
+                             <li>{isRTL ? 'اذهب إلى الإعدادات > الأجهزة المرتبطة.' : 'Go to Settings > Linked Devices.'}</li>
+                             <li>{isRTL ? 'اضغط على "ربط جهاز" ووجه الكاميرا لمسح الرمز.' : 'Tap "Link a Device" and scan the QR code.'}</li>
+                             <li>{isRTL ? 'انتظر ثوانٍ حتى يتم الاتصال وتحديث الحالة.' : 'Wait a few seconds for the connection to establish.'}</li>
+                           </ol>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* QR Code Column */}
+                    <div className="w-full md:w-auto flex flex-col items-center justify-center bg-white p-6 rounded-2xl shadow-xl min-w-[280px]">
+                      {isConnected ? (
+                         <div className="flex flex-col items-center text-center space-y-4">
+                           <ShieldCheck className="w-20 h-20 text-emerald-500 mb-2" />
+                           <p className="text-sm font-black text-slate-800">
+                             {isRTL ? 'الرقم متصل بنجاح' : 'Number Connected'}
+                           </p>
+                           <button
+                             type="button"
+                             onClick={async () => {
+                               if(!window.confirm(isRTL ? 'هل أنت متأكد من فصل الرقم؟ ستحتاج لمسح QR جديد لإعادته.' : 'Are you sure you want to disconnect?')) return;
+                               try {
+                                  await supabase.from("system_settings").upsert({
+                                    key: `whatsapp_control_${ch.id}`,
+                                    value: { action: "force_disconnect", channel_id: ch.id, requested_at: new Date().toISOString() },
+                                    updated_at: new Date().toISOString()
+                                  }, { onConflict: "key" });
+                                  await supabase.from("whatsapp_channels").update({ status: "qr_pending", phone_number: null, qr_code: null }).eq("id", ch.id);
+                                  toast.success(isRTL ? 'تم إرسال أمر الفصل، يرجى الانتظار...' : 'Disconnect command sent, please wait...');
+                                  fetchChannels();
+                               } catch(e) { toast.error(e.message); }
+                             }}
+                             className="px-4 py-2 mt-2 text-xs font-bold bg-rose-50 text-rose-600 border border-rose-200 rounded-xl hover:bg-rose-100 transition-colors"
+                           >
+                             {isRTL ? 'فصل الرقم (تسجيل خروج)' : 'Disconnect (Logout)'}
+                           </button>
+                         </div>
+                      ) : ch.qr_code ? (
+                        <>
+                          <div className="bg-white p-2 rounded-xl border border-gray-200 shadow-sm relative">
+                            <QRCode value={ch.qr_code} size={220} />
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
+                               <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg">
+                                 <Smartphone className="w-8 h-8 text-emerald-600" />
+                               </div>
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-slate-500 font-bold mt-4 animate-pulse text-center">
+                            {isRTL ? 'يتم تحديث الرمز تلقائياً... قم بالمسح الآن' : 'QR updates automatically... scan now'}
+                          </p>
+                        </>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-48 space-y-3">
+                          <RefreshCw className="w-8 h-8 text-amber-500 animate-spin" />
+                          <p className="text-xs font-bold text-slate-600 text-center">
+                            {isRTL ? 'جارٍ توليد رمز QR... يرجى الانتظار' : 'Generating QR code... please wait'}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
