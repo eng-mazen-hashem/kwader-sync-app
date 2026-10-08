@@ -2076,8 +2076,12 @@ export default function AiSalesCenter() {
                          </div>
                       ) : ch.qr_code ? (
                         <>
-                          <div className="bg-white p-2 rounded-xl border border-gray-200 shadow-sm relative">
-                            <QRCode value={ch.qr_code} size={220} />
+                          <div className="bg-white p-2 rounded-xl border border-gray-200 shadow-sm relative flex items-center justify-center min-h-[220px]">
+                            {ch.qr_code.startsWith('data:image') ? (
+                              <img src={ch.qr_code} alt="QR Code" width={220} height={220} />
+                            ) : (
+                              <QRCode value={ch.qr_code} size={220} />
+                            )}
                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
                                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg">
                                  <Smartphone className="w-8 h-8 text-emerald-600" />
