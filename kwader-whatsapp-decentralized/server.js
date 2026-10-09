@@ -802,28 +802,23 @@ async function startChannelManager(channelId) {
                             const adminReplyToCustomer = `${text.trim()}`;
                             const currentSock = state.activeClient?.sock || sock;
 
-                            await currentSock.sendMessage(customerJid, { text: adminReplyToCustomer });
-                            console.log(`[WhatsApp AI] 🔔 Admin proxy reply forwarded to customer ${customerPhone}`);
-                            await currentSock.sendMessage(targetJid || jid, { text: `✅ تم إرسال ردك للعميل +${customerPhone} بنجاح.` });
+                            // Smart AI Formulation Trigger
+                            const directiveText = `<ADMIN_DIRECTIVE>المدير يوجهك بالرد التالي على العميل: "${adminReplyToCustomer}".\nيرجى صياغة هذا الرد بأسلوبك الاستشاري اللبق والودود، وأرسله للعميل مباشرة.</ADMIN_DIRECTIVE>`;
+                            
+                            enqueueIncomingMessage({
+                                channelId,
+                                phone: customerPhone,
+                                targetJid: customerJid,
+                                jid: customerJid,
+                                customerName: customerPhone,
+                                text: directiveText,
+                                sock: currentSock,
+                                state
+                            });
 
-                            // Fire and forget: save to AI history
-                            (async () => {
-                                try {
-                                    const { data: convs } = await supabase.from('ai_conversations').select('id').eq('channel_id', channelId).eq('customer_phone', customerPhone).order('updated_at', { ascending: false }).limit(1);
-                                    if (convs && convs.length > 0) {
-                                        await supabase.from('ai_messages').insert({
-                                            conversation_id: convs[0].id,
-                                            sender_type: 'ai',
-                                            role: 'assistant',
-                                            content: adminReplyToCustomer,
-                                            message_text: adminReplyToCustomer,
-                                            tokens_used: 0,
-                                            status: 'delivered'
-                                        });
-                                    }
-                                } catch(e) {}
-                            })();
-
+                            console.log(`[WhatsApp AI] 🔔 Admin proxy reply queued for AI smart formatting to ${customerPhone}`);
+                            await currentSock.sendMessage(targetJid || jid, { text: `✅ تم استلام توجيهك. سيقوم الذكاء الاصطناعي بصياغته بأسلوب احترافي وإرساله للعميل +${customerPhone} خلال ثوانٍ.` });
+                            
                             continue; // Stop processing this admin message as a normal user query
                         }
                     }
@@ -1251,7 +1246,7 @@ async function generateAiReply({ systemPrompt, history, text, phone, adminPhone,
     // Add strong sales empathy booster
     let enhancedSystemPrompt = systemPrompt + "\n\n[Sales Persona Booster]: أنت بائع استشاري (Consultative Seller). كن متعاطفاً جداً مع العميل وافهم مشاعره ومخاوفه قبل البيع. لا تكتفِ بسرد الأسعار، بل افهم احتياجه أولاً ثم اطرح الحل كأنك مستشار مؤتمن يخاف على مصلحته بأسلوب ودود ومقنع جداً ومختصر.";
 
-    enhancedSystemPrompt += `\n\n[الطوارئ والتواصل مع الإدارة]: في الحالات الطارئة، أو عند رغبة العميل في حجز موعد هام، استخدم الإجراء التالي لإرسال رسالة للمدير: أضف <ACTION>NOTIFY_ADMIN: ملخص المشكلة هنا</ACTION> في نهاية ردك.`;
+    enhancedSystemPrompt += `\n\n[التحويل للموظف البشري - هام جداً]:\nإذا سألك العميل عن معلومة أو سعر غير موجود صراحة في قاعدة المعرفة، أو طلب التحدث مع شخص بشري، أو قدم شكوى، **لا تخترع إجابة من عندك أبداً**. بل أخبر العميل بلباقة أنك ستحول استفساره للإدارة للرد عليه فوراً. ولتنفيذ التحويل برمجياً، **يجب** أن تختم ردك بهذا الكود السري:\n<ACTION>NOTIFY_ADMIN: ملخص سؤال العميل</ACTION>`;
     
     enhancedSystemPrompt += `\n\n[نظام الفواتير والأسعار]: لتحديد أسعار المنتجات والفواتير، **يجب عليك الاعتماد فقط على الأسعار المذكورة في "قاعدة المعرفة" (Knowledge Base)** التي تم تزويدك بها أعلى هذه التعليمات. إذا لم تجد السعر، اسأل العميل بأدب لطلب تفاصيل أكثر. إذا طلب العميل الشراء وتأكدت من السعر من قاعدة المعرفة، أرسل هذا الأمر في نهاية ردك لإصدار فاتورة مبدئية للإدارة: <ACTION>CREATE_INVOICE: [{"item": "اسم المنتج كما في قاعدة المعرفة", "qty": 1, "price": 150}]</ACTION>`;
 
@@ -1267,10 +1262,16 @@ async function generateAiReply({ systemPrompt, history, text, phone, adminPhone,
         return { replyText: cleanReply, tokensUsed: tokens, action: aiAction, actionPayload };
     };
 
+    let finalUserMessage = text;
+    if (text.includes('<ADMIN_DIRECTIVE>')) {
+        const directiveContent = text.replace(/<\/?ADMIN_DIRECTIVE>/g, '').trim();
+        finalUserMessage = `[توجيه داخلي من الإدارة - لا ترد على هذا التوجيه بل نفذه للعميل]:\n${directiveContent}`;
+    }
+
     const messages = [
         { role: 'system', content: enhancedSystemPrompt },
         ...history,
-        { role: 'user', content: text }
+        { role: 'user', content: finalUserMessage }
     ];
 
     // ── TIER 0: GitHub Models API (Free Tier for Developers) - Cost Saver ──
